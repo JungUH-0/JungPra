@@ -1,0 +1,13 @@
+* {  /* 문서 전체에 적용하는 스타일 */
+  box-sizing: border-box;  /* 박스 사이즈 */
+  margin:0;  /* 마진 */
+  padding:0;  /* 패딩 */
+}
+#container {
+  width:480px;
+  margin:40px auto;
+}
+h1 {
+  font-size:2em;
+  margin:10px;
+}

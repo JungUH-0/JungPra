@@ -1,0 +1,52 @@
+package intro;
+import java.util.Scanner;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class Jung {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		Scanner sc = new Scanner(System.in);
+
+        System.out.println("=== 간단 자기소개서 작성기 ===");
+
+        // 1. 데이터 입력 받기
+        System.out.print("이름: ");
+        String name = sc.nextLine();
+
+        System.out.print("지원 동기: ");
+        String motivation = sc.nextLine();
+
+        System.out.print("자신의 장점: ");
+        String strength = sc.nextLine();
+
+        // 2. 저장할 내용 구성하기
+        String result = "--- 자기소개서 ---\n" +
+                        "성명: " + name + "\n" +
+                        "지원 동기: " + motivation + "\n" +
+                        "장점: " + strength + "\n" +
+                        "-----------------";
+
+        // 3. 파일로 저장하기
+        try {
+            FileWriter writer = new FileWriter("my_resume.txt");
+            writer.write(result);
+            writer.close(); // 파일을 반드시 닫아줘야 저장됩니다.
+            
+            System.out.println("\n성공적으로 저장되었습니다! (파일명: my_resume.txt)");
+            System.out.println("내용 확인:\n" + result);
+            
+        } catch (IOException e) {
+            System.out.println("파일 저장 중 오류가 발생했습니다.");
+            e.printStackTrace();
+        } finally {
+            sc.close();
+        }
+    }
+		
+
+	}
+
+

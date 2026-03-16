@@ -1,0 +1,62 @@
+/* 1. 전체적인 페이지 분위기 설정 */
+body {
+  font-family: 'Arial', sans-serif; /* 글꼴 설정 */
+  line-height: 1.6;               /* 줄 간격 */
+  color: #333;                    /* 기본 글자색 */
+  max-width: 800px;               /* 전체 너비 제한 */
+  margin: 0 auto;                 /* 가운데 정렬 */
+  padding: 20px;                  /* 안쪽 여백 */
+  background-color: #7fceb3;      /* 배경색 */
+}
+
+/* 2. 상단 제목(Header) 꾸미기 */
+header {
+  text-align: center;             /* 텍스트 가운데 정렬 */
+  padding: 50px 0;
+  background-color: #505357;      /* 어두운 남색 배경 */
+  color: white;                   /* 글자색 흰색 */
+  border-radius: 10px;            /* 모서리 둥글게 */
+}
+
+/* 3. 섹션(Section) 구분 및 간격 */
+section {
+  background: white;              /* 구역 배경 흰색 */
+  margin: 20px 0;                 /* 구역 간 간격 */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 살짝 떠 있는 효과 */
+}
+
+h2 {
+  color: #2980b9;                 /* 소제목 포인트 컬러 */
+  border-bottom: 2px solid #2980b9; /* 하단 밑줄 */
+  padding-bottom: 5px;
+}
+
+/* 4. 이미지 배치 (5주차 학습 예정인 float 활용) */
+img {
+  float: right;                   /* 이미지를 오른쪽으로 배치 */
+  margin-left: 20px;              /* 텍스트와 이미지 사이 간격 */
+  border: 5px solid #fff;         /* 흰색 테두리 */
+  border-radius: 50%;             /* 이미지를 동그랗게 깎기 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* 5. 링크 스타일링 */
+a {
+  color: #e67e22;                 /* 주황색 링크 */
+  text-decoration: none;          /* 밑줄 제거 */
+  font-weight: bold;
+}
+
+a:hover {
+  text-decoration: underline;     /* 마우스 올렸을 때만 밑줄 */
+}
+
+/* 6. 하단(Footer) */
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-top: 40px;
+}

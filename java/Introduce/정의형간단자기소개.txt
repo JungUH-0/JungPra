@@ -1,0 +1,5 @@
+--- 자기소개서 ---
+이름: 정의형
+언어: Java,JavaScript,SQL,CSS/경험 C#
+툴 이클립스,VSCode(Editor)
+-----------------
