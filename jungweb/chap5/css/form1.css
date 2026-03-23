@@ -1,0 +1,24 @@
+fieldset {  /* 모든 fieldset 요소에 적용할 스타일 */
+  margin-bottom:20px;  /* 아래쪽 마진 */ 
+}
+fieldset legend {  /* fieldset 요소의 하위 legend 요소에 적용할 스타일 */
+  font-weight:bold;  /* 폰트 굵기 */
+}
+ul { /* 모든 ul 요소에 적용할 스타일 */
+  list-style:none;  /* 불릿 없애기 */
+  padding-left:0;  /* 왼쪽 패딩 */ 
+}
+li {  /* 모든 li 요소에 적용할 스타일 */
+  font-weight: bold;
+  margin:10px;  /* 마진 */
+}
+
+input[type="text"] {   /* type="text", type="tel", type="email"인 input 요소에 적용할 스타일 */
+  width:300px;   /* 너비 */
+}
+
+/* '주문하기', '취소하기' 버튼 */
+div {  /* 모든 div 요소에 적용할 스타일 */
+  width:400px;  /* 너비 */
+  margin:15px auto;  /* 화면 중앙에 배치 */
+}

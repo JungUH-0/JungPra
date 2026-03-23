@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>동아리 가입 신청서</title>
+     <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+     <form>
+          <fieldset>
+               <legend>2026학년도 코딩 동아리 가입 신청서</legend>
+               <label>(*)필수 입력 항목입니다.</label>
+               <ul>
+                    <li>이름(*):
+                         <input type="text" autofocus placeholder="이름을 입력하세요" required>
+                    </li>
+                    <li>소속 대학교:
+                         <input type="text" value="한국대학교" readonly required>(수정 불가)
+                    </li>
+                    <li>이메일(*):
+                         <input type="email" required>
+                    </li>
+                     <li>연락처(*):
+                         <input type="tel" required placeholder="000-0000-0000">
+                    </li>
+                     <li>희망 면접일:
+                         <input type="date" >
+                    </li>
+                     <li>희망 면접시간:
+                         <input type="time" >
+                    </li>
+                    <li><label id="hope">희망 파트 :</label>
+                         <input type="radio" name="pro" checked="checked"> 프론트엔드
+                         <input type="radio" name="pro"> 백엔드
+                    </li>
+                    <li><label id="hope">보유 장비(중복 선택) :</label>
+                         <input type="checkbox" name="item" id="note" > 노트북
+                         <input type="checkbox" name="item" id="tab"> 태블릿
+                    </li>
+                    <li>자기소개 및 포부</li>
+                    <textarea  rows="5" cols="50" placeholder="짧게 작성해 주세요."></textarea>
+                   
+               </ul>
+                <input type="submit" value="신청서 제출"/>
+               <input type="reset" value="다시 쓰기"/>
+          </fieldset>
+          
+
+     </form>
+</body>
+</html>

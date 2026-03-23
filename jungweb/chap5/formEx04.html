@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>입력 양식 실습 - 파트 구분</title>
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <form action="url" method="post">
+        
+        <fieldset>
+            <legend>기본 정보</legend>
+            <p>
+                <label for="name">이름</label>
+                <input type="text" id="name" name="name" required>
+            </p>
+            <p>
+                <label>성별</label>
+                <input type="radio" id="male" name="gender" value="male" checked>
+                <label for="male" class="inline-label">남자</label>
+                <input type="radio" id="female" name="gender" value="female">
+                <label for="female" class="inline-label">여자</label>
+            </p>
+            <p>
+                <label for="email">이메일</label>
+                <input type="email" id="email" name="email">
+            </p>
+            <p>
+                <label for="pw">비밀번호</label>
+                <input type="password" id="pw" name="pw" required>
+            </p>
+        </fieldset>
+
+        <fieldset>
+            <legend>상세 정보</legend>
+            <p>
+                <label for="food">좋아하는 음식</label>
+                <select id="food" name="food" size="4" multiple>
+                    <option value="kimbap">김밥</option>
+                    <option value="tteokbokki" selected>떡볶이</option>
+                    <option value="soondae">순대</option>
+                    <option value="eomuk">어묵</option>
+                </select>
+            </p>
+
+            <p>
+                <label>관심분야</label>
+                <input type="checkbox" id="security" name="interest" value="security" checked>
+                <label for="security" class="inline-label">보안</label>
+                <input type="checkbox" id="ai" name="interest" value="ai">
+                <label for="ai" class="inline-label">인공지능</label>
+                <input type="checkbox" id="network" name="interest" value="network">
+                <label for="network" class="inline-label">네트워크</label>
+            </p>
+
+            <p>
+                <label for="subject">선택과목</label>
+                <select id="subject" name="subject">
+                    <optgroup label="실습과목">
+                        <option value="html" selected>HTML5/CSS</option>
+                        <option value="js">JavaScript</option>
+                        <option value="c">C언어</option>
+                    </optgroup>
+                    <optgroup label="이론과목">
+                        <option value="multimedia">멀티미디어개론</option>
+                        <option value="computer">컴퓨터개론</option>
+                    </optgroup>
+                </select>
+            </p>
+        </fieldset>
+
+        <div style="text-align: center;">
+            <button type="submit">정보 제출하기</button>
+            <button type="reset">다시 작성</button>
+        </div>
+
+    </form>
+
+</body>
+</html>

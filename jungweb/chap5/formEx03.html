@@ -1,0 +1,61 @@
+<form action="/url" method="post">
+    <fieldset>
+        <legend>2026학년도 코딩 동아리 가입 신청서</legend>
+<p><smaill>(*)필수 입력 항목입니다.</smaill></p>
+        <p>
+            <label for="username">이름(*): </label>
+            <input type="text" id="username" name="username" placeholder="이름을 입력하세요" required>
+        </p>
+        <p>
+            <label for="school">소속 대학교: </label>
+            <input type="text" id="school" value="한국대학교" readonly> 
+            <small>(수정 불가)</small>
+        </p>
+
+        <p>
+            <label for="useremail">이메일(*): </label>
+            <input type="email" id="useremail" name="useremail" required>
+        </p>
+
+        <p>
+            <label for="usertel">연락처(*): </label>
+            <input type="tel" id="usertel" name="usertel" placeholder="000-000-0000" required>
+        </p>
+
+        <p>
+            <label for="apply-date">희망 면접일: </label>
+            <input type="date" id="apply-date" name="apply-date">
+        </p>
+        <p>
+            <label for="apply-time">희망 면접시간: </label>
+            <input type="time" id="apply-time" name="apply-time">
+        </p>
+
+        <p>
+            <strong>희망 파트:</strong>
+            <input type="radio" id="frontend" name="part" value="fe" checked>
+            <label for="frontend">프론트엔드</label>
+            <input type="radio" id="backend" name="part" value="be">
+            <label for="backend">백엔드</label>
+        </p>
+
+        <p>
+            <strong>보유 장비 (중복 선택):</strong>
+            <input type="checkbox" id="laptop" name="device" value="laptop">
+            <label for="laptop">노트북</label>
+            <input type="checkbox" id="tablet" name="device" value="tablet">
+            <label for="tablet">태블릿</label>
+        </p>
+
+        <p>
+            <label for="intro">자기소개 및 포부:</label><br>
+            <textarea id="intro" name="intro" rows="5" cols="50" placeholder="짧게 작성해 주세요."></textarea>
+        </p>
+
+        <p>
+            <button type="submit">신청서 제출</button>
+            <button type="reset">다시 쓰기</button>
+        </p>
+    </fieldset>
+</form>
+</html>

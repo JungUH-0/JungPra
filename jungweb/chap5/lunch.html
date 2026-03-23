@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>점심메뉴 선호도 조사</title>
+     <link rel="stylesheet" href="css/form1.css">
+</head>
+
+<body>
+     <form>
+          <fieldset>
+               <legend>즐거운 점심시간 선호도 조사</legend>
+               <p>이름:
+                    <input type="text" placeholder="성함을 적어주세요"/>
+               </p>
+               <ol>
+                    <li>오늘 가장 당기는 메뉴 종류는?</li>
+                         <input type="radio" name="lunch" checked="checked"><label>한식(비빔밥, 김치찌개)</label><br>
+                         <input type="radio" name="lunch"><label>중식(짜장면, 마라탕)</label><br>
+                         <input type="radio" name="lunch"><label>양식/일식(돈가스, 초밥)</label>
+
+                    <li>못 먹거나 피하는 식재료가 있나요?(모두 선택)</li>
+                    <input type="checkbox" name="food">견과류
+                    <input type="checkbox" name="food">유제품
+                    <input type="checkbox" name="food">해산물
+                    <input type="checkbox" name="food">없음
+
+                    <li>희망하는 점심 식사 시간 :
+                    <input type="time" value="12:00">
+                    </li>
+                    <li>선호하는 결제 방식 :
+                         <select id="cash">
+                              <option>각자 계산(더치페이)</option>
+                         </select>
+                    </li>
+                    <li>식당에 바라는점:</li>
+                    <textarea id="txtarea" placeholder="예: 밥 많이 주세요!" cols="50" rows="10"></textarea>
+               </ol>
+               <input type="submit" value="조사결과 제출하기"/>
+               <input type="reset" value="다시 작성"/>
+               
+          </fieldset>
+
+     </form>
+</body>
+</html>
