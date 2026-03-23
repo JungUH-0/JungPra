@@ -16,7 +16,11 @@ def main(page: ft.Page):
           global count
           
           try:
-           numchk = int(num.value) # 여기서 숫자가 아니면 바로 except로 점프!
+           numchk = int(num.value) # 여기서 숫자가 아니면 바로 except로 이동해서 실행됨
+           if numchk <0:
+               msg.value = "음수는 입력하지마세요 (1~50)"
+               page.update()
+               return
           except ValueError:
                # 정수가 아닐 때 실행될 코드
                msg.value = "숫자만 입력해주세요 (1~50)"
