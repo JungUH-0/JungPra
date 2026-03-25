@@ -17,6 +17,8 @@ public class TypeConversion {
 		System.out.println((int)(2.9+1.8));
 		System.out.printf("3번");
 		System.out.println((int)2.9+(int)1.8);
+		int a = 80;
+		System.out.println(a>90 ? "s" : "a");
 
 		
 	}
