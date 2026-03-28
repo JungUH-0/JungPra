@@ -25,6 +25,8 @@ while True :
                     print("목숨끝")
                     break
                print("남은목숨 :",count)
+
+               
      elif duo=='N' or duo=='n' :
           while True :
                num = int(input("숫자 입력:"))
