@@ -63,6 +63,8 @@ import flet as ft
 
 # ft.app(target=main)
 def main(page: ft.Page):
+    
+  
     # 닫기 함수
     def close_dlg(e):
         dlg.open = False  # page.close(dlg) 대신 직접 속성 변경
@@ -76,7 +78,7 @@ def main(page: ft.Page):
         actions=[
             ft.TextButton("cancel", on_click=close_dlg),
             ft.TextButton("confirm", on_click=close_dlg)
-        ],
+        ]
     )
     page.overlay.append(dlg) # 페이지 레이어에 추가
     # 열기 함수
@@ -85,8 +87,33 @@ def main(page: ft.Page):
         
         dlg.open = True          # 열기 상태로 변경
         page.update()            # 반영
+    txt_name = ft.TextField(
+        label="이름을 입력하세요", 
+        width=300,
+        height=100,  # 높이를 100으로 충분히 줍니다. (에러 메시지 공간)
+        border=ft.InputBorder.OUTLINE # 테두리를 명확히 해서 빨간색 변화를 확인합니다.
+    )
+
+    def btn_click(e):
+        if not txt_name.value:
+            # 1. 에러 문구 설정
+            txt_name.error_text = "이름 입력은 필수입니다!"
+            # 2. 즉시 화면 갱신
+            page.update() 
+        else:
+            txt_name.error_text = None
+            # page.clean()
+            page.add(ft.Text(f"안녕하세요, {txt_name.value}님!"))
+
+    page.add(
+        ft.Text("Flet 에러 테스트", size=25),
+        txt_name,
+        # 버튼과 입력창 사이에 간격을 줍니다.
+        ft.Container(height=10), 
+        ft.ElevatedButton("확인", on_click=btn_click, width=300)
+    )
     
-    page.add(ft.TextButton("창 실행", on_click=opendlg))
+    # page.add(t,txt_name,ft.ElevatedButton("Say hello!", on_click=btn_click),ft.TextButton("창 실행", on_click=opendlg))
 
 ft.app(target=main)
 
