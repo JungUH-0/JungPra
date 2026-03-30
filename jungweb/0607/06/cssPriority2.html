@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSS Priority Live Test</title>
+    <style>
+        * {color: gray; }	/* 전체선택자 */
+        p {color: blue; } 	/* 2. 태그 선택자 */
+        .highlight {  color: green;  } /* 3. 클래스 선택자 */
+        #important { color: red; } 	/* 4. 아이디 선택자 */
+        p.special {  color: purple; }  /* 5. 조합된 선택자  */
+        #important.highlight {  color: orange; }/* 6. 아이디 + 클래스 조합 */
+        .forced { color: black !important; }  /* 7. !important 사용 */
+    </style>
+</head>
+<body>
+    <h2>CSS 우선순위 테스트</h2>
+    <p>껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다(파란색 적용)</p>
+    <p class="highlight">껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다 (초록색 적용)</p>
+    <p id="important">껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다 (빨간색 적용)</p>
+    <p class="special">껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다 (보라색 적용)</p>
+    <p id="important" class="highlight">껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다 (주황색 적용)</p>
+    <p class="highlight forced">껍질에 붉은 빛이 돌아 <b>레드향</b>이라 불린다 (검은색 적용)</p>
+</body>
+
+</html>

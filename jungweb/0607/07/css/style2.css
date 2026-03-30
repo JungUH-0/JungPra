@@ -1,0 +1,14 @@
+/* 레이아웃을 위한 기본 박스 스타일 */
+.container {
+    width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}

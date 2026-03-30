@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSS Priority Test</title>
+    <style>
+        * {   color: gray;   }    /* 전체 선택자 */
+        p {   color: blue;   }   /* 태그 선택자 */
+        .highlight { color: green;  }  /* 클래스 선택자 */
+        #special {  color: orange;  }  /* 아이디 선택자 */  
+        .important-text {
+            color: red !important;
+        }       /* !important 적용 */
+    </style>
+</head>
+<body>
+    <h2>CSS 우선순위 테스트</h2>
+    <p>1. 태그 선택자(p) 적용 → 파란색</p>
+    <p class="highlight">2. 클래스 선택자(.highlight) 적용 → 초록색</p>
+    <p id="special">3. 아이디 선택자(#special) 적용 → 주황색</p>
+    <p style="color: purple;">4. 인라인 스타일 적용 → 보라색</p>
+    <p class="highlight important-text" style="color: purple;">
+      5. 클래스 + !important + 인라인 스타일 → 빨간색(!important 우선)
+    </p>
+</body>
+</html>
