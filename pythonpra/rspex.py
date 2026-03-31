@@ -51,9 +51,13 @@
  #-------------------------------------------------------------------------------------   
 import flet as ft
 import random
+
+
 count=0
 
 def main(page: ft.Page):
+    page.padding = 0 # 여백 없애기 화면 꽉참
+    # page.bgcolor = "pink"
     win_count={'user':0,'com':0}
     result_text = ft.Text(size=20, text_align=ft.TextAlign.CENTER)
     final_text=ft.Text("")
@@ -98,18 +102,27 @@ def main(page: ft.Page):
         play_cout_text.value=f"경기횟수:{count}"
         win_count=winchk(winner,win_count)
         wcount_text.value = f"com : {win_count['com']} : user : {win_count['user']}"
+        # 결과 출력
+        if (winner=='무승부'):
+            final_text.value = f"결과: {winner} \n(나: {user_choice} vs 컴퓨터: {com_choice})"
+        else :
+            final_text.value = f"결과: {winner}승리! \n(나: {user_choice} vs 컴퓨터: {com_choice})"
+            # 3승시 종료
+        if(win_count['user']==3 or win_count['com']==3) :
+            for btn in buttons:
+                btn.disabled = True
+            result_text.value=finalwin(winner)
 
+            # 5판 결과 안날시 리셋
         if(count >=5):
             count =0
             win_count['com']=0
             win_count['user']=0
         
-        final_text.value = f"결과: {winner} 승!\n(나: {user_choice} vs 컴퓨터: {com_choice})"
-
-        if(win_count['user']==3 or win_count['com']==3) :
-            for btn in buttons:
-                btn.disabled = True
-            result_text.value=finalwin(winner)
+        # if (winner=='무승부'):
+        #     final_text.value = f"결과: {winner} \n(나: {user_choice} vs 컴퓨터: {com_choice})"
+        # else :
+        #     final_text.value = f"결과: {winner}승리! \n(나: {user_choice} vs 컴퓨터: {com_choice})"
 
 
         # win_count[winner]=win_count[winner]+1
