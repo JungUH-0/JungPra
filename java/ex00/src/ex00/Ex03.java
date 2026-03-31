@@ -15,6 +15,7 @@ public class Ex03 {
 		b= sc.nextInt();
 		System.out.print("3번 정수를 입력하시오. : ");
 		c= sc.nextInt();
+		//if(a+b>c && a+c>b && c+b>a)
 		if(a+b>c) {
 			if(a+c>b) {
 				if(c+b>a) {

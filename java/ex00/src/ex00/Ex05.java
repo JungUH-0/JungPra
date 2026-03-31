@@ -20,6 +20,7 @@ public class Ex05 {
 		x=sc.nextInt();
 		y=sc.nextInt();
 		//원의 방정식 ((x - a)*(x - a) + (y - b)*(y - b) <= c*c)
+		//
 		int xx = x-a;
 		int yy= y-b;
 		if((xx*xx)+(yy*yy)<=c*c)
@@ -27,6 +28,8 @@ public class Ex05 {
 		else
 			System.out.printf("점(%.1f,%.1f)는 원 안에 없습니다.",(double)x,(double)y);
 		sc.close();
+		double line=Math.sqrt(Math.pow(xx,2)+Math.pow(y,2));
+		System.out.println("확인"+line);
 
 	}
 
