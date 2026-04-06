@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Document</title>
+     <style>
+          span{
+               display: block;
+               /* display:block 이 없으면 width,height 가 적용 x */
+               width: 100px;
+               height: 60px;
+               border: 1px solid;
+          }
+          div div{
+               width: 400px;
+               height: 60px;
+               border: 1px solid;
+          }
+     </style>
+</head>
+<body>
+     <div>
+          <span>block span</span>과<span>block span</span>입니다.
+     </div>
+     <div style="background-color: orange;">
+          <div>inline DIV</div>
+          <div>inline DIV</div>
+          <div>inline DIV</div>
+     </div>
+     
+</body>
+</html>
