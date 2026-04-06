@@ -19,7 +19,7 @@ int main()
   intPart = static_cast<int>(number); 
   fractPart = number - intPart;
   // 출력
-  cout << fixed << showpoint << setprecision(2);
+  cout << fixed << showpoint << setprecision(4);
   cout << "원래 값: " << number << endl;  
   cout << "정수 부분: " << intPart << endl;
   cout << "소수점 아래 부분: " << fractPart;
