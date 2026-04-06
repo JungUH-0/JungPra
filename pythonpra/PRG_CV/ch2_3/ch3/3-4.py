@@ -2,13 +2,13 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 
-img=cv.imread('JohnHancocksSignature.png',cv.IMREAD_UNCHANGED) 
+img=cv.imread('ch2_3/ch3/JohnHancocksSignature.png',cv.IMREAD_UNCHANGED) 
 
 t,bin_img=cv.threshold(img[:,:,3],0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
 plt.imshow(bin_img,cmap='gray'), plt.xticks([]), plt.yticks([])
 plt.show() 
 
-b=bin_img[bin_img.shape[0]//2:bin_img.shape[0],0:bin_img.shape[0]//2+1]
+b=bin_img[bin_img.shape[0]//2:bin_img.shape[0],0:bin_img.shape[0]//2+1]         
 plt.imshow(b,cmap='gray'), plt.xticks([]), plt.yticks([])
 plt.show()
 

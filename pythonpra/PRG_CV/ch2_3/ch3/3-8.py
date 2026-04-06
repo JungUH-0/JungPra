@@ -1,6 +1,6 @@
 import cv2 as cv
 
-img=cv.imread('rose.png')
+img=cv.imread('ch2_3/ch3/rose.png')
 patch=img[250:350,170:270,:]
 
 img=cv.rectangle(img,(170,250),(270,350),(255,0,0),3)

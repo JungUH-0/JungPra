@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-img=cv.imread('soccer.jpg')
+img=cv.imread('ch2_3/ch3/soccer.jpg')
 img=cv.resize(img,dsize=(0,0),fx=0.4,fy=0.4)
 gray=cv.cvtColor(img,cv.COLOR_BGR2GRAY)
 cv.putText(gray,'soccer',(10,20),cv.FONT_HERSHEY_SIMPLEX,0.7,(255,255,255),2)

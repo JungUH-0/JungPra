@@ -14,7 +14,7 @@ def my_cvtGray2(bgr_img):
     g=0.114*bgr_img[:,:,0]+0.587*bgr_img[:,:,1]+0.299*bgr_img[:,:,2]
     return np.uint8(g)
     
-img=cv.imread('girl_laughing.png') 
+img=cv.imread('ch2_3/ch3/girl_laughing.jpg') 
 
 start=time.time()
 my_cvtGray1(img)
