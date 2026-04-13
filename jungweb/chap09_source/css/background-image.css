@@ -1,0 +1,25 @@
+@charset "utf-8";
+
+/* 배경 이미지 삽입하고 배치하기 */
+section {
+    width: 200px; 
+    height: 200px;
+    border: 1px solid #000;
+    background-image: url(../images/pattern.png); 
+
+/* 배경 이미지 반복하지 않기 
+    background-repeat: no-repeat; */
+/* 배경 이미지 가로축으로 반복 
+    background-repeat: repeat-x; */
+/* 배경 이미지 세로축으로 반복 
+    background-repeat: repeat-y; */
+/* 배경 이미지를 정중앙에 배치
+    background-position: center center; */
+/* 배경 이미지 오른쪽 아래에 배치
+    background-position: right bottom; */
+/* 배경 이미지 px로 배치
+    background-position: 20px 60px; */
+/* 배경 이미지 백분율로 배치 
+    background-position: 100% 50%; */
+}
+

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS-고급 선택자활용</title>
+<link rel="stylesheet" href="labstyles.css">
+
+
+</head>
+<body>
+
+<div class="header">
+  <h1>오늘의 CSS</h1>
+  <p>오늘의 수업 CSS, 고급 선택자 활용하기</p>
+</div>
+
+<div class="topnav">
+  <a href="#com">연결 선택자</a>
+  <a href="#sel">속성 선택자</a>
+  <a href="#pseu">가상클래스와 가상 요소</a>
+  <a href="https://p.kopo.ac.kr/login.jsp" style="float:right">로그인</a>
+</div>
+
+<div class="row">
+  <div class="leftcolumn">
+    <div class="card" id="com">
+      <h2 >연결 선택자</h2>
+      <img src="./images/combinator.png" alt="연결선택자 ">
+      <p style="line-height: 1.8; margin-top: 20px;">
+        <strong>연결선택자</strong>는 둘 이상의 선택자를 연결해서 스타일이 적용될 요소가 어느 부분인지 지정합니다. 선택자를 둘 이상 조합하므로
+        '조합 선택자','콤비네이션 셀럭터'라고도 합니다.
+        <code>div p</code>
+      </p>
+    </div>
+
+    <div class="card" id="sel">
+      <h2 >속성 선택자</h2>
+      <img src="./images/till.png" alt="속성선택자">
+      <p style="line-height: 1.8; margin-top: 20px;">
+        여기에서 살펴볼 속성 선택자는 태그안에서 사용하는 속성값에 따라 요소를 선택하는 역할을 합니다. 
+        <strong>속성 선택자</strong>는 속성값의 조건에 따라 특정 부분만 선택하기 쉬우므로
+        상황에 맞는 스타일을 지정하기도 쉽습니다.
+      </p>
+    </div>
+  
+
+  <div class="card" id="pseu">
+      <h2 >가상클래스와 가상 요소</h2>
+      <img src="./images/pseudo.png" alt="가상클래스와 가상요소">
+      <p style="line-height: 1.8; margin-top: 20px;">
+        CSS에서는 사용자가 HTML 요소와 상호 작용하거나, 요소가 특정 상태일 때에만
+        해당 요소에 가상의 클래스를 적용하여 요소를 선택하는
+        <strong>가상 클래스(Pseudo-class)</strong>는 요소의 특정 '상태'(:hover, :focus, :nth-child 등)를, <strong>가상 요소(Pseudo-element)</strong>는 
+        요소의 특정 '영역'(::before, ::after, ::first-line 등)을 선택합니다.
+      </p>
+    </div>
+  
+  </div>
+
+  
+
+  <div class="rightcolumn">
+    <div class="card">
+      <h3>학교 소식</h3>
+      <p>현재 매주 월요일 마다 웹프로그래밍을 배우고 있습니다. </p>
+    </div>
+    <div class="card">
+      <h3>주요 사이트</h3>
+      <ul style="padding-left: 20px; line-height: 2;">
+        <li> <a href="https://www.w3schools.com/" target="_blank">W3Schools</a></li>
+        <li> <a href="https://developer.mozilla.org/ko/" target="_blank">MDN Web Docs (Mozilla)</a></li>
+        <li> <a href="https://opentutorials.org/course/1" target="_blank">생활코딩 - HTML/CSS 수업 (YouTube + 사이트)</a></li>
+        <li> <a href="https://codepen.io/trending" target="_blank">Codepen</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>학교 개방시간 </h3>
+      <p>09:00 - 18:00 (일요일 휴일)</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>[04392] 서울시 용산구 보광로 73<br>
+  대표번호: 02-2001-4000(한국폴리텍대학 보이는 ARS 이용은 1588-2282)</p>
+</div>
+
+</body>
+</html>

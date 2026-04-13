@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 각 입력 항목을 감싸는 컨테이너 (예: <p> 또는 <div>) */
+.form-group {
+  clear: both;      /* float 해제 */
+  margin-bottom: 10px;
+}
+
+/* (2) 레이아웃을 위한 핵심 스타일 */
+label {
+  float: left;      /* 왼쪽으로 띄움 */
+  width: 100px;     /* 레이블의 일정한 너비 확보 (이미지 (2)의 핵심) */
+  text-align: left; /* 텍스트 정렬 방향 */
+  line-height: 30px; /* input 높이와 맞춰 수직 중앙 정렬 */
+}
+
+input {
+  float: left;      /* 레이블 옆으로 나란히 붙음 */
+  width: 200px;     /* 입력창 너비 설정 */
+  height: 30px;
+}
+    </style>
+    <title>Document</title>
+</head>
+<body>
+    <fieldset>
+  <legend>로그인 정보</legend>
+  
+  <div class="form-group">
+    <label for="userid">아이디</label>
+    <input type="text" id="userid">
+  </div>
+
+  <div class="form-group">
+    <label for="userpw">비밀번호</label>
+    <input type="password" id="userpw">
+  </div>
+  
+  </fieldset>
+</body>
+</html>
