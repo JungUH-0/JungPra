@@ -1,6 +1,6 @@
 import cv2 as cv 
 
-img=cv.imread('apples.jpg')
+img=cv.imread('ch4/apples.jpg')
 gray=cv.cvtColor(img,cv.COLOR_BGR2GRAY)
 
 apples=cv.HoughCircles(gray,cv.HOUGH_GRADIENT,1,200,param1=150,param2=20,minRadius=50,maxRadius=120)

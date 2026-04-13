@@ -217,31 +217,80 @@ def discount_page (market,discount): #할인페이지
           print("3. 이전 화면")
           sel_num = int(input("#번호 입력 :"))
           if sel_num == 1:
-               clear_screen()
-               print("q 입력시 이전 화면")
-               sel_name = input("#할인할 품목 : ")
-               f_key = find_key(market,sel_name)
-               if sel_name =='q':
-                    break
-               if f_key != None :
-                     print("할인적용할 물품 :",market[f_key]["품명"])
-                     discount_num = int(input("원하는 할인율(10~40) : "))
-                     if  10 <= discount_num <= 40 : 
-                         print(f"{market[f_key]["품명"]}의 할인 전 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
-                         market[f_key]["현재가격"]= market[f_key]["원가"] - int((market[f_key]["원가"]*(discount_num*0.01)))
-                         print(f"{market[f_key]["품명"]}의 할인 후 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
-                         market[f_key]["할인율"] = discount_num
-                         discount +=1
-                         input("\n계속하려면 엔터를 누르세요...")
-                     else : 
-                          print ("숫자 확인")
-               else :
-                    print("품목 확인")
-                    input("\n계속하려면 엔터를 누르세요...")
+               discount=choose_discount_page(market,discount)
+               # clear_screen()
+               # print("q 입력시 이전 화면")
+               # sel_name = input("#할인할 품목 : ")
+               # f_key = find_key(market,sel_name)
+               # if sel_name =='q':
+               #      break
+               # if f_key != None :
+               #       print("할인적용할 물품 :",market[f_key]["품명"])
+               #       discount_num = int(input("원하는 할인율(10~40) : "))
+               #       if  10 <= discount_num <= 40 : 
+               #           print(f"{market[f_key]["품명"]}의 할인 전 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
+               #           market[f_key]["현재가격"]= market[f_key]["원가"] - int((market[f_key]["원가"]*(discount_num*0.01)))
+               #           print(f"{market[f_key]["품명"]}의 할인 후 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
+               #           market[f_key]["할인율"] = discount_num
+               #           discount +=1
+               #           input("\n계속하려면 엔터를 누르세요...")
+               #       else : 
+               #            print ("숫자 확인")
+               # else :
+               #      print("품목 확인")
+               #      input("\n계속하려면 엔터를 누르세요...")
 
           elif sel_num ==2 : #깜짝할인
                # print("chk")
-               for i in range(5): # 최대 5개의 품목
+               # for i in range(5): # 최대 5개의 품목
+               #      dis_item = random.randint(1,100)
+               #      if dis_item in market  and market[dis_item]["할인율"] == 0 :
+               #           discount_ran = random.randint(1,4)*10
+               #           print(f"{market[dis_item]["품명"]}의 할인 전 가격은 {market[dis_item]["현재가격"]:,} 원 입니다. ")
+               #           market[dis_item]["현재가격"]= market[dis_item]["원가"] - int((market[dis_item]["원가"]*(discount_ran*0.01)))
+               #           print(f"{market[dis_item]["품명"]}의 할인 후 가격은 {market[dis_item]["현재가격"]:,} 원 입니다. ")
+               #           market[dis_item]["할인율"] = discount_ran
+               #           discount +=1
+
+               #      else :
+               #           continue
+               # input("\n계속하려면 엔터를 누르세요...")
+               discount=random_discount_page(market,discount)
+          elif sel_num ==3 :     
+               break
+          else :
+               print("번호 확인")
+     return discount
+
+def choose_discount_page (market,discount) :
+     clear_screen()
+     print("q 입력시 이전 화면")
+     sel_name = input("#할인할 품목 : ")
+     f_key = find_key(market,sel_name)
+     if sel_name =='q':
+          clear_screen()
+          return discount 
+     if f_key != None :
+               print("할인적용할 물품 :",market[f_key]["품명"])
+               discount_num = int(input("원하는 할인율(10~40) : "))
+               if  10 <= discount_num <= 40 : 
+                    print(f"{market[f_key]["품명"]}의 할인 전 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
+                    market[f_key]["현재가격"]= market[f_key]["원가"] - int((market[f_key]["원가"]*(discount_num*0.01)))
+                    print(f"{market[f_key]["품명"]}의 할인 후 가격은 {market[f_key]["현재가격"]:,} 원 입니다. ")
+                    market[f_key]["할인율"] = discount_num
+                    discount +=1
+                    input("\n계속하려면 엔터를 누르세요...")
+                    return discount 
+               else : 
+                    print ("숫자 확인")
+                    return discount 
+     else :
+          print("품목 확인")
+          input("\n계속하려면 엔터를 누르세요...")
+          return discount 
+
+def random_discount_page(market,discount) :
+     for i in range(5): # 최대 5개의 품목
                     dis_item = random.randint(1,100)
                     if dis_item in market  and market[dis_item]["할인율"] == 0 :
                          discount_ran = random.randint(1,4)*10
@@ -250,20 +299,17 @@ def discount_page (market,discount): #할인페이지
                          print(f"{market[dis_item]["품명"]}의 할인 후 가격은 {market[dis_item]["현재가격"]:,} 원 입니다. ")
                          market[dis_item]["할인율"] = discount_ran
                          discount +=1
-
+                         
                     else :
                          continue
-               input("\n계속하려면 엔터를 누르세요...")
-          elif sel_num ==3 :
-               break
-          else :
-               print("번호 확인")
+     input("\n계속하려면 엔터를 누르세요...")
      return discount
 
 #main
 market = market_dic(물품명)
 
 discount=0
+
 total_cash=0
 while True :
      sel_num=show_main(discount)
