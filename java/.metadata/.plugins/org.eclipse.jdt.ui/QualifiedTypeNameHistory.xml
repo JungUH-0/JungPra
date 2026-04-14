@@ -5,6 +5,14 @@
     <fullyQualifiedTypeName name="ex00.ScannerEx"/>
     <fullyQualifiedTypeName name="java.lang.Math"/>
     <fullyQualifiedTypeName name="java.lang.System"/>
-    <fullyQualifiedTypeName name="java.util.Scanner"/>
     <fullyQualifiedTypeName name="java.lang.Double"/>
+    <fullyQualifiedTypeName name="java.lang.ArithmeticException"/>
+    <fullyQualifiedTypeName name="java.lang.ArrayIndexOutOfBoundsException"/>
+    <fullyQualifiedTypeName name="java.util.InputMismatchException"/>
+    <fullyQualifiedTypeName name="java.lang.NumberFormatException"/>
+    <fullyQualifiedTypeName name="ex03.Rectangle"/>
+    <fullyQualifiedTypeName name="java.util.Scanner"/>
+    <fullyQualifiedTypeName name="sun.util.resources.ext.CurrencyNames_el_CY"/>
+    <fullyQualifiedTypeName name="ex03.CurrencyConverter"/>
+    <fullyQualifiedTypeName name="ex04.ColorPoint"/>
 </qualifiedTypeNameHistroy>
