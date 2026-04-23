@@ -5,7 +5,6 @@
     <fullyQualifiedTypeName name="ex00.ScannerEx"/>
     <fullyQualifiedTypeName name="java.lang.Math"/>
     <fullyQualifiedTypeName name="java.lang.System"/>
-    <fullyQualifiedTypeName name="java.lang.Double"/>
     <fullyQualifiedTypeName name="java.lang.ArithmeticException"/>
     <fullyQualifiedTypeName name="java.lang.ArrayIndexOutOfBoundsException"/>
     <fullyQualifiedTypeName name="java.util.InputMismatchException"/>
@@ -15,4 +14,14 @@
     <fullyQualifiedTypeName name="sun.util.resources.ext.CurrencyNames_el_CY"/>
     <fullyQualifiedTypeName name="ex03.CurrencyConverter"/>
     <fullyQualifiedTypeName name="ex04.ColorPoint"/>
+    <fullyQualifiedTypeName name="ex04.PhoneInterface"/>
+    <fullyQualifiedTypeName name="ex04.SamsungPhone"/>
+    <fullyQualifiedTypeName name="com.sun.tools.javac.launcher.Main"/>
+    <fullyQualifiedTypeName name="java.lang.Character"/>
+    <fullyQualifiedTypeName name="java.lang.Integer"/>
+    <fullyQualifiedTypeName name="java.lang.Double"/>
+    <fullyQualifiedTypeName name="java.lang.Boolean"/>
+    <fullyQualifiedTypeName name="ex05.StringTokenizerEx"/>
+    <fullyQualifiedTypeName name="java.util.StringTokenizer"/>
+    <fullyQualifiedTypeName name="java.util.Calendar"/>
 </qualifiedTypeNameHistroy>
