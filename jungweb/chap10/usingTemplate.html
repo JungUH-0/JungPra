@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial;
+  padding: 10px;
+  background: #f1f1f1;
+}
+
+/* Header/Blog Title */
+.header {
+  padding: 30px;
+  text-align: center;
+  background-color: white;
+}
+
+.header h1 {
+  font-size: 50px;
+}
+
+/* Style the top navigation bar */
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+/* Style the topnav links */
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change color on hover */
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+/* Create two unequal columns that floats next to each other */
+/* Left column */
+.leftcolumn {   
+  float: left;
+  width: 75%;
+}
+
+/* Right column */
+.rightcolumn {
+  float: left;
+  width: 25%;
+  background-color: #f1f1f1;
+  padding-left: 20px;
+}
+
+/* Fake image */
+.fakeimg {
+  background-color: #aaa;
+  width: 100%;
+  padding: 0px;
+  overflow: hidden;
+}
+
+/* Add a card effect for articles */
+.card {
+  background-color: white;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Footer */
+.footer {
+  padding: 20px;
+  text-align: center;
+  background: #ddd;
+  margin-top: 20px;
+}
+
+/* 반응형 레이아웃 */
+/* @media screen and (max-width: 800px) {
+  .leftcolumn, .rightcolumn {   
+    width: 100%;
+    padding: 0;
+  }
+} */
+
+/* 반응형 레이아웃 */
+/* @media screen and (max-width: 400px) {
+  .topnav a {
+    float: none;
+    width: 100%;
+  }
+} */
+
+div.header {
+  background-image: url("images/top.jpg");
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>탐라국 입춘굿</h1>
+  <p style="color: white;">전국적으로 유일하게 입춘날 벌어지는 축제</p>
+</div>
+
+<div class="topnav">
+  <a href="#">소개</a>
+  <a href="#">볼거리</a>
+  <a href="#">일정</a>
+  <a href="#" style="float:right">기타</a>
+</div>
+
+<div class="row">
+  <div class="leftcolumn">
+    <div class="card">
+      <h2>탐라국 입춘굿</h2>
+      <h5>Title description, Dec 7, 2017</h5>
+      <div class="fakeimg" style="height:200px;"><img src="images/tamla.png"></div>
+      <p>탐라국 입춘굿놀이는 전국적으로 유일하게 입춘날 벌어지는 축제이자 제주도의 문화축제 중에서 유일하게 전통시대부터 존재했던 축제이다.</p>
+      <p>제주에서 입춘은 새철 드는 날. <br>
+      신구간이 끝나 하늘의 1만8000신이 지상으로 내려와 새해 일들을 시작하는 때다.</p>
+    </div>
+    <div class="card">
+      <h2>일정</h2>
+     <!--  <h5>Title description, Sep 2, 2017</h5>
+      <div class="fakeimg" style="height:200px;">Image</div>
+      <p>Some text..</p>
+      <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+      -->
+      <ol>
+      <li>입춘맞이 : 1/27(월) ~ 1/31(금)</li>
+      <li>낭쉐코사 : 2/1(토)</li>
+      <li>거리굿 : 2/2(일)</li>
+      <li>열림굿 : 2/3(월)</li>
+      <li>입춘굿 : 2/4(화)</li>
+    </ol>
+    </div>
+  </div>
+  <div class="rightcolumn">
+    <div class="card">
+      <h2>About Me</h2>
+      <div class="fakeimg" style="height:100px;">Image</div>
+      <p>Some text about me in culpa qui officia deserunt mollit anim..</p>
+    </div>
+    <div class="card">
+      <h3>Popular Post</h3>
+      <div class="fakeimg"><p>Image</p></div>
+      <div class="fakeimg"><p>Image</p></div>
+      <div class="fakeimg"><p>Image</p></div>
+    </div>
+    <div class="card">
+      <h3>Follow Me</h3>
+      <p>Some text..</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div>(63122) 제주특별자치도 제주시 선덕로 23(연동) 제주웰컴센터<br>
+관광문의 : 제주관광공사Tel : 064-740-6000~1FAX : 064-740-6090 사업자등록번호 : 616-82-21432<br>
+관광불편신고 : 제주안내 120콜센터(국번없이 120번)</div>
+</div>
+
+</body>
+</html>
+
+

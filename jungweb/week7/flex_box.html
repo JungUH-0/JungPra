@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  /* 1. 모든 요소의 여백을 초기화하고 박스 크기 계산 방식 설정 */
+  * { 
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  
+  .navbar {
+    display: flex;
+    /* 항목들을 양쪽 끝으로 배치, 로고는 왼쪽, 메뉴는 오른쪽으로 배치 */
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(177, 177, 177);
+    padding: 10px 20px;
+  }
+
+  /* 3. 메뉴 리스트 내부의 불필요한 점을 없애고 가로로 나열 */
+  .nav-menu {
+    display: flex;
+    list-style: none; 
+  }
+
+  .nav-menu li {
+    padding: 5px 20px;
+    color: white;
+  }
+
+  .main-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px;
+    min-height: 77vh;
+  }
+
+  /* 6. 왼쪽 포스트 영역: 남은 공간을 3의 비율로 차지하도록 지정 */
+  .post-section {
+    flex: 3 1 0;
+    overflow: auto;
+  }
+
+  /* 7. 오른쪽 사이드바: 고정된 기본 너비를 250px로 설정 */
+  .sidebar {
+    text-align: center;
+    width: 250px;
+    background-color: #eee;
+    padding: 30px;
+  }
+
+  /* 8. 클래스가 'highlight'인 요소만 글자색을 주황색으로 바꾸기 */
+  .highlight {
+    color: red;
+    font-weight: bold;
+    background-color: yellow;
+    padding: 20px;
+  }
+
+  /* 9. 마우스를 올렸을 때 버튼의 배경색을 바꾸기 */
+  .btn:hover {
+    background-color: #555;
+    color: white;
+  }
+
+  /* 10. 링크 밑줄 없애고 글자색을 흰색으로 바꾸기 */
+  .nav-menu li a {
+    text-decoration: none;
+    color: white;
+  }
+
+  /* 11. 마우스를 올렸을 때 링크의 오렌지색으로 바꾸기 */
+  li a:hover  {
+    color: orange;
+  }
+  .footer{
+    text-align: center;
+    background-color: rgb(177, 177, 177);
+    
+    padding: 31px;
+    margin-top: 30px;
+  }
+
+  .post{
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: left;
+    align-items: center; 
+    flex-basis: 30%;
+    border: 2px solid rgba(192, 192, 192, 0.281);
+    border-radius: 10px;
+    padding:20px;
+    margin: 10px;
+    min-height: 200px;
+    font-size:30px;
+  }
+  h1{
+     font-size: 20px;
+  }
+  @media screen and (max-width:768px){
+    .main-container{
+        flex-direction: column;
+      }
+    .sidebar{
+      width: 100%;
+    }
+  }
+  
+</style>
+</head>
+<body>
+  <nav class="navbar">
+    <h1 class="highlight">로고</h1>
+    <div class="head">Header</div>
+    <ul class="nav-menu">
+      <li><a href='#' >메뉴1</a></li>
+      <li><a href='#' >메뉴2</a></li>
+      <li class="btn">메뉴3</li>
+    </ul>
+  </nav>
+
+  <div class="main-container">
+    <section class="post-section">
+      <div class="post">첫 번째 포스트</div>
+      <div class="post">두 번째 포스트</div>
+      <div class="post">세 번째 포스트</div>
+      
+    </section>
+    <aside class="sidebar">RightContent(Sidebar)</aside>
+  </div>
+  <footer class="footer">Footer</footer>
+</body>
+
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울의 궁 - 경복궁</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  padding: 10px;
+  background: #fdfcf5;
+  margin: 0;
+}
+
+/* Header - 근정전 사진 활용 */
+.header {
+  padding: 80px 30px;
+  text-align: center;
+
+  /* 배경 이미지 경로 수정 */
+  background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("./images/Gyeongbokgung_Palace_with_blue_sky_in_Seoul.jpg"); 
+  background-size: cover;
+  background-position: center 40%;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+}
+
+.header h1 {
+  font-size: 55px;
+  margin: 0;
+  letter-spacing: 5px;
+}
+
+.header p {
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+/* Navigation Bar */
+.topnav {
+  overflow: hidden;
+  background-color: #1a2a3a; /* 깊은 밤의 궁궐 색상 */
+  position: sticky; /* 스크롤 시 상단 고정 */
+  top: 0;
+  z-index: 1000;
+}
+
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.topnav a:hover {
+  background-color: #c6a05e;
+  color: white;
+}
+
+/* Layout Columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.leftcolumn {   
+  float: left;
+  width: 70%;
+}
+
+.rightcolumn {
+  float: left;
+  width: 30%;
+  padding-left: 20px;
+}
+
+/* Image Styling */
+.card img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.card {
+  background-color: white;
+  padding: 25px;
+  margin-top: 20px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+}
+
+.card h2 {
+  font-size: 28px;
+  color: #1a2a3a;
+  border-left: 5px solid #c6a05e;
+  padding-left: 15px;
+  margin-bottom: 20px;
+}
+
+.card h3 {
+  color: #1a2a3a;
+  margin-bottom: 15px;
+}
+
+/* Footer */
+.footer {
+  padding: 30px;
+  text-align: center;
+  background: #1a2a3a;
+  color: #aaa;
+  margin-top: 30px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>서울의 궁</h1>
+  <p>전통과 현대가 공존하는 조선의 법궁, 경복궁</p>
+</div>
+
+<div class="topnav">
+  <a href="#">경복궁 소개</a>
+  <a href="#">관람안내</a>
+  <a href="#">행사일정</a>
+  <a href="#" style="float:right">로그인</a>
+</div>
+
+<div class="row">
+  <div class="leftcolumn">
+    <div class="card">
+      <h2>법궁의 위엄, 근정전(勤政殿)</h2>
+      <img src="./images/Gyeongbokgung_Palace_with_blue_sky_in_Seoul.jpg" alt="경복궁 근정전 정면 사진">
+      <p style="line-height: 1.8; margin-top: 20px;">
+        <strong>근정전</strong>은 경복궁의 정전으로, 왕의 즉위식이나 문무백관의 조례, 외국 사신의 접견 등 국가의 공식 행사가 거행되던 곳입니다. 
+        사진 속 탁 트인 조정과 품계석은 조선 시대의 엄격한 위계와 질서를 잘 보여줍니다. 뒷편으로 보이는 북악산의 기세가 근정전의 웅장함을 더해줍니다.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>연회의 장소, 경회루(慶會樓)</h2>
+      <img src="./images/Gyonghoeuru.jpg" alt="벚꽃 핀 경회루 전경">
+      <p style="line-height: 1.8; margin-top: 20px;">
+        봄바람에 흩날리는 벚꽃과 어우러진 <strong>경회루</strong>는 경복궁에서 가장 아름다운 풍경 중 하나입니다. 
+        단일 평면으로는 우리나라에서 가장 큰 누각으로, 연못 위에 떠 있는 듯한 건축 양식은 자연과 인공의 완벽한 조화를 상징합니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="rightcolumn">
+    <div class="card">
+      <h3>궁궐 소식</h3>
+      <p>현재 '경복궁 야간 관람' 예매가 진행 중입니다. 아름다운 밤의 궁궐을 만나보세요.</p>
+    </div>
+    <div class="card">
+      <h3>주요 궁궐</h3>
+      <ul style="padding-left: 20px; line-height: 2;">
+        <li>창덕궁 (후원)</li>
+        <li>창경궁 (야간개장)</li>
+        <li>덕수궁 (석조전)</li>
+        <li>경희궁</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>관람 시간</h3>
+      <p>09:00 - 18:00 (화요일 휴궁)</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>(03045) 서울특별시 종로구 사직로 161<br>
+  대표번호: 02-3700-3900 | 관리: 문화재청 경복궁관리소</p>
+</div>
+
+</body>
+</html>
