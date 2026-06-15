@@ -8,7 +8,7 @@
 using namespace std; 
 
 // 주요 함수 선언
-void input(double& invest, double& rate, double& term);
+void input(double& invest, double& rate, double& term); // 변경시 원본도 바뀔수 있다
 void process(double invest, double rate, double term,
               double& multiplier, double& futureValue);
 void output(double invest, double rate, double term, 

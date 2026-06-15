@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOM event 객체</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }    
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="images/cat.jpg" id="cat">		
+  </div>
+
+	<script>
+    // Do it! DOM 요소 #cat 가져오기
+    const cat = document.querySelector('#cat');
+
+    
+    //#cat 요소 클릭시 '야옹' 메시지(alert()) 출력 함수를 DOM 요소에 직접 붙이기
+    cat.onclick = function(){
+      alert('야옹');
+    }
+
+    //#cat 요소에 마우스 올리면(onmouseover) img.src 를 바꾸는 함수 호출
+    cat.onmouseover = changePic;
+    
+    function changePic() {
+      cat.src = 'images/kitty-2.png';
+    }
+    //#cat 요소에 마우스 내리면(onmouseout) img.src 를 원래대로 바꾸는 함수 호출
+    cat.onmouseout = returnPic;
+    function returnPic(){
+      cat.src='images/cat.jpg';
+    }
+	</script>
+</body>
+</html>

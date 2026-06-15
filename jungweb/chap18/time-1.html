@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>What time is it?</title>
+	<style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+			font-size: 1.2em;
+    }
+	</style>
+</head>
+<body>
+	<script>
+    // Do it! Date 객체를 사용하여 현재 날짜와 시간을 표시하기
+    let now = new Date();
+    console.log('현재시간: ', now);
+    document.write('현재시간: ', now);
+
+    const car = {
+  // 프로퍼티
+  manufacturer: "Aston Martin",
+  modelName: "Vantage",
+  color: "Silver",
+  displacement: "3,982cc",
+
+  // 메서드 단축 구문
+  startEngine() {
+    console.log("시동을 겁니다.");
+  },
+  move() {
+    console.log("움직입니다.");
+  },
+  stop() {
+    console.log("멈춥니다.");
+  },
+  park() {
+    console.log("주차합니다.");
+  }
+};
+// 프로퍼티 접근하기 (점 표기법)
+console.log(car.manufacturer); // 출력: Aston Martin
+console.log(car.color);        // 출력: Silver
+
+// 메서드 호출하기
+car.startEngine(); // 출력: 시동을 겁니다. 부릉!
+car.move();        // 출력: 자동차를 움직입니다. 고고!
+
+	</script>
+</body>
+</html>
+

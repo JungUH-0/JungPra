@@ -1,0 +1,4 @@
+영상갯수 확인
+python -c "import os; from collections import Counter; files = [os.path.splitext(f)[0] for f in os.listdir(r'D:\JungPra\pythonpra\signlan\downloaded_videos') if f.endswith('.mp4')]; counts = Counter(files); print('총 파일 수:', len(files)); [print(w, ':', c) for w, c in counts.items() if c > 1]"
+샘플수
+python -c "import os; video_dir = r'D:\JungPra\pythonpra\signlan\preprocessed_videos'; files = [f for f in os.listdir(video_dir) if f.endswith('.npy')]; print('총 샘플 수:', len(files))"

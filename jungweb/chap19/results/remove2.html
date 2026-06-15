@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <ul id="todoList">
+        <li>방 청소하기</li>
+        <li>자바스크립트 복습하기</li>
+        <li>마트에서 장보기</li>
+    </ul>
+
+    <script>
+        //클릭한 li 요소 삭제 remove()
+        // 1. 모든 li 요소를 가져오기
+        const todoItems = document.querySelectorAll('#todoList li');
+
+        // 2. 반복문을 돌며 각 li에 이벤트리스너 붙이ㅣ
+        todoItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                //클릭된 나 자신(this)을 화면에서 제거
+                this.remove(); 
+                console.log("항목이 성공적으로 삭제되었습니다.");
+            });
+        });
+    </script>
+</body>
+</html>

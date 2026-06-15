@@ -1,0 +1,204 @@
+import os
+import cv2
+import numpy as np
+
+# ──────────────────────────────────────────────
+# mediapipe 버전 자동 감지 후 적절한 방식 사용
+# ──────────────────────────────────────────────
+import mediapipe as mp
+
+def get_hands_detector():
+    """mediapipe 버전에 맞는 hands 감지기를 반환합니다."""
+    try:
+        # 구버전 (0.9.x 이하) - mp.solutions 방식
+        hands = mp.solutions.hands.Hands(
+            static_image_mode=False,
+            max_num_hands=2,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+        print("   ✅ mediapipe 구버전 API 사용 (mp.solutions)")
+        return hands, "legacy"
+    except AttributeError:
+        pass
+
+    # 신버전 (0.10.x 이상) - tasks API 방식
+    try:
+        import urllib.request
+        from mediapipe.tasks.python.vision import HandLandmarker, HandLandmarkerOptions
+        from mediapipe.tasks.python.vision.core.vision_task_running_mode import VisionTaskRunningMode
+        from mediapipe.tasks.python.core.base_options import BaseOptions
+
+        model_path = os.path.join(os.path.dirname(__file__), "hand_landmarker.task")
+
+        if not os.path.exists(model_path):
+            print("   📥 MediaPipe 손 인식 모델 다운로드 중...")
+            url = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+            urllib.request.urlretrieve(url, model_path)
+            print(f"   ✅ 모델 다운로드 완료: {model_path}")
+
+        options = HandLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path=model_path),
+            running_mode=VisionTaskRunningMode.IMAGE,
+            num_hands=2,
+            min_hand_detection_confidence=0.5,
+        )
+        detector = HandLandmarker.create_from_options(options)
+        print("   ✅ mediapipe 신버전 API 사용 (tasks)")
+        return detector, "tasks"
+    except Exception as e:
+        raise RuntimeError(f"mediapipe 초기화 실패: {e}\n"
+                           f"해결: pip install mediapipe==0.9.3 으로 구버전 설치")
+
+
+def extract_landmarks_legacy(frame, hands_detector):
+    """구버전 API로 관절 좌표 추출"""
+    rgb    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    result = hands_detector.process(rgb)
+
+    left  = np.zeros(21 * 3, dtype=np.float32)
+    right = np.zeros(21 * 3, dtype=np.float32)
+
+    if result.multi_hand_landmarks and result.multi_handedness:
+        for hand_lm, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
+            coords = np.array(
+                [[lm.x, lm.y, lm.z] for lm in hand_lm.landmark],
+                dtype=np.float32
+            ).flatten()
+            if handedness.classification[0].label == "Left":
+                left = coords
+            else:
+                right = coords
+
+    return np.concatenate([left, right])  # (126,)
+
+
+def extract_landmarks_tasks(frame, detector):
+    """신버전 API로 관절 좌표 추출"""
+    import mediapipe as mp
+    rgb        = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    mp_image   = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    result     = detector.detect(mp_image)
+
+    left  = np.zeros(21 * 3, dtype=np.float32)
+    right = np.zeros(21 * 3, dtype=np.float32)
+
+    if result.hand_landmarks and result.handedness:
+        for hand_lm, handedness in zip(result.hand_landmarks, result.handedness):
+            coords = np.array(
+                [[lm.x, lm.y, lm.z] for lm in hand_lm],
+                dtype=np.float32
+            ).flatten()
+            if handedness[0].category_name == "Left":
+                left = coords
+            else:
+                right = coords
+
+    return np.concatenate([left, right])  # (126,)
+
+
+# ──────────────────────────────────────────────
+# 설정값
+# ──────────────────────────────────────────────
+BASE_DIR       = r"D:\JungPra\pythonpra\signlan"
+SRC_VIDEO_DIR  = os.path.join(BASE_DIR, "downloaded_videos")
+DIST_VIDEO_DIR = os.path.join(BASE_DIR, "preprocessed_videos")
+
+os.makedirs(DIST_VIDEO_DIR, exist_ok=True)
+
+FRAME_INTERVAL = 3
+MAX_FRAMES     = 30
+LANDMARK_DIM   = 126
+
+
+def preprocess_all_videos():
+    video_files = [
+        f for f in os.listdir(SRC_VIDEO_DIR)
+        if f.lower().endswith(('.mp4', '.avi', '.mov'))
+    ]
+
+    if not video_files:
+        print("❌ downloaded_videos 폴더에 영상 파일이 없습니다.")
+        return
+
+    print(f"🚀 총 {len(video_files)}개 영상 MediaPipe 관절 추출 시작")
+    print("   버전 감지 중...")
+    detector, api_mode = get_hands_detector()
+    extract_fn = extract_landmarks_legacy if api_mode == "legacy" else extract_landmarks_tasks
+    print(f"{'='*55}")
+
+    total_ok = total_fail = total_no_hand = 0
+
+    for video_name in sorted(video_files):
+        video_path = os.path.join(SRC_VIDEO_DIR, video_name)
+        word_name  = os.path.splitext(video_name)[0]
+        save_path  = os.path.join(DIST_VIDEO_DIR, f"{word_name}.npy")
+
+        if os.path.exists(save_path):
+            print(f"  ⏭️  [{word_name}] 이미 존재, 건너뜀")
+            total_ok += 1
+            continue
+
+        print(f"  🎬 [{word_name}] 추출 중...")
+
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            print(f"    ❌ 영상 열기 실패: {video_name}")
+            total_fail += 1
+            continue
+
+        frame_count  = 0
+        landmark_seq = []
+        no_hand_cnt  = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if frame_count % FRAME_INTERVAL == 0:
+                coords = extract_fn(frame, detector)
+                landmark_seq.append(coords)
+                if np.all(coords == 0):
+                    no_hand_cnt += 1
+
+            frame_count += 1
+
+        cap.release()
+
+        if not landmark_seq:
+            print(f"    ❌ 프레임 없음")
+            total_fail += 1
+            continue
+
+        seq = np.array(landmark_seq, dtype=np.float32)
+
+        # MAX_FRAMES로 통일
+        if len(seq) >= MAX_FRAMES:
+            idx = np.linspace(0, len(seq) - 1, MAX_FRAMES, dtype=int)
+            seq = seq[idx]
+        else:
+            pad = np.zeros((MAX_FRAMES - len(seq), LANDMARK_DIM), dtype=np.float32)
+            seq = np.concatenate([seq, pad], axis=0)
+
+        np.save(save_path, seq)
+
+        hand_ratio = (len(landmark_seq) - no_hand_cnt) / len(landmark_seq) * 100
+        print(f"    ✅ 손 감지율: {hand_ratio:.0f}% → {word_name}.npy 저장")
+        if hand_ratio < 50:
+            print(f"    ⚠️  손 감지율 낮음! 영상 품질 확인 필요")
+            total_no_hand += 1
+
+        total_ok += 1
+
+    # legacy는 close() 필요
+    if api_mode == "legacy":
+        detector.close()
+
+    print(f"\n{'='*55}")
+    print(f"📊 성공: {total_ok} | 실패: {total_fail} | 감지율 낮음: {total_no_hand}")
+    print(f"📂 저장 폴더: {DIST_VIDEO_DIR}")
+
+
+if __name__ == "__main__":
+    preprocess_all_videos()

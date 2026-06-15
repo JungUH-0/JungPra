@@ -13,7 +13,7 @@ int main()
   // 변수 선언
   int x = 10;
   // x를 argument fun 함수 호출
-  fun(x); 
+  fun(x);  //fun($x); 포인트로 전달시 x값을 참조해서 보내줘야한다
   // x의 값이 변했는지 확인(변함)
   cout << "main 함수 내부의 x = " << x << endl;
   return 0;
@@ -24,9 +24,9 @@ int main()
  * parameter를 변경하면                                       *
  * argument가 함께 변화                                       * 
  **************************************************************/
-void fun(int&  y)
+void fun(int&  y) //int* y 포인터전달 함수내에 모든 매개변수값앞에 * 추가
 {
-  y++;
+  y++; //(*y)++
   cout << "fun 함수 내부의 y = " << y << endl;
   return;
 }

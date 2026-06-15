@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-int num = 5;   // 전역 변수
+int num = 5;   // 전역 변수 
 
 int main()
 {

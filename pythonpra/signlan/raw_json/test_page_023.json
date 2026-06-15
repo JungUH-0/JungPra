@@ -1,0 +1,105 @@
+{
+    "totalCount": 10,
+    "items": [
+        {
+            "title": "동생",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:18",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734925/MOV000250491_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734925/MOV000250491_700X466.mp4",
+            "description": "2지를 펴서 등이 밖으로 향하게 세운 오른 주먹을 아래로 내린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229697/IMG000223183_700X466.jpg"
+        },
+        {
+            "title": "(단위의)등",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:18",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1004970/MOV000359745_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1004970/MOV000359745_700X466.mp4",
+            "description": "오른손으로 나타내고자 하는 등수를 지숫자로 표시하여 왼쪽 어깨에 댄다. 일등을 표시할 때에는 오른 주먹의 1지를 펴서 왼쪽 어깨에 댄다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230191/IMG000223863_700X466.jpg"
+        },
+        {
+            "title": "주전자",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:18",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042464/MOV000360986_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042464/MOV000360986_700X466.mp4",
+            "description": "오른 주먹의 4·5지를 펴서 끝이 아래로 향하게 하였다가 5지 끝을 아래로 향하게 기울인다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236227/IMG000231662_700X466.jpg"
+        },
+        {
+            "title": "시가",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:18",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041939/MOV000360924_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041939/MOV000360924_700X466.mp4",
+            "description": "왼 주먹의 4지를 펴서 바닥이 안으로 향하게 세우고, 오른 주먹의 5지를 펴서 바닥이 밖으로 향하게 세워 왼 주먹의 4지에 댔다가 밖으로 내민 다음, 두 손의 손끝을 맞대고 좌우로 비스듬히 세운다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151209/224821/IMG000217377_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151209/224822/IMG000217378_700X466.jpg"
+        },
+        {
+            "title": "일등,으뜸,제일,최고,가장,맨,수석",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:18",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735714/MOV000244626_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735714/MOV000244626_700X466.mp4",
+            "description": "오른 주먹의 1지를 펴서 왼쪽 어깨에 댄다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151206/222767/IMG000214943_700X466.jpg"
+        },
+        {
+            "title": "기다랗다",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:19",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735603/MOV000243566_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735603/MOV000243566_700X466.mp4",
+            "description": "1·5지 끝을 맞댄 두 주먹을 모로 세워 맞댔다가 양옆으로 길게 벌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151204/221434/IMG000213370_700X466.jpg"
+        },
+        {
+            "title": "어기다",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:19",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733473/MOV000257345_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733473/MOV000257345_700X466.mp4",
+            "description": "두 주먹의 4지를 펴서 왼손 4지를 오른손 4지로 스쳐 내린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794549/IMG000358102_700X466.jpg"
+        },
+        {
+            "title": "폭등,급등",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:19",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735455/MOV000235901_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735455/MOV000235901_700X466.mp4",
+            "description": "1·5지 끝을 맞대고 나머지 손가락을 벌려 모로 나란히 세운 두 손을 힘주어 위로 올린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151117/211596/IMG000201949_700X466.jpg"
+        },
+        {
+            "title": "절교,단교",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:19",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735640/MOV000257926_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735640/MOV000257926_700X466.mp4",
+            "description": "두 주먹의 5지를 펴서 끝이 위로 향하게 하여 맞댔다가 양옆으로 힘주어 돌려 벌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236739/IMG000232317_700X466.jpg"
+        },
+        {
+            "title": "걱정,근심,상심,시름,염려,우수,괴롭다",
+            "alternativeTitle": "",
+            "regDate": "2025-09-25 09:34:20",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/625140/MOV000249112_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/625140/MOV000249112_700X466.mp4",
+            "description": "약간 구부린 오른 손끝을 가슴에 대고 왼쪽으로 한 바퀴 돌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151215/228296/IMG000221413_700X466.jpg"
+        }
+    ]
+}

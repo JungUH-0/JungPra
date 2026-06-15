@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>DOM - addEventListener</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    img {
+      padding: 20px;
+      height: 250px;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      box-shadow: 2px 2px 5px #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="images/kitty-1.png" id="cat">		
+  </div>
+  
+	<script>
+    // Do it! 이벤트 리스너(addEventListener(event, handler, false))로 이벤트 처리하기
+    // id가 cat인 요소 가져오기
+    const cat = document.querySelector('#cat');
+    // 이미지에 마우스 포인트 올리면(mouseover) 이미지 바꾸기
+    // cat.addEventListener('mouseover',changePic);
+    cat.addEventListener('mouseover',function(){
+      cat.src = 'images/kitty-2.png';
+    })
+
+    // 이미지에서 마우스포인트 벗어나면(mouseout) 이미지 원래대로 전환
+    cat.addEventListener('mouseout',originPic);
+
+    function originPic() {
+      cat.src = 'images/kitty-1.png';
+    }
+
+    function changePic() {
+      cat.src = 'images/kitty-2.png';
+    }
+	</script>
+</body>
+</html>

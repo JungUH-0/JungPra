@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Document</title>
+</head>
+<body>
+     <button id="saveBtn">상품 데이터 저장</button>
+     <button id="loadBtn">상품 데이터 불러오기</button>
+     <pre id="result"></pre>
+
+     <script>
+          const products = [
+               { id: 1, name: "노트북", price : 1200000},
+               { id: 2, name: "마우스", price : 30000},
+               { id: 3, name: "키보드", price : 80000}
+          ];
+          
+          const product = products.find((pd)=>{
+               return pd.id===2
+          });
+          console.log(product);
+
+          const pro = products.find((pd)=> pd.id===2);
+          console.log(pro);
+
+          const overproducts = products.filter((pd)=> pd.price >= 50000);
+          console.log(overproducts);
+
+          const names = products.map((st)=> st.name);
+          console.log(names);
+
+          const saveBtn = document.querySelector("#saveBtn");
+          const loadBtn = document.querySelector("#loadBtn");
+          const result = document.querySelector("#result");
+
+          saveBtn.addEventListener("click", function () {
+            localStorage.setItem("products", JSON.stringify(products));
+            result.textContent = "물건 데이터가 저장되었습니다.";
+        });
+
+        loadBtn.addEventListener("click", function () {
+            const savedData = localStorage.getItem("products"); 
+            const prouducttList = JSON.parse(savedData); 
+            console.log(prouducttList);
+            result.textContent = JSON.stringify(prouducttList, null, 2); 
+        });
+
+
+
+          
+     </script>
+     
+</body>
+</html>

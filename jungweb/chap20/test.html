@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Document</title>
+</head>
+<body>
+     <script>
+          const students = [
+               { id: 1, name: "김민수", score : 85},
+               { id: 2, name: "이서연", score : 92},
+               { id: 3, name: "박지훈", score : 78}
+          ];
+          
+          const student = students.find((st)=>{
+               return st.id===2
+          });
+          console.log(student);
+
+          const st = students.find((st)=> st.id===2);
+          console.log(st);
+
+          const passedStudents = students.filter((st)=> st.score >= 80);
+          console.log(passedStudents);
+
+          const names = students.map((st)=> st.name);
+          console.log(names);
+
+          const result = students.map((st)=>{
+               return {
+                    name : st.name,
+                    passed : st.score>= 80 ? '통과':'재도전',
+               };
+          });
+          console.log(result)
+     </script>
+     
+</body>
+</html>

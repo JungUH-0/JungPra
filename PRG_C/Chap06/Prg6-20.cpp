@@ -16,3 +16,6 @@ int main()
   cout << sum << endl;   // 외부 블록의 sum 함수를 사용
   return 0;
 }
+// 5
+// 3
+// 5

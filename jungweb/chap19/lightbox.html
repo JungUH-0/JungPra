@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>라이트박스</title>
+    <link rel="stylesheet" href="css/lightbox.css">
+  </head>
+  <body>
+    <div class="row">
+      <ul>
+        <li><img src="images/tree-1-thumb.jpg" data-src="images/tree-1.jpg" class="pic"></li>
+        <li><img src="images/tree-2-thumb.jpg" data-src="images/tree-2.jpg" class="pic"></li>
+        <li><img src="images/tree-3-thumb.jpg" data-src="images/tree-3.jpg" class="pic"></li> 
+        <li><img src="images/tree-4-thumb.jpg" data-src="images/tree-4.jpg" class="pic"></li>
+        <li><img src="images/tree-5-thumb.jpg" data-src="images/tree-5.jpg" class="pic"></li>
+        <li><img src="images/tree-6-thumb.jpg" data-src="images/tree-6.jpg" class="pic"></li>          
+      </ul>    
+    </div>
+    <div id="lightbox">
+			<img src="images/tree-1.jpg" alt="" id="lightboxImage">			
+    </div>
+
+    <script>
+      //pic 클래스 요소 모두 가져오기
+      const pics = document.querySelectorAll('.pic');
+      
+      //lightbox 요소 가져오기
+      const lightbox = document.querySelector('#lightbox');
+
+      //lightboxImage 요소 가져오기
+      const lightboxImage = document.querySelector('#lightboxImage');
+
+      //pic 모든 요소에 리스너 붙이기
+      for(let i=0; i<pics.length; i++){
+        pics[i].addEventListener('click',showLightBox);
+      }
+      
+      // pic 요소 click 이벤트 발생시 처리할 핸들러(함수) showLightBox() 선언
+      function showLightBox(){
+        //data-src 읽어서 bigLocaation에 저장 
+        let bigLocation =this.dataset.src;
+        
+        //bigImg 값을 lightboxImage.src에 저장
+        lightboxImage.src = bigLocation;
+
+        //lightbox 요소 보이기(lightbox.style.display = "block";)
+        lightbox.style.display = 'block';
+      }
+
+      //(요소에 익명함수 붙이기)lightbox 요소 클릭 이벤트 발생시 lightbox 요소 감추기(lightbox.style.display = "none";)
+      lightbox.onclick = function(){
+        lightbox.style.display="none";
+      }
+    </script>
+  </body>
+</html>

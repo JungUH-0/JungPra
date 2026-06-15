@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Web Programming</title>
+	<link rel="stylesheet" href="css/subject.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Web Programming</h1>
+    <p>공부할 주제를 기록해 보세요</p>
+    <form action="">
+      <label for="subject" class="hidden">주제</label>
+      <input type="text" id="subject" autofocus>
+      <button id="btn">추가</button>
+    </form>
+    <hr>  
+    <ul id="itemList"></ul>  
+  </div>
+  <script>
+    //button, ul 요소 가져오기
+    const btnEl = document.querySelector('#btn');
+    const ulEl = document.querySelector("#itemList");
+
+    //버튼에 클릭이벤트 발생시 <ul> 요소에 <li>사용자폼입력값</li></ul> 요소 붙이기
+    btnEl.addEventListener('click', function(event){
+      //폼 제출 시 페이지가 새로고침되는 브라우저 기본 행동 막기
+      event.preventDefault();  
+      
+      //<li>요소 생성
+      const liEl = document.createElement('li');
+
+      //input 요소 가져오기
+      const subject = document.querySelector('#subject');
+      
+      // 입력요소(#subject)의 현재 값 가져오기(trim()함수로 앞뒤 공백 제거)
+      subject.value = subject.value.trim();//입력 값의 앞뒤 공백 제거
+
+      
+      // (예외 처리) 만약 입력값이 비어있다면 return 
+      if(subject.value ===''){
+        alert("공부할 주제를 입력하세요.")
+        return
+      }
+      
+      //<li> 내용 채우기(textContent)
+      liEl.textContent = subject.value;
+
+
+      // li 요소를 ul 요소에 붙이기
+      // ulEl.appendChild(liEl);
+
+      // li요소를 ul요소의 첫번째 자식으로 붙이기
+      //ulEl.insertBefore(liEl,ulEl,childNodes[0]) 기준 요소 앞에 붙일 요소 삽입
+      ulEl.insertBefore(liEl,ulEl.firstChild); 
+
+
+      //입력양식 초기화
+      subject.value = "";
+      subject.focus();
+    });  
+  </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>종합 실습 - 할 일 관리 매니저</title>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f8f9fa;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .app-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      width: 100%;
+      max-width: 450px;
+    }
+    h2 { margin-bottom: 20px; text-align: center; color: #333; }
+    
+    /* 입력창 및 등록 버튼 */
+    .input-box { display: flex; gap: 8px; margin-bottom: 20px; }
+    input {
+      flex: 1; padding: 10px 15px; font-size: 14px;
+      border: 1px solid #ddd; border-radius: 6px; outline: none;
+    }
+    input:focus { border-color: #6c5ce7; }
+    button {
+      padding: 10px 16px; font-size: 14px; font-weight: bold;
+      border: none; border-radius: 6px; cursor: pointer; transition: 0.2s;
+    }
+    #addBtn { background-color: #6c5ce7; color: white; }
+    #addBtn:hover { background-color: #5b4bc4; }
+
+    /* 통계 리포트 영역 */
+    .report-box {
+      background-color: #f1f2f6; padding: 12px; border-radius: 6px;
+      font-size: 13px; color: #555; margin-bottom: 15px; text-align: center;
+    }
+
+    /* 할 일 목록 (DOM 생성 타겟) */
+    .todo-list { list-style: none; }
+    .todo-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px; border-bottom: 1px solid #eee; font-size: 14px;
+    }
+    .todo-text { cursor: pointer; transition: 0.2s; }
+    .todo-text.completed { text-decoration: line-through; color: #b2bec3; }
+    .del-btn { background-color: #ff7675; color: white; padding: 5px 10px; font-size: 12px; }
+    .del-btn:hover { background-color: #d63031; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <h2>🎯 미션 매니저</h2>
+    
+    <div class="input-box">
+      <input type="text" id="todoInput" placeholder="새로운 미션을 입력하세요..." />
+      <button id="addBtn">등록</button>
+    </div>
+
+    <div class="report-box" id="reportBox">
+      총 미션: 0개 | 완료됨: 0개 | 남은 미션 이름: 없음
+    </div>
+
+    <ul class="todo-list" id="todoList"></ul>
+  </div>
+
+  <script>
+    // 1. DOM 요소들 가져오기
+    const todoInput = document.getElementById("todoInput");
+    const addBtn = document.getElementById("addBtn");
+    const todoList = document.getElementById("todoList");
+    const reportBox = document.getElementById("reportBox");
+
+    // 2. 초기 데이터 로드 (localStorage & JSON 객체배열 활용)
+    let todos = localStorage.getItem("myTodos") ? JSON.parse(localStorage.getItem("myTodos")) : [];
+
+    // 3. 할 일 추가 로직 (DOM 생성 및 데이터 조작)
+    addBtn.addEventListener("click", () => {
+      const text = todoInput.value.trim();
+      if (!text) return;
+
+      // 새 객체 생성 (고유 ID값 부여)
+      const newTodo = {
+        id: Date.now(), // 타임스탬프로 중복 없는 ID 생성
+        text: text,
+        isCompleted: false
+      };
+
+      todos.push(newTodo); // 배열에 추가
+      saveAndRender();     // 데이터 저장 및 화면 갱신
+      todoInput.value = ""; // 입력창 비우기
+    });
+
+    // 4. 할 일 완료 상태 토글 (find 함수 활용)
+    function toggleComplete(id) {
+      // find(): 클릭한 항목의 id와 일치하는 객체 1개만 매칭해서 가져옴
+      const targetTodo = todos.find(todo => todo.id === id);
+      if (targetTodo) {
+        targetTodo.isCompleted = !targetTodo.isCompleted; // 상태 반전
+        saveAndRender();
+      }
+    }
+
+    // 5. 할 일 삭제 로직 (filter 함수 및 DOM 삭제 활용)
+    function deleteTodo(id) {
+      // filter(): 삭제 타겟인 id만 제외한 '새로운 객체배열'을 반환함
+      todos = todos.filter(todo => todo.id !== id);
+      saveAndRender();
+    }
+
+    // 6. 데이터 통계 가공 (filter, map 함수 활용)
+    function updateReport() {
+      const totalCount = todos.length;
+      
+      // filter()를 사용해 완료된 할 일 개수 체크
+      const completedCount = todos.filter(todo => todo.isCompleted).length;
+      
+      // filter()와 map()을 연쇄 처리(Chaining)하여 아직 완료 안 된 할 일들의 '이름'만 수집
+      const remainingNames = todos
+        .filter(todo => !todo.isCompleted)
+        .map(todo => todo.text);
+
+      // 상단 요약 바 텍스트 업데이트
+      reportBox.textContent = `총 미션: ${totalCount}개 | 완료됨: ${completedCount}개 | 남은 미션: [ ${remainingNames.join(", ")} ]`;
+    }
+
+    // 7. [핵심] 로컬스토리지 저장 및 DOM 렌더링 통합 처리
+    function saveAndRender() {
+      // [localStorage & JSON] 배열을 문자열로 바꿔 브라우저에 저장
+      localStorage.setItem("myTodos", JSON.stringify(todos));
+
+      // [DOM 삭제] 기존에 그려져 있던 리스트 내용 전체 초기화
+      todoList.innerHTML = "";
+
+      // [DOM 생성] 최신 데이터를 바탕으로 한 줄씩 동적 생성
+      todos.forEach(todo => {
+        // <li> 태그 동적 생성
+        const li = document.createElement("li");
+        li.className = "todo-item";
+
+        // 내용 글자 영역 구성 및 이벤트 결합
+        const textSpan = document.createElement("span");
+        textSpan.className = `todo-text ${todo.isCompleted ? 'completed' : ''}`;
+        textSpan.textContent = todo.text;
+        textSpan.addEventListener("click", () => toggleComplete(todo.id));
+
+        // 삭제 버튼 구성 및 이벤트 결합
+        const delBtn = document.createElement("button");
+        delBtn.className = "del-btn";
+        delBtn.textContent = "삭제";
+        delBtn.addEventListener("click", () => deleteTodo(todo.id));
+
+        // 자식 노드로 조립 (DOM 구조 형성)
+        li.appendChild(textSpan);
+        li.appendChild(delBtn);
+        todoList.appendChild(li);
+      });
+
+      // 통계 리포트 갱신
+      updateReport();
+    }
+
+    // 8. 앱 최초 실행 시 기존 저장 데이터 화면에 뿌려주기
+    saveAndRender();
+  </script>
+</body>
+</html>

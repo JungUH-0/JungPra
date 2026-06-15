@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Programming</title>
+  <link rel="stylesheet" href="css/subject.css">
+</head>
+<body>
+  <div class="container" id="container">
+    <h1>먹고싶은 음식</h1>
+    <p>메뉴 선택 (예: gogi, kurry, tendong)</p>
+    <form action="">
+      <label for="subject" class="hidden">주제</label>
+      <input type="text" id="subject" autofocus placeholder="이미지 이름을 입력하세요">
+      <button id="addBtn">추가</button>
+    </form>
+    <hr>  
+    <ul id="itemList"></ul>  
+  </div>
+
+  <script>
+    
+    const subject = document.querySelector("#subject"); 
+    const addBtn = document.querySelector("#addBtn");   
+    const itemList = document.querySelector("#itemList"); 
+
+    addBtn.addEventListener("click", function (event) {
+      event.preventDefault(); 
+      createCard();           
+    });
+
+    function createCard() {
+      const nameValue = subject.value.trim(); 
+
+      if (nameValue === '') {
+        alert('이미지 이름을 입력해주세요!');
+        subject.focus();
+        return;
+      }
+
+      let extension = 'jpg'; // 기본값은 jpg
+      if (nameValue === 'kurry' || nameValue === 'sakedong' || nameValue === 'tendong') {
+        extension = 'jpeg';  
+      }
+
+      const newLi = document.createElement("li");
+
+      const cardDiv = document.createElement('div');
+      cardDiv.className = 'card'; // CSS 디자인 입히기
+
+      const imgEl = document.createElement('img');
+      imgEl.src = `img/${nameValue}.${extension}`; 
+      imgEl.alt = nameValue;
+
+      const pEl = document.createElement('p');
+      pEl.textContent = nameValue; 
+
+      cardDiv.appendChild(imgEl);
+      cardDiv.appendChild(pEl);
+      newLi.appendChild(cardDiv);
+
+      cardDiv.addEventListener('click', function() {
+        const isDelete = confirm(`"${nameValue}" 카드를 정말 삭제하시겠습니까?`);
+        if (isDelete === true) {
+          newLi.remove(); 
+        }
+      });
+
+      itemList.appendChild(newLi);
+
+      
+      subject.value = '';
+      subject.focus();
+    }
+  </script>
+</body>
+</html>

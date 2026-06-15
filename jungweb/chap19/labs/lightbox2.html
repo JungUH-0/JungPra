@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>라이트박스</title>
+    <link rel="stylesheet" href="lightbox.css">
+  </head>
+  <body>
+    <div class="row">
+      <ul>
+        <li><img src="images/tree-1-thumb.jpg" data-src="images/tree-1.jpg" class="pic"></li>
+        <li><img src="images/tree-2-thumb.jpg" data-src="images/tree-2.jpg" class="pic"></li>
+        <li><img src="images/tree-3-thumb.jpg" data-src="images/tree-3.jpg" class="pic"></li> 
+        <li><img src="images/tree-4-thumb.jpg" data-src="images/tree-4.jpg" class="pic"></li>
+        <li><img src="images/tree-5-thumb.jpg" data-src="images/tree-5.jpg" class="pic"></li>
+        <li><img src="images/tree-6-thumb.jpg" data-src="images/tree-6.jpg" class="pic"></li>          
+      </ul>    
+    </div>
+    <div id="lightbox">
+			<img src="images/tree-1.jpg" alt="" id="lightboxImage">			
+    </div>
+
+    <script>
+      // 1. 원본 이미지 경로를 배열에 순서대로 저장
+const originImages = [
+    "images/tree-1.jpg",
+    "images/tree-2.jpg",
+    "images/tree-3.jpg",
+    "images/tree-4.jpg",
+    "images/tree-5.jpg",
+    "images/tree-6.jpg"
+];
+
+// 제어할 HTML 요소들 가져오기
+const thumbs = document.querySelectorAll('.row ul li .pic'); // 썸네일 이미지들 (6개)
+const lightbox = document.querySelector('#lightbox');          // 라이트박스 컨테이너
+const lightboxImg = document.querySelector('#lightboxImage');  // 라이트박스 안의 큰 이미지
+
+// 2. 썸네일 이미지를 클릭했을 때 라이트박스 나타내기
+thumbs.forEach(function(thumb, index) {
+    
+    thumb.addEventListener('click', function() {
+        // 클릭한 썸네일의 번호(index)에 맞는 원본 이미지 경로를 배열에서 꺼내옴
+        const targetSrc = originImages[index];
+        
+        // 라이트박스의 이미지 src를 교체
+        lightboxImg.src = targetSrc;
+        
+        // 라이트박스 화면에 표시
+        lightbox.style.display = 'block';
+    });
+    
+});
+
+// 3. 라이트박스를 클릭하면 원본 이미지 요소 사라지게 하기
+lightbox.addEventListener('click', function() {
+    this.style.display = 'none';
+});
+    </script>
+  </body>
+</html>

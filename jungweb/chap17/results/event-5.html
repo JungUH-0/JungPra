@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>자바스크립트 이벤트</title>
+	<link rel="stylesheet" href="css/function.css">
+</head>
+<body>
+	<!-- Do it! <a> 요소에 addEventListener() 붙이기 -->
+	<ul>
+		<li><a href="#">Green</a></li>
+		<li><a href="#">Orange</a></li>
+		<li><a href="#">Purple</a></li>
+	</ul>		
+	<div id="result"></div>
+	
+	<script>
+		//li 모든 요소 가져오기
+		const linkEl =  document.querySelectorAll('ul li a');
+
+		for(let i = 0; i < linkEl.length; i++){
+			const color = linkEl[i].textContent.toLowerCase();
+			linkEl[i].addEventListener('click', function(event){
+				//event.preventDefault();
+				changeBg(color);
+			}) ;
+		}
+
+		function changeBg(color) {
+			let result = document.querySelector('#result');
+			result.style.backgroundColor = color;
+		}
+	</script>
+</body>
+</html>  

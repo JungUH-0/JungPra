@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>var 예약어로 변수 선언하기</title>
+</head>
+<body>
+	<script>		
+    var x = 10;   // 전역 변수 선언
+    function displayNumber() {
+      console.log(`x is ${x}`);
+      console.log(`y is ${y}`);
+      var z = x + y;
+      console.log(`z is ${z}`);
+      var y = 20;   // 지역 변수 선언 및 값 할당
+    }
+  displayNumber();
+  </script>
+</body>
+</html>

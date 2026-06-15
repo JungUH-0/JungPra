@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Web Programming</title>
+	<link rel="stylesheet" href="css/nodelist.css">
+</head>
+<body>
+	<h1>Web Programming</h1>
+	<ul>
+		<li>HTML</li>
+		<li>CSS</li>
+		<li>Javascript</li>
+	</ul>
+	<button onclick = "addImg(); this.onclick='';">이미지 추가</button>
+	<p></p>
+
+	<script>
+		//<body><p><img src='images/books.png' alt='이미지'></p>
+		function addImg(){
+			console.log('hello');
+			let pEl = document.querySelector('p');
+			
+			let imgEl = document.createElement('img');
+			let srcNode = document.createAttribute('src');
+			let altNode = document.createAttribute('alt');
+			srcNode.value='images/books.png';
+			altNode.value='책이미지';
+
+			imgEl.setAttributeNode(srcNode);
+			imgEl.setAttributeNode(altNode);
+			pEl.appendChild(imgEl);
+			//body.appendChild(pEl)
+		}
+
+	</script>
+</body>
+</html>

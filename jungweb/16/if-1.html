@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>조건문</title>
+</head>
+<body>
+    <script>
+      // Do it! 사용자가 입력한 숫자가 3의 배수이면 '3의 배수입니다.', 아니면 '3의 배수가 아닙니다.' 메시지 출력
+      let userNumber = prompt('숫자입력>>');
+      console.log(userNumber);
+      console.log(typeof(userNumber));
+
+      if(userNumber){
+        // userNumber = parseInt(userNumber);
+        // console.log(typeof(userNumber));
+        // if(parseInt(userNumber) % 3 ===0){
+        if(userNumber % 3 ===0){
+            console.log("3의 배수입니다.");
+        }else
+            console.log("3의 배수가 아닙니다.")
+      }else{
+        console.log("값을 입력하지않았거나, 입력이 취소되었습니다.")
+      }
+
+    </script>
+</body>
+</html>

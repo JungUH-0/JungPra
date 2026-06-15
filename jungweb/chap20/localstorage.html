@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+     <meta charset="UTF-8">
+     <title>나만의 구글 드라이브 파일 목록</title>
+     <style>
+          body {
+               font-family: Arial,
+                    sans-serif;
+               padding: 20px;
+               max-width: 600px;
+               margin: 0 auto;
+          }
+
+          .input-group {
+               margin-bottom: 20px;
+               display: flex;
+               gap: 10px;
+          }
+
+          input {
+               padding: 10px;
+               flex: 1;
+               border: 1px solid #ccc;
+               border-radius: 4px;
+          }
+
+          button {
+               padding: 10px 20px;
+               background-color: #4CAF50;
+               color: white;
+               border: none;
+               border-radius: 4px;
+               cursor: pointer;
+          }
+
+          button:hover {
+               background-color: #45a049;
+          }
+
+          ul {
+               list-style-type: none;
+               padding: 0;
+          }
+
+          li {
+               padding: 12px;
+               border-bottom: 1px solid #ddd;
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+          }
+
+          .file-link {
+               text-decoration: none;
+               color: #1a73e8;
+               font-weight: bold;
+          }
+
+          .delete-btn {
+               background-color: #f44336;
+               padding: 5px 10px;
+               font-size: 12px;
+          }
+
+          .delete-btn:hover {
+               background-color: #da190b;
+          }
+     </style>
+</head>
+
+<body>
+
+     <h2>📁 구글 드라이브 파일 저장소</h2>
+
+     <div class="input-group">
+          <input type="text" id="fileTitle" placeholder="파일 이름 (예: 가계부)">
+          <input type="text" id="fileUrl" placeholder="구글 드라이브 공유 링크 주소">
+          <button onclick="addFile()">추가</button>
+     </div>
+
+     <ul id="fileList"></ul>
+
+     <script>
+          window.onload = function () {
+               displayFiles();
+          };
+
+          function addFile() {
+               const titleInput = document.getElementById('fileTitle');
+               const urlInput = document.getElementById('fileUrl');
+
+               const title = titleInput.value.trim();
+               const url = urlInput.value.trim();
+
+               if (!title || !url) {
+                    alert('파일 이름과 링크 주소를 모두 입력해주세요!');
+                    return;
+               }
+
+               const files = JSON.parse(localStorage.getItem('myDriveFiles')) || [];
+
+               const newFile = { id: Date.now(), title: title, url: url };
+               files.push(newFile);
+
+               localStorage.setItem('myDriveFiles', JSON.stringify(files));
+
+               titleInput.value = '';
+               urlInput.value = '';
+               displayFiles();
+          }
+
+          function displayFiles() {
+               const fileList = document.getElementById('fileList');
+               fileList.innerHTML = ''; 
+
+               const files = JSON.parse(localStorage.getItem('myDriveFiles')) || [];
+
+               files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                    <a href="${file.url}" target="_blank" class="file-link">📄 ${file.title}</a>
+                    <button class="delete-btn" onclick="deleteFile(${file.id})">삭제</button>`;
+                    fileList.appendChild(li);
+               });
+               console.log(files);
+          }
+
+          function deleteFile(id) {
+               let files = JSON.parse(localStorage.getItem('myDriveFiles')) || [];
+
+               files = files.filter(file => file.id !== id);
+
+               localStorage.setItem('myDriveFiles', JSON.stringify(files));
+               displayFiles();
+          }
+     </script>
+</body>
+
+</html>

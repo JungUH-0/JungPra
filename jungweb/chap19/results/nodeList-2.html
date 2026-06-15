@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Web Programming</title>
+	<link rel="stylesheet" href="css/nodelist.css">
+</head>
+<body>
+	<h1>Web Programming</h1>
+	<ul>
+		<li>HTML</li>
+		<li>CSS</li>
+		<li>Javascript</li>
+	</ul>
+	<button onclick="addImg(); this.onclick='';">이미지 추가</button>
+	<div id="container"></div>
+
+	<script>
+		function addImg(){
+			//<div><img src='./image/books.png' alt='책이미지'></div>
+			//1. <img> 요소 생성
+			const imgEl = document.createElement('img')
+
+			//2. img.src, img.alt 속성값 지정 
+			imgEl.src = 'images/books.png';
+			imgEl.alt = '책이미지';
+
+			//3. img 요소를 부모요소 div에 붙이기
+			document.querySelector('#container').appendChild(imgEl);
+
+
+		}
+
+	</script>
+</body>
+</html>

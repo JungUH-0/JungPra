@@ -1,0 +1,105 @@
+{
+    "totalCount": 10,
+    "items": [
+        {
+            "title": "사과",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/632066/MOV000253800_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/632066/MOV000253800_700X466.mp4",
+            "description": "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 모로 세운 왼 주먹 등을 오른 손바닥으로 닦아 내린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232818/IMG000227218_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232819/IMG000227219_700X466.jpg"
+        },
+        {
+            "title": "사기,기만",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735002/MOV000253810_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735002/MOV000253810_700X466.mp4",
+            "description": "두 주먹 각각 1·5지를 펴서 끝을 맞대어 오른쪽 입가에 댔다가 오른손만 밖으로 내민다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232824/IMG000227229_700X466.jpg"
+        },
+        {
+            "title": "설명",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630927/MOV000253816_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630927/MOV000253816_700X466.mp4",
+            "description": "두 주먹을 상하로 엇갈리게 스친다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190730/605262/IMG000227235_700X466.jpg"
+        },
+        {
+            "title": "아름답다,미",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630982/MOV000255965_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630982/MOV000255965_700X466.mp4",
+            "description": "오른 주먹의 1지를 펴서 끝을 오른쪽 볼에 대고 살짝 돌린 다음, 오른손을 펴서 눈앞에서 손가락을 가볍게 흔들며 왼쪽에서 오른쪽으로 반원을 그린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/234882/IMG000229903_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/234883/IMG000229904_700X466.jpg"
+        },
+        {
+            "title": "식탁,밥상,진짓상",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200819/731440/MOV000256996_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200819/731440/MOV000256996_700X466.mp4",
+            "description": "오른손을 펴서 손바닥이 위로 향하게 하여 입으로 올린 다음, 두 손을 펴서 손끝이 밖으로 향하게 하여 맞댔다가 옆으로 벌리다가 손목을 돌려 아래로 약간 내린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794434/IMG000358073_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794435/IMG000358074_700X466.jpg"
+        },
+        {
+            "title": "의정부",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042306/MOV000360955_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042306/MOV000360955_700X466.mp4",
+            "description": "목 오른쪽을 오른 손바닥으로 스쳐 내린 다음 손등으로 스쳐 올린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235258/IMG000230390_700X466.jpg"
+        },
+        {
+            "title": "신중,경계,조심,주의,준수,지키다",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/630146/MOV000257295_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/630146/MOV000257295_700X466.mp4",
+            "description": "모로 세운 왼 주먹 위에 모로 세운 오른 주먹을 올려놓고 안으로 당긴다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236159/IMG000231546_700X466.jpg"
+        },
+        {
+            "title": "신청,주문",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200819/731063/MOV000257297_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200819/731063/MOV000257297_700X466.mp4",
+            "description": "손바닥이 위로 향하게 편 왼 손바닥에 오른 주먹의 1지를 펴서 끝 바닥을 대고 동시에 내민다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794518/IMG000358079_700X466.jpg"
+        },
+        {
+            "title": "국유",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/249088/MOV000262148_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/249088/MOV000262148_700X466.mp4",
+            "description": "두 손의 손가락을 약간 구부려 마주 보게 세워 전후로 약간 흔든 다음, 오른손을, 손바닥이 위로 향하게 하여 약간 구부렸다가 위로 올리며 주먹을 쥔다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/248714/IMG000262149_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/248715/IMG000262150_700X466.jpg"
+        },
+        {
+            "title": "동아시아",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:41",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240118/1261126/MOV000361377_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240118/1261126/MOV000361377_700X466.mp4",
+            "description": "1·5지 끝을 맞대어 동그라미를 만든 오른손을, 손끝이 오른쪽으로 손등이 위로 향하게 편 왼손 밖에서 위로 살짝 올린 다음, 오른 주먹의 5지를 펴서 끝이 왼쪽으로 향하게 눕혀 오른쪽으로 한 바퀴 돌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151124/215992/IMG000207111_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151124/215993/IMG000207112_700X466.jpg"
+        }
+    ]
+}

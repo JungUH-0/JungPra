@@ -1,0 +1,27 @@
+div {
+      width:100px;
+      height:100px;
+      margin:10px ;
+    }
+.box1{
+     background-color: red;
+     border-radius: 0% 50%;
+}
+.box2{
+     background-color: green;
+     border-radius: 0% 50%;
+     margin-left: 110px;
+     margin-top: -10px;
+}
+.box3{
+     background-color: blue;
+     border-radius: 0% 50%;
+     margin-left: 210px;
+     margin-top: -10px;
+}
+.box4{
+     background-color: gray;
+     border-radius: 0% 50%;
+     margin-left: 310px;
+     margin-top: -10px;
+}

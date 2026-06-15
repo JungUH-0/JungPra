@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOM</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }    
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #detail {
+      border: 1px solid #000;
+      padding: 30px;
+      margin: 10px;
+    }
+    #detail h2 {
+      font-size: 1.5em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="detail">
+    <ul>
+      <li>원산지 : 에디오피아</li>
+      <li style="display: none">지 역 : 이르가체프 코체레</li>
+      <li style="display: none">농 장 : 게뎁</li>
+    </ul>
+  </div>
+
+  <script>
+    // Do it! DOM을 사용해 #detail > ul 텍스트에 접근하기 
+    //id 가 detail인 요소의 자식 요소인 ul 요소 가져오기
+    const ulEl = document.querySelector('#detail > ul');
+    // console.log(ulEl);
+
+    // innerText 출력 -> 웹화면에 보이는 요소만 출력
+    console.log(ulEl.innerText);
+    
+    //innerHtml 출력 -> HTML 요소 포함해서 출력
+    console.log(ulEl.innerHTML);
+
+    //textContent 출력 -> 요소의 텍스트 모두 출력
+    console.log(ulEl.textContent);
+
+  </script>
+</body>
+</html>

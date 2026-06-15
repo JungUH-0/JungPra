@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Web Programming</title>
+	<link rel="stylesheet" href="css/nodelist.css">
+</head>
+<body>
+	<h1>Web Programming</h1>
+	<ul>
+		<li>HTML</li>
+		<li>CSS</li>
+		<li>Javascript</li>
+	</ul>
+	<!-- <button onclick="addLi(); this.onclick='';">요소 추가</button> -->
+	 <button id="btn">
+		요소추가
+	 </button>
+
+	<script>
+		//addLi 함수: 요소 추가 버튼 클릭하면 <li>TypeScript</li> 추가
+		/*function addLi(){
+			//1. li 요소 생성
+			const liEl = document.createElement('li');
+
+			//2. li 요소의 내용 생성 textContent
+			liEl.textContent='TypeScript';
+
+			//3. 부모노드(ul)에 붙이기
+			const ulEl = document.querySelector('ul');
+			ulEl.appendChild(liEl);
+		}*/
+		//id가 btn인 요소 가져오기
+		const btn = document.querySelector('#btn');
+		//btn 요소에 리스너 붙이기
+		btn.addEventListener('click',addLi);
+		//이벤트리스너 함수 정의
+		function addLi(){
+			//1. li 요소 생성
+			const liEl = document.createElement('li');
+			//2. textNode 생성
+			const textNode = document.createTextNode('TypeScript');
+			//3. li 요소에 textNode 붙이기
+			liEl.appendChild(textNode);
+			//4. 부모노드(ul)에 붙이기
+			const ulEl = document.querySelector('ul');
+			ulEl.appendChild(liEl);
+		}
+
+	</script>
+</body>
+</html>

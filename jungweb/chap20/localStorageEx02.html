@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로컬스토리지 다크모드 예제</title>
+  <style>
+    /* 기본 라이트 모드 스타일 */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff;
+      color: #333333;
+      transition: background-color 0.3s, color 0.3s; /* 부드러운 전환 효과 */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vi;
+      margin: 0;
+    }
+
+    /* 다크 모드 스타일 (.dark-mode 클래스가 body에 붙었을 때) */
+    body.dark-mode {
+      background-color: #121212;
+      color: #ffffff;
+    }
+
+    /* 토글 버튼 스타일 */
+    .theme-btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.2s;
+    }
+
+    body.dark-mode .theme-btn {
+      background-color: #f8f9fa;
+      color: #333333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>로컬스토리지 테마 변경 테스트</h1>
+  <p>아래 버튼을 눌러 테마를 변경하고 페이지를 <strong>새로고침(F5)</strong> 해보세요!</p>
+  
+  <button id="toggle-btn" class="theme-btn">모드 변경하기</button>
+
+  <script>
+    const toggleBtn = document.getElementById("toggle-btn");
+
+    function saveTheme(isDarkMode) {
+      localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    }
+
+    function applySavedTheme() {
+      const savedTheme = localStorage.getItem("theme");
+      
+      console.log(document.querySelector('body').classList);
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+        console.log("다크 모드를 적용했습니다.");
+      } else {
+        document.body.classList.remove("dark-mode");
+        console.log("라이트 모드를 적용했습니다.");
+      }
+    }
+
+    toggleBtn.addEventListener("click", () => {
+      // 현재 body에 'dark-mode' 클래스가 있는지 확인 (있으면 true, 없으면 false)
+      const isCurrentlyDark = document.body.classList.contains("dark-mode");
+      
+      if (isCurrentlyDark) {
+        // 현재 다크모드라면 라이트모드로 변경
+        document.body.classList.remove("dark-mode");
+        saveTheme(false); 
+      } else {
+        // 현재 라이트모드라면 다크모드로 변경
+        document.body.classList.add("dark-mode");
+        saveTheme(true); 
+      }
+    });
+
+    //웹 페이지가 처음 로드될 때 저장된 설정을 불러와 설정하기
+    applySavedTheme();
+  </script>
+</body>
+</html>

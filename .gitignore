@@ -1,0 +1,15 @@
+*.jpg
+*.npy
+*.pt
+*.pth
+*.mp4
+*.exe
+datasets/
+*.zip
+*.h5
+*.weights
+*.keras
+*.task
+*.pyc
+__pycache__/
+*.pb

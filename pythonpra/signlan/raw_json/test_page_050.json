@@ -1,0 +1,105 @@
+{
+    "totalCount": 10,
+    "items": [
+        {
+            "title": "돌다,미치다",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733608/MOV000252615_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733608/MOV000252615_700X466.mp4",
+            "description": "오른 주먹의 1지를 펴서 끝을 머리 오른쪽 가까이 대고 두 바퀴 돌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151221/231676/IMG000225749_700X466.jpg"
+        },
+        {
+            "title": "종,급사,사환",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220727/1001980/MOV000359556_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220727/1001980/MOV000359556_700X466.mp4",
+            "description": "두 손의 손등이 밖으로 손끝이 아래로 향하게 하여 가슴 앞에서 상하로 두 번 움직인 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 두 번 약간 돌리며 벌린다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214049/IMG000204891_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214050/IMG000204892_700X466.jpg"
+        },
+        {
+            "title": "중부",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/732979/MOV000238063_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/732979/MOV000238063_700X466.mp4",
+            "description": "손끝이 오른쪽으로 향하게 모로 세운 왼손의 1·5지 중간에 오른손을 4지 옆면이 닿게 세워 댄 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214147/IMG000204992_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214148/IMG000204993_700X466.jpg"
+        },
+        {
+            "title": "중앙청",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220727/1001982/MOV000359558_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220727/1001982/MOV000359558_700X466.mp4",
+            "description": "오른손의 1지를 세워 옆면을 입 중앙에 대고 2지를 5지에 대고 두 번 튕기고, 오른 주먹의 1지를 펴서 세워 머리 앞에 댄 다음, 약간 구부린 두 손을 양쪽 어깨에 올려놓고, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214153/IMG000205001_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214154/IMG000205002_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214155/IMG000205003_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/214156/IMG000205004_700X466.jpg"
+        },
+        {
+            "title": "발전소",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733699/MOV000240789_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733699/MOV000240789_700X466.mp4",
+            "description": "오른 주먹의 1·2·5지를 펴서 바닥이 밖으로 향하게 세워 빠르게 왼쪽으로 약간 비스듬히 내리다가 오른쪽으로 약간 이동하여 다시 왼쪽으로 비스듬히 내린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151127/217798/IMG000209194_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151127/217799/IMG000209195_700X466.jpg"
+        },
+        {
+            "title": "매제",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/732981/MOV000241309_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/732981/MOV000241309_700X466.mp4",
+            "description": "오른 주먹의 4지를 펴서 등이 밖으로 향하게 세워 아래로 내린 다음, 왼 주먹의 4지를 펴서 바닥이 안으로 향하게 세우고, 오른 주먹의 5지를 펴서 세워 왼 주먹의 4지에 댄 다음, 오른 주먹을 밖으로 내민다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151128/218398/IMG000209931_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151128/218399/IMG000209932_700X466.jpg"
+        },
+        {
+            "title": "회의",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191001/623669/MOV000241317_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191001/623669/MOV000241317_700X466.mp4",
+            "description": "5지를 펴서 세운 두 주먹을 마주 보게 하여 두 번 약간 굽혔다가 세운다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151129/218405/IMG000209942_700X466.jpg"
+        },
+        {
+            "title": "횡령,착복",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735124/MOV000241340_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735124/MOV000241340_700X466.mp4",
+            "description": "손등이 위로 향하게 반쯤 구부린 오른손을 밖에서, 주먹을 쥐고 세운 왼팔의 팔꿈치 밑으로 당기며 주먹을 쥔다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151129/218421/IMG000209969_700X466.jpg"
+        },
+        {
+            "title": "해군",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784472/MOV000356902_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784472/MOV000356902_700X466.mp4",
+            "description": "오른 주먹의 4지를 펴서 끝을 오른쪽 입가에 댄 후에 두 손을 펴서 손바닥이 밑으로 손끝이 밖으로 향하게 하여 상하로 약간 움직이며 왼쪽에서 오른쪽으로 이동시키고 두 주먹을 오른쪽 가슴에 오른 주먹이 위에 놓이게 상하로 이어 댄다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808877/IMG000358344_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808878/IMG000358345_700X466.jpg,http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808879/IMG000358346_700X466.jpg"
+        },
+        {
+            "title": "엔진",
+            "alternativeTitle": "",
+            "regDate": "2026-06-04 08:35:42",
+            "collectionDb": "일상생활수어",
+            "imageUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735552/MOV000243858_215X161.jpg",
+            "videoUrl": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735552/MOV000243858_700X466.mp4",
+            "description": "두 주먹을 바닥이 마주 보게 하여 상하로 엇갈리게 움직인다.",
+            "signImages": "http://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151204/221814/IMG000213809_700X466.jpg"
+        }
+    ]
+}

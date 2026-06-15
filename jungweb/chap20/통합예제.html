@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button id="saveBtn">학생 데이터 저장</button>
+    <button id="loadBtn">학생 데이터 불러오기</button>
+    <button id="findBtn">id가 2인 학생 찾기</button>
+    <button id="filterBtn">80점 이상 학생 보기</button>
+    <button id="mapBtn">학생 이름만 보기</button>
+
+    <pre id="result"></pre>
+
+    <script>
+        const students = [
+            { id: 1, name: "김민수", score: 85 },
+            { id: 2, name: "이서연", score: 92 },
+            { id: 3, name: "박지훈", score: 78 }
+        ];
+
+        const saveBtn = document.querySelector("#saveBtn");
+        const loadBtn = document.querySelector("#loadBtn");
+        const findBtn = document.querySelector("#findBtn");
+        const filterBtn = document.querySelector("#filterBtn");
+        const mapBtn = document.querySelector("#mapBtn");
+        const result = document.querySelector("#result");
+
+        saveBtn.addEventListener("click", function () {
+            localStorage.setItem("students", JSON.stringify(students));
+            result.textContent = "학생 데이터가 저장되었습니다.";
+        });
+
+        loadBtn.addEventListener("click", function () {
+            const savedData = localStorage.getItem("students"); 
+            const studentList = JSON.parse(savedData); 
+            console.log(studentList);
+            result.textContent = JSON.stringify(studentList, null, 2); 
+        });
+
+        findBtn.addEventListener("click", function () {
+            const savedData = localStorage.getItem("students");
+            const studentList = JSON.parse(savedData);
+            const student = studentList.find((item) => item.id === 2);
+            result.textContent = JSON.stringify(student, null, 2);
+        });
+
+        filterBtn.addEventListener("click", function () {
+            const savedData = localStorage.getItem("students");
+            const studentList = JSON.parse(savedData);
+            const passedStudents = studentList.filter((item) => item.score >= 80);
+            result.textContent = JSON.stringify(passedStudents, null, 2);
+        });
+
+        mapBtn.addEventListener("click", function () {
+            const savedData = localStorage.getItem("students");
+            const studentList = JSON.parse(savedData);
+            const names = studentList.map((item) => item.name);
+            result.textContent = JSON.stringify(names, null, 2);
+        });
+    </script>
+
+</body>
+</html>
