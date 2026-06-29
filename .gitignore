@@ -13,3 +13,17 @@ datasets/
 *.pyc
 __pycache__/
 *.pb
+*.ipch
+*.pch
+*.db
+*.VC.db
+*.slnx
+*.pdb
+*.idb
+*.tlog
+*.obj
+*.pobj
+x64/
+Debug/
+Release/
+.vs/
