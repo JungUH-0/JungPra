@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 플레이리스트 — Moodify</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- [chap04] <nav> 내비게이션 -->
+  <nav>
+    <a class="nav-logo" href="index.html">Mood<span>ify</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">홈</a></li>
+      <li><a href="test.html">음악 추천 테스트</a></li>
+      <li><a href="list.html">전체 탐색</a></li>
+      <li><a href="playlist.html" class="active">내 플레이리스트</a></li>
+      <li><a href="board.html">한줄 감상평</a></li>
+    </ul>
+    
+  </nav>
+
+  <main class="playlist-main">
+    <div class="section-inner" style="padding-top: 100px;">
+
+      <!-- [chap04] <p>, <h1> 제목/단락 태그 -->
+      <p class="section-eyebrow">마이페이지</p>
+
+      <!-- [chap11] Flexbox - 제목과 버튼 양쪽 정렬 -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <h1 class="section-title" style="margin-bottom:0;">내 플레이리스트</h1>
+        <!-- [chap05] <button> 태그 (button-1.html 참고) -->
+        <button class="btn-outline" onclick="clearPlaylist()" style="font-size:0.85rem; padding:10px 18px;">전체 비우기</button>
+      </div>
+
+      <!-- [chap12] Grid - 저장된 음악 카드 그리드 -->
+      <!-- [chap20] LocalStorage - playlist 키에서 id 배열 읽어 카드 렌더링 -->
+      <!-- [chap19] DOM - JS에서 innerHTML로 동적 카드 생성 -->
+      <div class="music-grid" id="playlistGrid"></div>
+
+      <!-- [chap20] LocalStorage - detail.js에서 저장한 recentMusic 키 활용 -->
+      <!-- [chap19] DOM - hidden 클래스로 데이터 있을 때만 표시 -->
+      <div class="hidden" id="recentSection" style="margin-top:60px;">
+        <h2 class="section-title" style="font-size:1.3rem; margin-bottom:24px;">최근 본 음악</h2>
+        <!-- [chap12] Grid - 최근 본 음악 카드 그리드 -->
+        <div class="music-grid" id="recentGrid"></div>
+      </div>
+
+      <!-- [chap04] 빈 상태 안내 영역 -->
+      <!-- [chap04] <a> 링크로 list.html 이동 -->
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">🎵</div>
+        <h3>아직 저장한 음악이 없어요</h3>
+        <p>마음에 드는 음악의 ♥를 눌러 저장해보세요.</p>
+        <a href="list.html" class="btn-primary">음악 찾으러 가기</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- [chap04] <footer> 시맨틱 태그 -->
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Mood<span>ify</span></div>
+        <p class="footer-desc">장르, 장소, 기분을 기반으로<br>지금 이 순간에 딱 맞는 음악을 추천해드리는 큐레이션 서비스입니다.</p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스 메뉴</h4>
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="test.html">음악 추천 테스트</a></li>
+          <li><a href="list.html">전체 탐색</a></li>
+          <li><a href="playlist.html">내 플레이리스트</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>이용 안내</h4>
+        <ul>
+          <li><a href="board.html">한줄 감상평</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Moodify. All rights reserved.</span>
+      <span>contact@moodify.kr</span>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/playlist.js"></script>
+</body>
+</html>

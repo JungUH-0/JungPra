@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한줄 감상평 — Moodify</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- [chap04] <nav> 내비게이션 -->
+  <nav>
+    <a class="nav-logo" href="index.html">Mood<span>ify</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">홈</a></li>
+      <li><a href="test.html">음악 추천 테스트</a></li>
+      <li><a href="list.html">전체 탐색</a></li>
+      <li><a href="playlist.html">내 플레이리스트</a></li>
+      <li><a href="board.html" class="active">한줄 감상평</a></li>
+    </ul>
+    
+  </nav>
+
+  <main class="board-main">
+    <div class="section-inner" style="padding-top: 100px;">
+
+      <!-- [chap04] <p>, <h1> 제목/단락 태그 -->
+      <p class="section-eyebrow">커뮤니티</p>
+      <h1 class="section-title">한줄 감상평</h1>
+      <p style="color:var(--gray); margin-bottom: 40px;">음악을 듣고 느낀 점을 한 줄로 남겨보세요.</p>
+
+      <!-- [chap05] 폼 입력 요소 모음 (formEx03.html, register.html 참고) -->
+      <!-- [chap08] 박스모델 - 폼 영역 border, padding, border-radius -->
+      <div class="board-form">
+
+        <!-- [chap11] Flexbox - 입력 요소 가로 배치 -->
+        <div class="form-row">
+          <!-- [chap05] <input type="text"> - 닉네임 입력 (t-field.html 참고) -->
+          <!-- [chap05] placeholder 속성 (placeholder.html 참고) -->
+          <!-- [chap05] maxlength 속성으로 입력 글자수 제한 -->
+          <input type="text" id="inputNickname" class="board-input"
+            placeholder="닉네임" maxlength="10" />
+
+          <!-- [chap05] <select>, <option> - 드롭다운 (select.html 참고) -->
+          <!-- [chap19] DOM - JS에서 musicData 배열로 option 동적 생성 -->
+          <select id="inputMusic" class="board-select">
+            <option value="">음악 선택</option>
+            <!-- option은 board.js에서 동적으로 추가됨 -->
+          </select>
+        </div>
+
+        <div class="form-row">
+          <!-- [chap05] <input type="text"> - 감상평 입력 -->
+          <!-- [chap05] maxlength로 80자 제한 -->
+          <input type="text" id="inputComment" class="board-input flex-1"
+            placeholder="한줄 감상평을 입력해주세요 (최대 80자)" maxlength="80" />
+
+          <!-- [chap05] <button> - 등록 버튼 (button-1.html 참고) -->
+          <!-- [chap17] JS 이벤트 - onclick으로 submitComment() 호출 -->
+          <button class="btn-primary" onclick="submitComment()" style="white-space:nowrap;">등록</button>
+        </div>
+      </div>
+
+      <!-- [chap04] <span> - 개수 표시 -->
+      <!-- [chap19] DOM - JS에서 감상평 개수 동적 업데이트 -->
+      <div class="result-count" style="margin-bottom: 20px;">
+        총 <span id="commentCount">0</span>개의 감상평
+        <!-- [chap05] <button> - 전체 삭제 -->
+        <button class="reset-btn" onclick="clearBoard()">전체 삭제</button>
+      </div>
+
+      <!-- [chap19] DOM - JS innerHTML로 감상평 카드 동적 렌더링 -->
+      <!-- [chap20] LocalStorage - boardComments 배열 읽어 피드 출력 -->
+      <!-- [chap18] 배열 reverse() - 최신순 정렬 후 출력 -->
+      <div class="board-feed" id="boardFeed"></div>
+
+      <!-- [chap04] 빈 상태 안내 -->
+      <!-- [chap19] DOM - 감상평 없을 때 hidden 클래스 제거 -->
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">💬</div>
+        <h3>아직 감상평이 없어요</h3>
+        <p>첫 번째 감상평을 남겨보세요!</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- [chap04] <footer> 시맨틱 태그 -->
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Mood<span>ify</span></div>
+        <p class="footer-desc">장르, 장소, 기분을 기반으로<br>지금 이 순간에 딱 맞는 음악을 추천해드리는 큐레이션 서비스입니다.</p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스 메뉴</h4>
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="test.html">음악 추천 테스트</a></li>
+          <li><a href="list.html">전체 탐색</a></li>
+          <li><a href="playlist.html">내 플레이리스트</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>이용 안내</h4>
+        <ul>
+          <li><a href="board.html">한줄 감상평</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Moodify. All rights reserved.</span>
+      <span>contact@moodify.kr</span>
+    </div>
+  </footer>
+
+  <!-- [chap15] JS 외부 스크립트 연결 - data.js 먼저 로드 -->
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/board.js"></script>
+</body>
+</html>

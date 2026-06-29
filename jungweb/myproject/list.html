@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>음악 탐색 — Moodify</title>
+  <!-- [chap06] 외부 CSS 연결 -->
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- [chap04] <nav> 시맨틱 태그, <a> 하이퍼링크 -->
+  <nav>
+    <a class="nav-logo" href="index.html">Mood<span>ify</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">홈</a></li>
+      <li><a href="test.html">음악 추천 테스트</a></li>
+      <li><a href="list.html" class="active">전체 탐색</a></li>
+      <li><a href="playlist.html">내 플레이리스트</a></li>
+      <li><a href="board.html">한줄 감상평</a></li>
+    </ul>
+    
+  </nav>
+
+  <main class="list-main">
+
+    <!-- [chap04] <h1>, <p> - 페이지 제목 영역 -->
+    <!-- [chap09] CSS 배경 - 그라디언트 헤더 배경 -->
+    <!-- [chap19] DOM - JS에서 추천 결과에 따라 텍스트 동적 변경 -->
+    <div class="list-header" id="listHeader">
+      <div class="list-header-inner">
+        <p class="section-eyebrow" id="headerEyebrow">전체 탐색</p>
+        <h1 id="headerTitle">모든 음악 둘러보기</h1>
+        <p id="headerDesc" class="list-header-desc">장르, 장소, 기분으로 필터링해보세요.</p>
+        <!-- [chap19] DOM - JS에서 활성 필터 태그 동적 삽입 -->
+        <div class="active-filters" id="activeFilters"></div>
+      </div>
+    </div>
+
+    <!-- [chap08] CSS position:sticky - 스크롤해도 상단 고정되는 필터 바 -->
+    <!-- [chap11] Flexbox - 필터 칩 가로 나열 (flex-1.html 참고) -->
+    <div class="filter-section">
+      <div class="filter-inner">
+
+        <!-- [chap04] <span> 레이블 텍스트 -->
+        <!-- [chap05] <button> 태그 - 필터 선택 버튼 (button-1.html 참고) -->
+        <!-- [chap19] DOM - data-type, data-value 속성으로 필터 구분 -->
+        <div class="filter-group">
+          <span class="filter-label">장르</span>
+          <div class="filter-chips" id="genreFilter">
+            <button class="filter-chip active" data-type="genre" data-value="">전체</button>
+            <button class="filter-chip" data-type="genre" data-value="lofi">🌙 로파이</button>
+            <button class="filter-chip" data-type="genre" data-value="pop">✨ 팝</button>
+            <button class="filter-chip" data-type="genre" data-value="jazz">🎷 재즈</button>
+            <button class="filter-chip" data-type="genre" data-value="indie">🎸 인디</button>
+            <button class="filter-chip" data-type="genre" data-value="rnb">🎤 R&amp;B</button>
+            <button class="filter-chip" data-type="genre" data-value="hiphop">🎧 힙합</button>
+            <button class="filter-chip" data-type="genre" data-value="classical">🎻 클래식</button>
+            <button class="filter-chip" data-type="genre" data-value="electronic">🔊 일렉</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">장소</span>
+          <div class="filter-chips" id="placeFilter">
+            <button class="filter-chip active" data-type="place" data-value="">전체</button>
+            <button class="filter-chip" data-type="place" data-value="cafe">☕ 카페</button>
+            <button class="filter-chip" data-type="place" data-value="home">🏠 집</button>
+            <button class="filter-chip" data-type="place" data-value="drive">🚗 드라이브</button>
+            <button class="filter-chip" data-type="place" data-value="gym">🏋️ 헬스장</button>
+            <button class="filter-chip" data-type="place" data-value="study">📚 공부방</button>
+            <button class="filter-chip" data-type="place" data-value="outdoor">🌿 야외</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">기분</span>
+          <div class="filter-chips" id="moodFilter">
+            <button class="filter-chip active" data-type="mood" data-value="">전체</button>
+            <button class="filter-chip" data-type="mood" data-value="focus">🎯 집중</button>
+            <button class="filter-chip" data-type="mood" data-value="excited">🔥 신남</button>
+            <button class="filter-chip" data-type="mood" data-value="healing">🌸 힐링</button>
+            <button class="filter-chip" data-type="mood" data-value="romantic">💜 감성</button>
+            <button class="filter-chip" data-type="mood" data-value="sad">🌧️ 우울</button>
+            <button class="filter-chip" data-type="mood" data-value="motivated">💪 의욕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-body">
+      <!-- [chap04] <span> - 결과 개수 표시 -->
+      <!-- [chap19] DOM - JS에서 결과 개수 동적 업데이트 -->
+      <div class="result-count">
+        <span id="resultCount">0</span>개의 음악
+        <button class="reset-btn" id="resetBtn" onclick="resetFilters()">✕ 필터 초기화</button>
+      </div>
+
+      <!-- [chap12] Grid - 음악 카드 4열 그리드 (grid-1~7.html 참고) -->
+      <!-- [chap19] DOM - JS innerHTML로 카드 동적 렌더링 -->
+      <div class="music-grid list-grid" id="musicGrid"></div>
+
+      <!-- [chap04] 빈 상태 안내 문구 -->
+      <!-- [chap19] DOM - 결과 없을 때 hidden 클래스 제거 -->
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">🎵</div>
+        <h3>조건에 맞는 음악이 없어요</h3>
+        <p>필터를 바꿔서 다시 찾아보세요.</p>
+        <button class="btn-primary" onclick="resetFilters()">필터 초기화</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- [chap04] <footer> 시맨틱 태그, <ul><li><a> 목록 링크 -->
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Mood<span>ify</span></div>
+        <p class="footer-desc">장르, 장소, 기분을 기반으로<br>지금 이 순간에 딱 맞는 음악을 추천해드리는 큐레이션 서비스입니다.</p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스 메뉴</h4>
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="test.html">음악 추천 테스트</a></li>
+          <li><a href="list.html">전체 탐색</a></li>
+          <li><a href="playlist.html">내 플레이리스트</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>이용 안내</h4>
+        <ul>
+          <li><a href="board.html">한줄 감상평</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Moodify. All rights reserved.</span>
+      <span>contact@moodify.kr</span>
+    </div>
+  </footer>
+
+  <!-- [chap15] JS 외부 스크립트 - data.js 먼저 로드 (list.js에서 musicData 사용) -->
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/list.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [chap19] DOM - JS에서 document.title로 동적 변경 -->
+  <title>상세 정보 — Moodify</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- [chap04] <nav> 내비게이션 -->
+  <nav>
+    <a class="nav-logo" href="index.html">Mood<span>ify</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">홈</a></li>
+      <li><a href="test.html">음악 추천 테스트</a></li>
+      <li><a href="list.html">전체 탐색</a></li>
+      <li><a href="playlist.html">내 플레이리스트</a></li>
+      <li><a href="board.html">한줄 감상평</a></li>
+    </ul>
+    
+  </nav>
+
+  <main class="detail-main">
+
+    <!-- [chap19] DOM - JS에서 ?id= 파싱 후 innerHTML로 전체 내용 동적 렌더링 -->
+    <!-- [chap11] Flexbox - 썸네일과 정보 영역 2열 배치 (flex-2.html 참고) -->
+    <!-- [chap20] LocalStorage - 하트 상태 읽어서 liked 클래스 적용 -->
+    <div class="detail-container" id="detailContainer">
+      <!-- detail.js가 동적으로 렌더링 -->
+    </div>
+
+    <!-- [chap12] Grid - 비슷한 음악 카드 3열 -->
+    <!-- [chap18] 배열 filter() - 같은 mood 음악 필터링 후 렌더링 -->
+    <section class="related-section">
+      <div class="section-inner">
+        <h2 class="section-title" style="font-size:1.4rem;">비슷한 분위기 음악</h2>
+        <!-- [chap19] DOM - JS에서 관련 음악 카드 동적 삽입 -->
+        <div class="music-grid" id="relatedGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- [chap04] <footer> 시맨틱 태그 -->
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Mood<span>ify</span></div>
+        <p class="footer-desc">장르, 장소, 기분을 기반으로<br>지금 이 순간에 딱 맞는 음악을 추천해드리는 큐레이션 서비스입니다.</p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스 메뉴</h4>
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="test.html">음악 추천 테스트</a></li>
+          <li><a href="list.html">전체 탐색</a></li>
+          <li><a href="playlist.html">내 플레이리스트</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>이용 안내</h4>
+        <ul>
+          <li><a href="board.html">한줄 감상평</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Moodify. All rights reserved.</span>
+      <span>contact@moodify.kr</span>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/detail.js"></script>
+</body>
+</html>

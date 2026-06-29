@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moodify — 지금 이 순간의 음악</title>
+
+  <!-- [chap06] 외부 CSS 파일 연결 -->
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+  <!-- [chap04] <nav> 시맨틱 태그 - 내비게이션 영역 -->
+  <!-- [chap04] <a> href로 페이지 이동 (MPA 핵심) -->
+  <nav>
+    <a class="nav-logo" href="index.html">Mood<span>ify</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">홈</a></li>
+      <li><a href="test.html">음악 추천 테스트</a></li>
+      <li><a href="list.html">전체 탐색</a></li>
+      <li><a href="playlist.html" id="playlistCount">내 플레이리스트</a></li>
+      <li><a href="board.html">한줄 감상평</a></li>
+    </ul>
+    
+  </nav>
+
+  <!-- [chap04] <section> 시맨틱 태그로 구역 분리 -->
+  <!-- [chap09] CSS 배경 - 그라디언트 효과 -->
+  <!-- [chap08] CSS position:absolute - orb 배경 배치 -->
+  <section class="mus">
+    <div class="mus-bg">
+      <div class="mus-orb orb1"></div>
+      <div class="mus-orb orb2"></div>
+      <div class="mus-orb orb3"></div>
+      <!-- [chap11] Flexbox - 음파 막대 가로 정렬 -->
+      <div class="waveform">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="mus-content">
+      <!-- [chap20] LocalStorage - 재방문자 배너 (JS에서 동적 표시) -->
+      <div class="visit-banner hidden" id="visitBanner"></div>
+
+      <div class="mus-badge">🎵 지금 이 순간에 딱 맞는 음악</div>
+
+      <!-- [chap04] <h1> 제목 태그 -->
+      <!-- [chap07] <em> 인라인 요소로 강조 색상 적용 -->
+      <h1 class="mus-title">
+        지금 내 기분에<br>
+        <em>완벽히 맞는 음악</em>을<br>
+        찾아드릴게요
+      </h1>
+
+      <p class="mus-sub">
+        장르, 듣는 장소, 지금 기분까지—<br>세 가지만 알려주면 딱 맞는 플레이리스트를 추천해드려요.
+      </p>
+
+      <!-- [chap11] Flexbox - 버튼 가로 배치 -->
+      <div class="mus-btns">
+        <a href="test.html" class="btn-primary">✦ 음악 추천 받기</a>
+        <a href="list.html" class="btn-outline">전체 음악 둘러보기</a>
+      </div>
+
+      <!-- [chap11] Flexbox - 통계 항목 가로 정렬 -->
+      <div class="mus-stats">
+        <div class="stat">
+          <span class="stat-num">200+</span>
+          <span class="stat-label">큐레이션 곡</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">8</span>
+          <span class="stat-label">장르</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">12</span>
+          <span class="stat-label">무드 태그</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [chap12] Grid - 3열 카드 레이아웃 -->
+  <section class="tags-section">
+    <div class="section-inner">
+      <p class="section-eyebrow">추천 기준</p>
+      <h2 class="section-title">딱 세 가지만 골라요</h2>
+
+      <!-- [chap08] 박스모델 - border, padding, border-radius -->
+      <div class="tag-cards">
+        <div class="tag-card">
+          <div class="tag-icon">🎸</div>
+          <h3>장르</h3>
+          <p>팝, 재즈, 인디, 클래식, 로파이, R&amp;B, 힙합, 일렉트로닉</p>
+          <div class="tag-chips">
+            <span>#팝</span><span>#재즈</span><span>#인디</span><span>#로파이</span>
+          </div>
+        </div>
+
+        <div class="tag-card">
+          <div class="tag-icon">📍</div>
+          <h3>장소</h3>
+          <p>카페, 집, 헬스장, 드라이브, 공부방, 야외</p>
+          <div class="tag-chips">
+            <span>#카페</span><span>#집</span><span>#드라이브</span><span>#야외</span>
+          </div>
+        </div>
+
+        <div class="tag-card">
+          <div class="tag-icon">💭</div>
+          <h3>기분 &amp; 상태</h3>
+          <p>설레는, 집중하고 싶은, 쉬고 싶은, 신나는, 감성적인, 우울한</p>
+          <div class="tag-chips">
+            <span>#집중</span><span>#설렘</span><span>#힐링</span><span>#신남</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [chap09] CSS 배경 - 그라디언트 썸네일 -->
+  <!-- [chap11] Flexbox - 제목과 전체보기 버튼 양쪽 정렬 -->
+  <section class="featured-section">
+    <div class="section-inner">
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">이달의 큐레이션</p>
+          <h2 class="section-title">지금 많이 듣는 플레이리스트</h2>
+        </div>
+        <a href="list.html" class="view-all">전체보기 →</a>
+      </div>
+
+      <div class="music-grid">
+        <div class="music-card" onclick="location.href='detail.html?id=1'">
+          <div class="music-thumb lofi-thumb">
+            <span class="music-play">▶</span>
+            <!-- [chap05] <button> 태그 -->
+            <button class="heart-btn" onclick="event.stopPropagation()">♥</button>
+          </div>
+          <div class="music-info">
+            <div class="music-tags"><span>#로파이</span><span>#카페</span><span>#집중</span></div>
+            <h4>밤 카페에서 공부할 때</h4>
+            <p>Lo-fi Hip Hop · 집중이 필요한 밤에</p>
+            <button class="btn-sm" onclick="event.stopPropagation(); location.href='detail.html?id=1'">자세히 보기</button>
+          </div>
+        </div>
+
+        <div class="music-card" onclick="location.href='detail.html?id=2'">
+          <div class="music-thumb drive-thumb">
+            <span class="music-play">▶</span>
+            <button class="heart-btn" onclick="event.stopPropagation()">♥</button>
+          </div>
+          <div class="music-info">
+            <div class="music-tags"><span>#팝</span><span>#드라이브</span><span>#신남</span></div>
+            <h4>드라이브할 때 창문 열고</h4>
+            <p>Pop · 신나는 드라이브 무드</p>
+            <button class="btn-sm" onclick="event.stopPropagation(); location.href='detail.html?id=2'">자세히 보기</button>
+          </div>
+        </div>
+
+        <div class="music-card" onclick="location.href='detail.html?id=3'">
+          <div class="music-thumb jazz-thumb">
+            <span class="music-play">▶</span>
+            <button class="heart-btn" onclick="event.stopPropagation()">♥</button>
+          </div>
+          <div class="music-info">
+            <div class="music-tags"><span>#재즈</span><span>#집</span><span>#힐링</span></div>
+            <h4>비 오는 날 집에서</h4>
+            <p>Jazz · 감성적인 오후에</p>
+            <button class="btn-sm" onclick="event.stopPropagation(); location.href='detail.html?id=3'">자세히 보기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- [chap08] 박스모델 - border-radius 둥근 섹션 -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>지금 바로 나만의 음악을 찾아볼까요?</h2>
+      <p>1분이면 충분해요. 세 가지 질문에 답하면 딱 맞는 음악을 추천해드려요.</p>
+      <a href="test.html" class="btn-primary" style="font-size:1.05rem; padding: 16px 36px;">✦ 추천 테스트 시작하기</a>
+    </div>
+  </section>
+
+  <!-- [chap04] <footer> 시맨틱 태그 -->
+  <!-- [chap12] Grid - 3열 레이아웃 -->
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <div class="footer-logo">Mood<span>ify</span></div>
+        <p class="footer-desc">
+          장르, 장소, 기분을 기반으로<br>
+          지금 이 순간에 딱 맞는 음악을 추천해드리는 큐레이션 서비스입니다.
+        </p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스 메뉴</h4>
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="test.html">음악 추천 테스트</a></li>
+          <li><a href="list.html">전체 탐색</a></li>
+          <li><a href="playlist.html">내 플레이리스트</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>이용 안내</h4>
+        <ul>
+          <li><a href="board.html">한줄 감상평</a></li>
+          <li><a href="#">서비스 소개</a></li>
+          <li><a href="#">문의하기</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Moodify. All rights reserved.</span>
+      <span>contact@moodify.kr</span>
+    </div>
+  </footer>
+
+  <!-- [chap15] JS 외부 스크립트 연결 -->
+  <script src="js/common.js"></script>
+  <script src="js/index.js"></script>
+</body>
+
+</html>
