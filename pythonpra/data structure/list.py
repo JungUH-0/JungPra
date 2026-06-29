@@ -166,11 +166,15 @@ class node_luse:
         else:   
             current = self.head
         
-        for i in range(pos - 1):
-            current = current.next
+            for i in range(pos - 1):
+                current = current.next
+
             new_node.next = current.next
             current.next = new_node
+        
         self.length += 1
+
+        
 
     def delete(self,pos):
         if self.head == None :
@@ -201,7 +205,7 @@ class node_luse:
             self.head.data = e
         else:
             current = self.head
-            for i in range(pos-1):
+            for i in range(pos):
                 current = current.next
             current.data = e
 
