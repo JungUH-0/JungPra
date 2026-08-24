@@ -4,11 +4,23 @@
 #  (최소화 / 복원 / 닫기)
 # ============================================================
 
+import os
 import win32gui
 import win32con
 import win32api  # [추가] 모니터 켜기용 마우스 이벤트
 
 CAMERA_WINDOW_TITLE = "AI Assistant - Camera"  # cameramodule.py의 imshow 창 제목
+
+# [추가] LLM이 해석한 "앱 열기" 명령용 화이트리스트 (임의 문자열 실행 방지 - 등록된 이름만 허용)
+ALLOWED_APPS = {
+    "chrome": "chrome",
+    "edge": "msedge",
+    "notepad": "notepad",
+    "calculator": "calc",
+    "explorer": "explorer",
+    "cmd": "cmd",
+    "powershell": "powershell",
+}
 
 _last_minimized_hwnd = None  # swipe_up 복원을 위해 마지막으로 최소화한 창 기억
 
@@ -61,9 +73,66 @@ def turn_off_monitor():
 def turn_on_monitor():
     """
     절전 중인 모니터를 깨움.
-    SC_MONITORPOWER에 '켜기' 값을 보내는 건 드라이버에 따라 무시되는 경우가 많아,
-    마우스를 1px 움직였다가 되돌려 입력 이벤트로 깨우는 방식을 사용.
+    [수정] SetCursorPos는 좌표만 옮길 뿐 '진짜 입력'으로 인식되지 않는 경우가 많아
+    모니터가 안 깨는 경우가 있었음. keybd_event로 실제 키 입력 이벤트를 발생시키는
+    방식이 더 확실하게 깨움 (SC_MONITORPOWER 켜기 신호도 함께 보내 이중으로 시도).
     """
-    x, y = win32api.GetCursorPos()
-    win32api.SetCursorPos((x + 1, y))
-    win32api.SetCursorPos((x, y))
+    win32gui.SendMessage(win32con.HWND_BROADCAST, win32con.WM_SYSCOMMAND, win32con.SC_MONITORPOWER, -1)
+    win32api.keybd_event(win32con.VK_SHIFT, 0, 0, 0)                          # Shift 키 누름
+    win32api.keybd_event(win32con.VK_SHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)   # Shift 키 뗌
+
+
+# [추가] 핀치(엄지+검지 집기) 제스처로 창을 잡아서 옮기는 기능
+def get_screen_size():
+    """모니터 해상도 (width, height) 반환 - 손 좌표를 화면 좌표로 매핑할 때 사용"""
+    return win32api.GetSystemMetrics(win32con.SM_CXSCREEN), win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+
+
+def get_window_at_point(x, y):
+    """화면 좌표 (x, y) 아래에 있는 최상위 창의 핸들을 반환. 카메라 미리보기 창은 제외."""
+    hwnd = win32gui.WindowFromPoint((x, y))
+    if not hwnd:
+        return None
+    hwnd = win32gui.GetAncestor(hwnd, win32con.GA_ROOT)  # 자식 컨트롤이 아닌 최상위 창으로
+    if not hwnd or win32gui.GetWindowText(hwnd) == CAMERA_WINDOW_TITLE:
+        return None
+    return hwnd
+
+
+def get_window_rect(hwnd):
+    """창의 (left, top, right, bottom) 화면 좌표 반환"""
+    return win32gui.GetWindowRect(hwnd)
+
+
+def is_window_valid(hwnd):
+    """드래그 중 창이 닫히는 등으로 핸들이 무효해졌는지 확인"""
+    return bool(hwnd) and win32gui.IsWindow(hwnd)
+
+
+def move_window_to(hwnd, x, y):
+    """창을 좌상단이 화면 좌표 (x, y)가 되도록 이동 (크기/Z순서/포커스는 그대로 유지)"""
+    if hwnd and win32gui.IsWindow(hwnd):
+        win32gui.SetWindowPos(
+            hwnd, 0, int(x), int(y), 0, 0,
+            win32con.SWP_NOSIZE | win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE
+        )
+
+
+# [추가] LLM이 해석한 명령("앱 열기")을 실제로 실행하는 함수
+def open_app(name):
+    """
+    ALLOWED_APPS 화이트리스트에 있는 앱만 실행 (LLM이 만든 임의 문자열을 그대로
+    실행하면 명령 주입 위험이 있어서, 등록된 이름으로만 매핑해 실행함)
+    반환값: (성공 여부, 에러 메시지 또는 None)
+    """
+    if not name:
+        return False, "앱 이름이 없습니다"
+    key = name.strip().lower()
+    exe = ALLOWED_APPS.get(key)
+    if exe is None:
+        return False, f"허용되지 않은 앱: {name}"
+    try:
+        os.startfile(exe)
+        return True, None
+    except OSError as e:
+        return False, str(e)

@@ -27,3 +27,4 @@ x64/
 Debug/
 Release/
 .vs/
+commands.json
