@@ -39,7 +39,7 @@ LEFT_EYE  = [362, 385, 387, 263, 373, 380]
 RIGHT_EYE = [33,  160, 158, 133, 153, 144]
 
 # EAR 임계값 설정
-EAR_THRESHOLD  = 0.15   # 이 값 이하면 눈 감은 것으로 판단
+EAR_THRESHOLD  = 0.20   # 이 값 이하면 눈 감은 것으로 판단
 LONG_BLINK_SEC = 2    # 이 시간 이상 감기면 '길게 감기'로 판단
 
 # [수정] FPS가 20~40 사이로 들쭉날쭉해도 항상 같게 동작하도록 프레임수 대신 시간(초) 기준으로 변경
@@ -63,6 +63,10 @@ EDGE_CROSS_THRESHOLD = 0.01  # 이 값보다 작으면 손날(옆면)로 판정 
 
 # [추가] 양손이 겹쳐졌는지(박수 동작 보조 판정용) 설정
 HANDS_TOGETHER_THRESHOLD = 0.15  # 두 손 중심점 사이 거리(정규화 좌표)가 이보다 작으면 겹친 것으로 판정 - 실측 후 조정 필요
+
+# [추가] 핀치(엄지+검지 집기)로 창 드래그 설정
+PINCH_ON_DIST  = 0.05  # 엄지-검지 거리(정규화 좌표)가 이보다 가까우면 "집기" 시작 - 실측 후 조정 필요
+PINCH_OFF_DIST = 0.08  # 집은 상태에서 이 이상 벌어지면 "놓기" (ON보다 느슨하게 잡아 떨림으로 인한 오해제 방지)
 
 
 # ── 특징 추출 함수 (SignBridge 동일, 55차원) ──────────────
@@ -172,6 +176,11 @@ class CameraModule:
         self._eye_display_text  = None   # ("BLINK!" / "LONG BLINK!", color)
         self._hand_display_text = None   # ("SWIPE UP" / "SWIPE DOWN", color)
 
+        # [추가] 핀치(엄지+검지 집기)로 창 드래그하는 기능용 상태
+        self._drag_hwnd   = None          # 지금 잡고 있는 창 핸들 (없으면 None)
+        self._drag_offset = (0.0, 0.0)    # 잡은 지점 - 창 좌상단 사이 오프셋 (화면 좌표계)
+        self._screen_w, self._screen_h = windowcontrol.get_screen_size()  # 손 좌표 → 화면 좌표 매핑용
+
         # 결과 딕셔너리 (외부에서 읽는 곳)
         self.result = {
             # 손동작
@@ -183,6 +192,7 @@ class CameraModule:
             "hand_orientation": None,  # [추가] "front" / "back" / "edge"
             "close_request"  : False,  # [수정] 손날+스와이프다운 → 닫기 확인 요청 (예/아니오로 최종 결정)
             "hands_together" : False,  # [추가] 양손이 겹쳐졌는지 (박수 보조 판정용)
+            "window_drag"    : False,  # [추가] 핀치로 창을 잡아 옮기는 중인지
 
             # 눈 깜빡임
             "blink"          : False,  # 이번 프레임에 깜빡임 발생 여부
@@ -249,56 +259,93 @@ class CameraModule:
         orientation = None
         close_request = False  # [추가] 손날+스와이프다운 → 닫기 확인 요청 (실제 닫기는 main.py에서)
         if chosen_landmarks is not None:
-            center_x = float(np.mean([chosen_landmarks[i].x for i in HAND_CENTER_INDICES]))
-            center_y = float(np.mean([chosen_landmarks[i].y for i in HAND_CENTER_INDICES]))
-            now = time.time()
-            self._hand_y_history.append((now, center_y))
+            # [추가] 핀치(엄지 4번 + 검지 8번 집기) 판정 - 화면 속 창을 잡아서 옮기는 기능
+            thumb_tip = chosen_landmarks[4]
+            index_tip = chosen_landmarks[8]
+            pinch_dist = ((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2) ** 0.5
+            pinch_x = (thumb_tip.x + index_tip.x) / 2.0
+            pinch_y = (thumb_tip.y + index_tip.y) / 2.0
+            # 프레임이 거울 모드로 좌우반전되어 있어(cv.flip), 정규화 좌표를 그대로 화면 좌표에
+            # 곱하면 미리보기 화면에서 보이는 손 위치와 동일한 감각으로 화면을 가리키게 됨
+            screen_x = pinch_x * self._screen_w
+            screen_y = pinch_y * self._screen_h
 
-            # [수정] SWIPE_WINDOW_SEC보다 오래된 기록은 버림 (프레임수 대신 시간 기준 윈도우)
-            while (self._hand_y_history and
-                   now - self._hand_y_history[0][0] > SWIPE_WINDOW_SEC):
-                self._hand_y_history.popleft()
+            px, py = int(pinch_x * w), int(pinch_y * h)
+            pinch_color = (0, 255, 255) if self._drag_hwnd is None else (0, 165, 255)
+            cv.circle(frame_vis, (px, py), 10, pinch_color, 2)
 
-            oldest_t, oldest_y = self._hand_y_history[0]
-            if now - oldest_t >= SWIPE_WINDOW_SEC * 0.8:  # 윈도우가 충분히 채워졌을 때만 판정
-                delta = center_y - oldest_y
-                if now - self._last_swipe_time > SWIPE_COOLDOWN_SEC:
-                    if delta > SWIPE_Y_THRESHOLD:
-                        swipe_down = True          # 기준점이 아래로 이동 = 쓸어내리기
-                        self._last_swipe_time = now
-                        self._hand_y_history.clear()
-                    elif delta < -SWIPE_Y_THRESHOLD:
-                        swipe_up = True             # 기준점이 위로 이동 = 쓸어올리기
-                        self._last_swipe_time = now
-                        self._hand_y_history.clear()
-
-            # [추가] 손바닥/손등/손날 판별
-            orientation = get_hand_orientation(chosen_landmarks, hand_side)
-
-            # 시각화: 손 중심점 + 방향 텍스트는 매 프레임
-            cx, cy = int(center_x * w), int(center_y * h)
-            cv.circle(frame_vis, (cx, cy), 5, (255, 200, 0), -1)
-            cv.putText(frame_vis, f"hand:{orientation}", (10, 150),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 0), 2)
-
-            if swipe_up:
-                self._hand_display_text = ("SWIPE UP", (255, 0, 0))  # [추가]
-            if swipe_down:
-                self._hand_display_text = ("SWIPE DOWN", (0, 0, 255))  # [추가]
-
-            # [수정] 스와이프 → 창 제어. 손날+다운은 여기서 바로 닫지 않고
-            # close_request 이벤트만 알려서, 예/아니오(깜빡임/박수) 응답으로
-            # 최종 행동(닫기/취소)은 main.py(통합 스크립트)에서 결정하게 함
-            if swipe_down:
-                if orientation == "edge":
-                    close_request = True
-                    self._hand_display_text = ("CLOSE? say YES/NO", (0, 0, 255))
+            if self._drag_hwnd is None:
+                if pinch_dist < PINCH_ON_DIST:
+                    hwnd = windowcontrol.get_window_at_point(int(screen_x), int(screen_y))
+                    if hwnd:
+                        left, top, _, _ = windowcontrol.get_window_rect(hwnd)
+                        self._drag_hwnd    = hwnd
+                        self._drag_offset  = (screen_x - left, screen_y - top)
+                        self._hand_display_text = ("WINDOW GRABBED", (0, 255, 255))
+            else:
+                if pinch_dist < PINCH_OFF_DIST and windowcontrol.is_window_valid(self._drag_hwnd):
+                    off_x, off_y = self._drag_offset
+                    windowcontrol.move_window_to(self._drag_hwnd, screen_x - off_x, screen_y - off_y)
                 else:
-                    windowcontrol.minimize_active_window()
-            elif swipe_up:
-                windowcontrol.restore_last_window()
+                    self._drag_hwnd = None
+                    self._hand_display_text = ("WINDOW RELEASED", (0, 200, 0))
+
+            # [수정] 창을 드래그하는 중에는 스와이프/손날 제스처를 판정하지 않음
+            # (손을 크게 움직이는 드래그 동작이 스와이프로 오인식되는 것 방지)
+            if self._drag_hwnd is None:
+                center_x = float(np.mean([chosen_landmarks[i].x for i in HAND_CENTER_INDICES]))
+                center_y = float(np.mean([chosen_landmarks[i].y for i in HAND_CENTER_INDICES]))
+                now = time.time()
+                self._hand_y_history.append((now, center_y))
+
+                # [수정] SWIPE_WINDOW_SEC보다 오래된 기록은 버림 (프레임수 대신 시간 기준 윈도우)
+                while (self._hand_y_history and
+                       now - self._hand_y_history[0][0] > SWIPE_WINDOW_SEC):
+                    self._hand_y_history.popleft()
+
+                oldest_t, oldest_y = self._hand_y_history[0]
+                if now - oldest_t >= SWIPE_WINDOW_SEC * 0.8:  # 윈도우가 충분히 채워졌을 때만 판정
+                    delta = center_y - oldest_y
+                    if now - self._last_swipe_time > SWIPE_COOLDOWN_SEC:
+                        if delta > SWIPE_Y_THRESHOLD:
+                            swipe_down = True          # 기준점이 아래로 이동 = 쓸어내리기
+                            self._last_swipe_time = now
+                            self._hand_y_history.clear()
+                        elif delta < -SWIPE_Y_THRESHOLD:
+                            swipe_up = True             # 기준점이 위로 이동 = 쓸어올리기
+                            self._last_swipe_time = now
+                            self._hand_y_history.clear()
+
+                # [추가] 손바닥/손등/손날 판별
+                orientation = get_hand_orientation(chosen_landmarks, hand_side)
+
+                # 시각화: 손 중심점 + 방향 텍스트는 매 프레임
+                cx, cy = int(center_x * w), int(center_y * h)
+                cv.circle(frame_vis, (cx, cy), 5, (255, 200, 0), -1)
+                cv.putText(frame_vis, f"hand:{orientation}", (10, 150),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 0), 2)
+
+                if swipe_up:
+                    self._hand_display_text = ("SWIPE UP", (255, 0, 0))  # [추가]
+                if swipe_down:
+                    self._hand_display_text = ("SWIPE DOWN", (0, 0, 255))  # [추가]
+
+                # [수정] 스와이프 → 창 제어. 손날+다운은 여기서 바로 닫지 않고
+                # close_request 이벤트만 알려서, 예/아니오(깜빡임/박수) 응답으로
+                # 최종 행동(닫기/취소)은 main.py(통합 스크립트)에서 결정하게 함
+                # [수정] swipe_up/swipe_down(손날 제외) 자체의 실행(minimize/restore)도
+                # main.py에서 commandmodule을 거쳐 처리하도록 옮김 - 사용자가 나중에
+                # 이 제스처에 다른 명령을 등록해도 여기서 하드코딩된 동작이 그대로
+                # 실행되어버리는 걸 막기 위함 (인식/실행 계층 분리 유지)
+                if swipe_down:
+                    if orientation == "edge":
+                        close_request = True
+                        self._hand_display_text = ("CLOSE? say YES/NO", (0, 0, 255))
+            else:
+                self._hand_y_history.clear()  # 드래그 중엔 스와이프 히스토리 오염 방지
         else:
             self._hand_y_history.clear()  # 손이 사라지면 히스토리 초기화
+            self._drag_hwnd = None        # [추가] 손이 사라지면 드래그도 해제
 
         # [추가] 마지막으로 인식된 스와이프/닫기 텍스트를 계속 표시
         if self._hand_display_text is not None:
@@ -315,6 +362,7 @@ class CameraModule:
             self.result["hand_orientation"] = orientation  # [추가]
             self.result["close_request"]    = close_request  # [수정] 손날+다운 → 닫기 확인 요청
             self.result["hands_together"]   = hands_together  # [추가] 양손 겹침 (박수 보조 판정용)
+            self.result["window_drag"]      = self._drag_hwnd is not None  # [추가] 핀치로 창을 잡아 옮기는 중인지
 
     # ── 내부: 눈 깜빡임 처리 ─────────────────────────────
     def _process_blink(self, frame_rgb, frame_vis):
@@ -336,6 +384,15 @@ class CameraModule:
             for idx in LEFT_EYE + RIGHT_EYE:
                 px, py = int(lm[idx].x * w), int(lm[idx].y * h)
                 cv.circle(frame_vis, (px, py), 2, (0, 255, 255), -1)
+
+            # [수정] 더블 블링크로 이어지지 않고 대기 시간(DOUBLE_BLINK_WINDOW_SEC)이 지나면
+            # 그제서야 단일 블링크로 확정. (매 프레임 확인 - 눈을 뜨고 있는 동안에도 시간초과를 감지해야 함)
+            # 이전엔 첫 깜빡임이 눈을 뜨는 즉시 blink=True로 확정돼서, 더블 블링크를 하려고 해도
+            # 첫 번째 깜빡임에서 바로 '예'로 인식되어 창닫기 확인 중 의도치 않게 창이 닫히는 문제가 있었음.
+            if (self._last_blink_time is not None and
+                    time.time() - self._last_blink_time > DOUBLE_BLINK_WINDOW_SEC):
+                blink = True
+                self._last_blink_time = None
 
             if ear < EAR_THRESHOLD:
                 # 눈 감기 시작 시간 기록
@@ -365,16 +422,15 @@ class CameraModule:
                     close_duration = time.time() - self._eye_close_start
                     # long_blink는 위에서 이미 실시간으로 처리했으므로 여기서는 짧은 깜빡임만 판정
                     if MIN_BLINK_SEC <= close_duration < LONG_BLINK_SEC:
-                        blink = True        # 짧게 깜빡임
-
-                        # [수정] 시간 윈도우(DOUBLE_BLINK_WINDOW_SEC) 안에 짧은 깜빡임이 또 나오면 더블 블링크
+                        # [수정] 짧은 깜빡임이 오면 바로 blink=True로 확정하지 않고 일단 "대기"만 함
+                        # (단일인지 더블의 첫 번째인지는 아직 알 수 없음 - 위쪽의 시간초과 체크에서 확정됨)
                         now = time.time()
                         if (self._last_blink_time is not None and
                                 now - self._last_blink_time <= DOUBLE_BLINK_WINDOW_SEC):
-                            double_blink = True
+                            double_blink = True   # 대기 중이던 첫 깜빡임 + 지금 이 깜빡임 = 더블 확정
                             self._last_blink_time = None
                         else:
-                            self._last_blink_time = now
+                            self._last_blink_time = now   # 대기 시작 (다음 프레임들에서 시간초과 시 단일로 확정)
                 self._eye_close_start      = None
                 self._long_blink_triggered = False  # [추가] 눈을 떴으니 다음 롱블링크는 다시 트리거 가능
 

@@ -16,9 +16,15 @@ import threading
 from cameramodule import CameraModule
 from audiomodule import AudioModule
 import windowcontrol
+import commandmodule  # [추가] LLM으로 등록한 사용자 정의 명령 실행용
 
 CLOSE_CONFIRM_TIMEOUT_SEC = 5.0  # 닫기 확인 요청 후 응답 없으면 자동 취소(안전 기본값)
 VISUAL_CLAP_COOLDOWN_SEC  = 0.5  # 손이 겹친 채로 있는 동안 같은 박수가 중복 인식되는 것 방지
+
+
+# [추가] 콘솔에 시각 태그를 붙여 어느 시점에 무슨 신호가 찍혔는지 구분하기 쉽게 함
+def _log(tag, msg):
+    print(f"[{time.strftime('%H:%M:%S')}] [{tag}] {msg}")
 
 
 def run_assistant():
@@ -35,6 +41,16 @@ def run_assistant():
     pending_close        = False
     pending_close_since  = None
     last_visual_clap_time = 0.0  # [추가] 손겹침+소리스파이크 박수 보조 판정용 쿨다운
+
+    # [추가] 신호가 "새로 켜진 순간(rising edge)"에만 반응하기 위한 이전 상태 기억
+    # (폴링 주기(0.02s)가 카메라/오디오 처리 주기보다 빨라서, 같은 신호를 여러 번 읽어
+    #  콘솔에 중복으로 마구 찍히는 것을 방지)
+    prev_yes = False
+    prev_no  = False
+
+    # [추가] swipe_up/swipe_down도 rising edge로만 반응 (commandmodule 연결용)
+    prev_swipe_up   = False
+    prev_swipe_down = False
 
     try:
         while cam_thread.is_alive():
@@ -53,26 +69,61 @@ def run_assistant():
             yes_event = cam_res["blink"] or audio_res["clap"] or visual_clap
             no_event  = cam_res["double_blink"] or audio_res["double_clap"]
 
+            # [추가] rising edge만 추출 - 신호가 계속 True로 읽혀도 딱 한 번만 반응
+            yes_edge = yes_event and not prev_yes
+            no_edge  = no_event and not prev_no
+            prev_yes = yes_event
+            prev_no  = no_event
+
+            # [추가] swipe_up/swipe_down rising edge (commandmodule 연결용)
+            swipe_up_edge   = cam_res["swipe_up"]   and not prev_swipe_up
+            swipe_down_edge = cam_res["swipe_down"] and not prev_swipe_down
+            prev_swipe_up   = cam_res["swipe_up"]
+            prev_swipe_down = cam_res["swipe_down"]
+
+            # [추가] 어느 채널에서 온 신호인지 출력용으로 구분
+            if cam_res["blink"]:
+                yes_source = "카메라-눈깜빡임"
+            elif visual_clap:
+                yes_source = "융합-손겹침+소리"
+            else:
+                yes_source = "오디오-박수"
+            no_source = "카메라-눈더블블링크" if cam_res["double_blink"] else "오디오-더블박수"
+
             if pending_close:
-                if yes_event:
+                if yes_edge:
                     windowcontrol.close_active_window()
                     pending_close = False
-                    print("[확정] 창 닫기 실행")
-                elif no_event:
+                    _log("확정", f"창 닫기 실행 ({yes_source})")
+                elif no_edge:
                     pending_close = False
-                    print("[취소] 창 닫기 취소")
+                    _log("취소", f"창 닫기 취소 ({no_source})")
                 elif time.time() - pending_close_since > CLOSE_CONFIRM_TIMEOUT_SEC:
                     pending_close = False
-                    print("[취소] 응답 없음 - 자동 취소")
+                    _log("취소", "응답 없음 - 자동 취소")
             else:
                 if cam_res["close_request"]:
                     pending_close       = True
                     pending_close_since = time.time()
-                    print("[확인 필요] 창을 닫을까요? 눈 1번/박수 1번=예, 더블=아니오")
-                elif yes_event:
-                    print("[신호] 예 / 동의")
-                elif no_event:
-                    print("[신호] 아니오 / 거절")
+                    _log("확인 필요", "창을 닫을까요? 눈 1번/박수 1번=예, 더블=아니오 (5초 내 응답)")
+                elif yes_edge:
+                    _log("신호", f"예 / 동의 ({yes_source})")
+                elif no_edge:
+                    _log("신호", f"아니오 / 거절 ({no_source})")
+
+            # [추가] swipe_up/swipe_down → commandmodule에 등록된 사용자 정의 명령이
+            # 있으면 그걸 실행, 없으면 기본 동작(복원/최소화)으로 폴백.
+            # close_request(손날+스와이프다운)는 위 pending_close 흐름에서 처리하므로 제외.
+            if swipe_up_edge:
+                ok, _ = commandmodule.execute_command("swipe_up")
+                if not ok:
+                    windowcontrol.restore_last_window()
+                _log("제스처", f"swipe_up ({'사용자 정의' if ok else '기본 동작'})")
+            if swipe_down_edge and not cam_res["close_request"]:
+                ok, _ = commandmodule.execute_command("swipe_down")
+                if not ok:
+                    windowcontrol.minimize_active_window()
+                _log("제스처", f"swipe_down ({'사용자 정의' if ok else '기본 동작'})")
 
             time.sleep(0.02)
     except KeyboardInterrupt:

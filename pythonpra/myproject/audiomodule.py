@@ -22,10 +22,10 @@ BASELINE_EMA_ALPHA = 0.02   # 주변 소음 바닥값 적응 속도 (느리게)
 SPIKE_RATIO         = 3.0   # 바닥값 대비 이 배수 이상 튀어야 스파이크
 MIN_ABS_RMS         = 0.02  # 너무 조용할 때 배수만으로 오인식되는 것 방지용 절대 하한
 HIGH_BAND_HZ        = (1500, 7000)  # 박수 특유의 넓은 고주파 임팩트 대역
-BAND_RATIO_THRESHOLD = 0.35  # 이 비율 이상이면 박수로 판정 (실측 후 조정 필요)
+BAND_RATIO_THRESHOLD = 0.27  # 이 비율 이상이면 박수로 판정 (실측 후 조정 필요)
 CLAP_COOLDOWN_SEC    = 0.25  # 한 번 인식 후 같은 박수의 잔향으로 중복 인식되는 것 방지
 
-# 더블 클랩 판정 윈도우 (1.5초 안에 두 번 박수)
+# 더블 클랩 판정 윈도우 
 DOUBLE_CLAP_WINDOW_SEC = 1.0
 
 
@@ -83,14 +83,17 @@ class AudioModule:
         if is_spike and (now - self._last_clap_time) > CLAP_COOLDOWN_SEC:
             band_ratio = self._high_band_ratio(mono)
             if band_ratio > BAND_RATIO_THRESHOLD:
-                clap = True
                 self._last_clap_time = now
 
+                # 더블 클랩으로 확정되면 clap/double_clap을 배타적으로 처리
+                # (안 그러면 더블의 두 번째 탭에서 clap=True와 double_clap=True가 동시에 켜져
+                #  main.py에서 예/아니오 신호가 같은 순간에 같이 발동해버림)
                 if (self._pending_single_clap_time is not None and
                         now - self._pending_single_clap_time <= DOUBLE_CLAP_WINDOW_SEC):
                     double_clap = True
                     self._pending_single_clap_time = None
                 else:
+                    clap = True
                     self._pending_single_clap_time = now
 
         with self._lock:
