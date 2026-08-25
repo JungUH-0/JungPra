@@ -10,7 +10,32 @@ import numpy as np
 import time
 import threading
 from collections import deque  # [추가] 손 위치 이동(스와이프) 추적용
+from PIL import Image, ImageDraw, ImageFont  # [추가] cv.putText는 한글을 못 그려서 한글 표시용으로 사용
 import windowcontrol  # [추가] 스와이프/손날 제스처로 창 제어
+
+# [추가] 한글 텍스트 표시용 폰트 (OpenCV putText는 Hershey 폰트라 한글 렌더링이 안 됨)
+KOREAN_FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"  # 맑은 고딕(윈도우 기본 한글 폰트)
+_korean_font_cache = {}
+
+
+def _get_korean_font(size):
+    if size not in _korean_font_cache:
+        _korean_font_cache[size] = ImageFont.truetype(KOREAN_FONT_PATH, size)
+    return _korean_font_cache[size]
+
+
+def put_korean_text(frame, text, org, font_size=24, color=(255, 200, 0)):
+    """
+    OpenCV 프레임(BGR numpy 배열)에 한글 텍스트를 그림 (cv.putText처럼 frame을 제자리에서 수정).
+    PIL로 그린 뒤 다시 numpy로 변환하는 방식이라 매 프레임 호출하면 약간의 비용이 있지만,
+    텍스트 몇 줄 정도는 실시간 표시에 문제 없는 수준.
+    """
+    img_pil = Image.fromarray(cv.cvtColor(frame, cv.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(img_pil)
+    # color는 OpenCV(BGR) 관례를 그대로 받되, PIL은 RGB라서 순서를 뒤집어줌
+    rgb_color = (color[2], color[1], color[0])
+    draw.text(org, text, font=_get_korean_font(font_size), fill=rgb_color)
+    frame[:] = cv.cvtColor(np.array(img_pil), cv.COLOR_RGB2BGR)
 
 # ── MediaPipe 초기화 ──────────────────────────────────────
 mp_hands    = mp.solutions.hands
@@ -40,7 +65,7 @@ RIGHT_EYE = [33,  160, 158, 133, 153, 144]
 
 # EAR 임계값 설정
 EAR_THRESHOLD  = 0.20   # 이 값 이하면 눈 감은 것으로 판단
-LONG_BLINK_SEC = 2    # 이 시간 이상 감기면 '길게 감기'로 판단
+LONG_BLINK_SEC = 3    # 이 시간 이상 감기면 '길게 감기'로 판단
 
 # [수정] FPS가 20~40 사이로 들쭉날쭉해도 항상 같게 동작하도록 프레임수 대신 시간(초) 기준으로 변경
 MIN_BLINK_SEC           = 0.05  # 눈 감은 시간이 이보다 짧으면 노이즈로 보고 무시
@@ -59,7 +84,17 @@ SWIPE_COOLDOWN_SEC = 0.6   # 한 번 인식 후 재인식까지 대기 시간
 HAND_CENTER_INDICES = [0, 5, 9, 13, 17]
 
 # [추가] 손바닥/손등/손날 판별 설정
-EDGE_CROSS_THRESHOLD = 0.01  # 이 값보다 작으면 손날(옆면)로 판정 - 실측 후 조정 필요
+# [수정] 정규화(단위벡터화)된 외적 = 두 벡터 사잇각의 sin값이라 -1~1 범위로 고정됨.
+# 예전엔 정규화 없이 원본 좌표차로 외적을 구해서, 손이 카메라에서 멀어져 랜드마크 간
+# 거리가 작아지면 손날이 아닌데도 cross 값이 작아져 손날로 오인식되는 문제가 있었음.
+# [수정] 0.15(약 8.6도)는 너무 엄격해서 손날 인식률이 낮았음 → 0.28(약 16.3도)로 완화
+EDGE_SIN_THRESHOLD = 0.28  # sin(각도) 기준 - 이 각도 이내로 손을 세우면 손날로 판정
+
+# [추가] 손날+스와이프다운(닫기 확인) 인식률 개선용 - "정확히 그 프레임"에 손날이어야만
+# 인정하면, 빠르게 손을 내리치는 동작 중엔 프레임 사이에서 각도가 흔들려 놓치기 쉬움.
+# 최근 이 시간 안에 손날이 한 번이라도 잡혔으면 "손날 상태"로 인정해서 여유를 줌
+EDGE_RECENT_SEC = 0.3
+ORIENTATION_KO = {"front": "손바닥", "back": "손등", "edge": "손날"}  # [추가] 화면 표시용 한글 라벨
 
 # [추가] 양손이 겹쳐졌는지(박수 동작 보조 판정용) 설정
 HANDS_TOGETHER_THRESHOLD = 0.15  # 두 손 중심점 사이 거리(정규화 좌표)가 이보다 작으면 겹친 것으로 판정 - 실측 후 조정 필요
@@ -67,6 +102,45 @@ HANDS_TOGETHER_THRESHOLD = 0.15  # 두 손 중심점 사이 거리(정규화 좌
 # [추가] 핀치(엄지+검지 집기)로 창 드래그 설정
 PINCH_ON_DIST  = 0.05  # 엄지-검지 거리(정규화 좌표)가 이보다 가까우면 "집기" 시작 - 실측 후 조정 필요
 PINCH_OFF_DIST = 0.08  # 집은 상태에서 이 이상 벌어지면 "놓기" (ON보다 느슨하게 잡아 떨림으로 인한 오해제 방지)
+
+# [추가] 검지 손가락으로 실제 마우스 커서 조작 설정
+CURSOR_SMOOTHING = 0.5  # 랜드마크 떨림으로 인한 커서 흔들림 완화용 EMA 계수 (0=필터 없음, 1에 가까울수록 둔감/부드러움)
+# [추가] 카메라 프레임 전체가 아니라 중앙의 이 비율만큼만 화면 전체에 매핑 - 손을 조금만
+# 움직여도 커서가 화면 끝까지 크게 움직이게 함(감도 증폭). 값이 클수록 더 민감해짐.
+# [수정] 커서 기준점을 검지 끝 → 손바닥 중심으로 바꾸면서, 같은 화면 이동에 필요한
+# 손 움직임의 범위가 커져서 0.08(약 1.19배)로는 화면 좌우 끝까지 가기엔 너무 느려짐 →
+# 0.15(중앙 70% 매핑, 약 1.43배 증폭)로 다시 올림
+CURSOR_ACTIVE_MARGIN = 0.15
+
+# [수정] 우클릭 판정 설정 - 검지+중지 겹침은 손날 자세와 충돌해서, 엄지를 손바닥
+# 중심 쪽으로 넣는 동작(주먹 쥐듯 엄지를 안으로 접는 느낌)으로 변경
+# [수정] 0.10 → 0.06으로 낮췄는데도 여전히 엄지가 살짝만 움직여도 발동할 만큼
+# 민감해서 0.035로 더 낮춤 (더욱 깊이 접어야만 인식되게 함)
+THUMB_TUCK_DIST = 0.035  # 엄지 끝과 손바닥 중심 사이 거리(정규화 좌표)가 이보다 가까우면 "엄지 넣음" - 실측 후 조정 필요
+
+# [추가] 엄지척(예)/엄지다운(아니오) 판정 설정
+# 검지~새끼 4개 손가락의 (MCP, PIP, TIP) 인덱스 - 다 말려있어야 "주먹"으로 인정
+FIST_FINGERS = [(5, 6, 8), (9, 10, 12), (13, 14, 16), (17, 18, 20)]
+THUMB_UPDOWN_Y_MARGIN = 0.08  # 엄지 끝이 손바닥 중심보다 이 정도 이상 위/아래여야 업/다운으로 판정
+# [추가] 엄지다운을 하려고 손을 움직이는 도중 잠깐 엄지업처럼 보이는 전환 자세를 거치면서
+# "예"가 먼저 오인식되는 문제가 있어서, 이 시간 이상 같은 상태를 유지해야 확정하도록 함
+THUMB_UPDOWN_HOLD_SEC = 1.0
+
+# [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (LLM/commandmodule에 등록한 사용자 정의
+# 명령 실행용). 엄지+검지 핀치(좌클릭)와 같은 방식이지만 손가락 조합만 다름 - 검증된
+# 판정 방식을 그대로 재사용해서 새 슬롯을 늘림
+PINCH_MIDDLE_DIST = 0.05  # 엄지-중지 끝 사이 거리(정규화 좌표)가 이보다 가까우면 "붙음" - 실측 후 조정 필요
+
+# [수정] 마우스 휠 스크롤 자세 설정 - 검지/약지/새끼를 다 말아야 했던 건 손이 너무
+# 불편해서, 약지/새끼만 말면 되도록 완화 (검지는 펴져있든 말든 상관 안 함)
+WHEEL_CURL_FINGERS = [(13, 14, 16), (17, 18, 20)]  # 약지/새끼의 (MCP, PIP, TIP)
+# [수정] 손을 처음 폈을 때의 위치를 "기준점"으로 기억해서 거기서 고정 거리(0.02~0.07)
+# 만큼 움직여야 활성화하는 방식은, 카메라와의 거리/손 크기에 따라 정규화 좌표에서 그
+# 거리가 다르게 나와서 값이 안 맞았음(가까우면 너무 쉽게, 멀면 거의 불가능하게 활성화).
+# 대신 중지 손끝(TIP)과 중지 중간관절(PIP)의 상대 위치로 비교 - 둘 다 "그 손 자체"의
+# 관절이라 손 크기/카메라 거리와 무관하게 항상 같은 비율로 동작함
+WHEEL_DIR_MARGIN = 0.015  # 활성화된 뒤, 중지 끝이 중간관절보다 이 정도 이상 위/아래여야 업/다운
+WHEEL_TICK_INTERVAL_SEC = 0.12  # 활성화된 동안 이 간격으로 휠 이벤트를 반복 발생시킴
 
 
 # ── 특징 추출 함수 (SignBridge 동일, 55차원) ──────────────
@@ -109,8 +183,9 @@ def get_ear(landmarks, eye_indices, w, h):
 def get_hand_orientation(landmarks, handedness):
     """
     손목(0) → 인덱스 MCP(5) → 새끼 MCP(17) 삼각형의 외적으로 방향 판별
-    - 외적 절댓값이 작으면 손을 세운 상태(손날)
-    - 그 외에는 부호로 손바닥/손등 구분
+    - [수정] 두 벡터를 단위벡터로 정규화한 뒤 외적을 구함 (= 사잇각의 sin값, -1~1로 스케일 고정)
+      → 손이 카메라에 가깝든 멀든(=벡터 크기가 커지든 작아지든) 판정이 흔들리지 않음
+    - sin값 절댓값이 작으면 손을 세운 상태(손날), 그 외에는 부호로 손바닥/손등 구분
     """
     wrist     = landmarks[0]
     index_mcp = landmarks[5]
@@ -118,15 +193,60 @@ def get_hand_orientation(landmarks, handedness):
 
     v1x, v1y = index_mcp.x - wrist.x, index_mcp.y - wrist.y
     v2x, v2y = pinky_mcp.x - wrist.x, pinky_mcp.y - wrist.y
-    cross = v1x * v2y - v1y * v2x
 
-    if abs(cross) < EDGE_CROSS_THRESHOLD:
+    v1_len = (v1x ** 2 + v1y ** 2) ** 0.5
+    v2_len = (v2x ** 2 + v2y ** 2) ** 0.5
+    if v1_len < 1e-6 or v2_len < 1e-6:
+        return None  # 랜드마크가 거의 겹쳐서 방향을 판단할 수 없는 프레임
+
+    cross = (v1x * v2y - v1y * v2x) / (v1_len * v2_len)  # 정규화된 외적 = sin(사잇각)
+
+    if abs(cross) < EDGE_SIN_THRESHOLD:
         return "edge"  # 손날
 
+    # [수정] front/back 부호가 실제와 반대로 나와서(손등을 손바닥으로 오판정) 뒤집음
     if handedness == "Right":
-        return "front" if cross < 0 else "back"
+        return "back" if cross < 0 else "front"
     else:
-        return "front" if cross > 0 else "back"
+        return "back" if cross > 0 else "front"
+
+
+# ── 엄지척(예)/엄지다운(아니오) 판별 함수 ──────────────────
+def get_thumb_updown(landmarks, center_y):
+    """
+    검지~새끼 4개 손가락이 전부 말려있는(주먹) 상태에서, 엄지 끝이 손바닥 중심보다
+    충분히 위/아래에 있으면 "up"(엄지척=예) / "down"(엄지다운=아니오)으로 판정.
+    - 손가락이 말렸는지는 [손끝-손목 거리] < [PIP 관절-손목 거리]로 판단
+      (펴져 있으면 손끝이 손목에서 제일 멀고, 말리면 PIP보다 손목에 가까워짐)
+    """
+    wrist = landmarks[0]
+    for mcp_i, pip_i, tip_i in FIST_FINGERS:
+        tip_to_wrist = ((landmarks[tip_i].x - wrist.x) ** 2 + (landmarks[tip_i].y - wrist.y) ** 2) ** 0.5
+        pip_to_wrist = ((landmarks[pip_i].x - wrist.x) ** 2 + (landmarks[pip_i].y - wrist.y) ** 2) ** 0.5
+        if tip_to_wrist >= pip_to_wrist:
+            return None  # 손가락 하나라도 펴져 있으면 주먹이 아님
+
+    thumb_tip = landmarks[4]
+    if thumb_tip.y < center_y - THUMB_UPDOWN_Y_MARGIN:
+        return "up"
+    if thumb_tip.y > center_y + THUMB_UPDOWN_Y_MARGIN:
+        return "down"
+    return None  # 주먹은 맞는데 엄지가 옆으로 뻗어있는 등 애매한 경우
+
+
+# ── 휠 스크롤 자세 판별 함수 ────────────────────────────────
+def is_wheel_pose(landmarks):
+    """약지/새끼는 말리고 중지는 펴져 있는지 판정 (검지/엄지 위치는 상관 안 함)"""
+    wrist = landmarks[0]
+    for mcp_i, pip_i, tip_i in WHEEL_CURL_FINGERS:
+        tip_to_wrist = ((landmarks[tip_i].x - wrist.x) ** 2 + (landmarks[tip_i].y - wrist.y) ** 2) ** 0.5
+        pip_to_wrist = ((landmarks[pip_i].x - wrist.x) ** 2 + (landmarks[pip_i].y - wrist.y) ** 2) ** 0.5
+        if tip_to_wrist >= pip_to_wrist:
+            return False  # 약지/새끼 중 하나라도 펴져 있으면 아님
+
+    middle_tip_to_wrist = ((landmarks[12].x - wrist.x) ** 2 + (landmarks[12].y - wrist.y) ** 2) ** 0.5
+    middle_pip_to_wrist = ((landmarks[10].x - wrist.x) ** 2 + (landmarks[10].y - wrist.y) ** 2) ** 0.5
+    return middle_tip_to_wrist > middle_pip_to_wrist  # 중지는 펴져 있어야 함
 
 
 # ── 카메라 입력 모듈 메인 클래스 ─────────────────────────
@@ -172,14 +292,40 @@ class CameraModule:
         self._hand_y_history = deque(maxlen=200)  # 시간 기준으로 trim하므로 maxlen은 안전장치용 상한일 뿐
         self._last_swipe_time = 0.0
 
+        # [추가] 손날+스와이프다운(닫기 확인) 인식률 개선용 - 최근에 손날이 잡힌 시각 기억
+        self._last_edge_time = 0.0
+
         # [추가] 화면에 계속 표시할 마지막 상태 텍스트 (다음 동작 인식 전까지 유지)
         self._eye_display_text  = None   # ("BLINK!" / "LONG BLINK!", color)
         self._hand_display_text = None   # ("SWIPE UP" / "SWIPE DOWN", color)
 
-        # [추가] 핀치(엄지+검지 집기)로 창 드래그하는 기능용 상태
-        self._drag_hwnd   = None          # 지금 잡고 있는 창 핸들 (없으면 None)
-        self._drag_offset = (0.0, 0.0)    # 잡은 지점 - 창 좌상단 사이 오프셋 (화면 좌표계)
+        # [비활성화] 핀치로 창을 SetWindowPos로 직접 옮기던 예전 방식 - 이제 검지가 실제
+        # 마우스 커서이므로, 핀치는 실제 좌클릭(마우스 다운/업)으로 대체함
+        # self._drag_hwnd   = None
+        # self._drag_offset = (0.0, 0.0)
         self._screen_w, self._screen_h = windowcontrol.get_screen_size()  # 손 좌표 → 화면 좌표 매핑용
+
+        # [추가] 검지 손가락으로 마우스 커서를 조작하는 기능용 - EMA 스무딩 상태
+        self._cursor_smooth_x = None
+        self._cursor_smooth_y = None
+
+        # [추가] 핀치(엄지+검지) = 실제 좌클릭 - 지금 마우스 버튼을 누르고 있는 상태인지
+        self._left_button_down = False
+
+        # [수정] 우클릭 제스처를 검지+중지 겹침(손날 자세와 충돌) 대신 엄지를 손바닥
+        # 중심 쪽으로 넣는 동작으로 변경. rising edge(넣는 순간 1회)만 발동하도록 상태 기억
+        self._thumb_tucked = False
+
+        # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - rising edge(붙는 순간 1회) 상태 기억
+        self._pinch_middle_active = False
+
+        # [추가] 엄지척/엄지다운 - 짧은 전환 자세로 오인식되지 않도록 유지 시간 추적
+        self._thumb_updown_candidate       = None  # 지금 후보로 잡힌 상태 ("up"/"down"/None)
+        self._thumb_updown_candidate_since = None  # 후보 상태가 시작된 시각
+
+        # [추가] 휠 스크롤 상태 - 중지 끝이 중지 중간관절(PIP) 높이까지 내려왔었는지
+        self._wheel_engaged        = False
+        self._last_wheel_tick_time = 0.0
 
         # 결과 딕셔너리 (외부에서 읽는 곳)
         self.result = {
@@ -192,7 +338,11 @@ class CameraModule:
             "hand_orientation": None,  # [추가] "front" / "back" / "edge"
             "close_request"  : False,  # [수정] 손날+스와이프다운 → 닫기 확인 요청 (예/아니오로 최종 결정)
             "hands_together" : False,  # [추가] 양손이 겹쳐졌는지 (박수 보조 판정용)
-            "window_drag"    : False,  # [추가] 핀치로 창을 잡아 옮기는 중인지
+            "left_click"     : False,  # [추가] 핀치(엄지+검지) - 지금 마우스 왼쪽 버튼을 누르고 있는지
+            "right_click"    : False,  # [추가] 엄지를 손 중앙으로 넣기 - 이번 프레임에 우클릭 발생했는지
+            "thumbs_up"      : False,  # [추가] 주먹+엄지 위 = 예
+            "thumbs_down"    : False,  # [추가] 주먹+엄지 아래 = 아니오
+            "pinch_middle"   : False,  # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - 이번 프레임에 발생했는지
 
             # 눈 깜빡임
             "blink"          : False,  # 이번 프레임에 깜빡임 발생 여부
@@ -258,43 +408,169 @@ class CameraModule:
         swipe_down = False
         orientation = None
         close_request = False  # [추가] 손날+스와이프다운 → 닫기 확인 요청 (실제 닫기는 main.py에서)
+        right_click_event = False  # [추가] 이번 프레임에 우클릭 제스처가 확정됐는지
+        thumbs_up   = False  # [추가] 주먹+엄지 위 = 예
+        thumbs_down = False  # [추가] 주먹+엄지 아래 = 아니오
+        pinch_middle_event = False  # [추가] 이번 프레임에 커스텀 슬롯 1(엄지+중지)이 발생했는지
         if chosen_landmarks is not None:
-            # [추가] 핀치(엄지 4번 + 검지 8번 집기) 판정 - 화면 속 창을 잡아서 옮기는 기능
-            thumb_tip = chosen_landmarks[4]
-            index_tip = chosen_landmarks[8]
-            pinch_dist = ((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2) ** 0.5
-            pinch_x = (thumb_tip.x + index_tip.x) / 2.0
-            pinch_y = (thumb_tip.y + index_tip.y) / 2.0
-            # 프레임이 거울 모드로 좌우반전되어 있어(cv.flip), 정규화 좌표를 그대로 화면 좌표에
-            # 곱하면 미리보기 화면에서 보이는 손 위치와 동일한 감각으로 화면을 가리키게 됨
-            screen_x = pinch_x * self._screen_w
-            screen_y = pinch_y * self._screen_h
+            thumb_tip  = chosen_landmarks[4]
+            index_tip  = chosen_landmarks[8]
+            middle_tip = chosen_landmarks[12]  # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기)용
 
-            px, py = int(pinch_x * w), int(pinch_y * h)
-            pinch_color = (0, 255, 255) if self._drag_hwnd is None else (0, 165, 255)
-            cv.circle(frame_vis, (px, py), 10, pinch_color, 2)
+            # [수정] 손목+4개 MCP 관절(0,5,9,13,17) 평균 = 손바닥 중심점.
+            # 커서 기준점을 검지 끝에서 이 손바닥 중심점으로 바꿈 - 검지 끝을 기준으로 하면
+            # 클릭하려고 엄지-검지를 붙이는 마지막 순간에 검지 끝 자체가 움직여서 커서가
+            # 목표 지점에서 벗어나는 문제가 있었음. 손바닥 중심은 핀치 동작에 거의 영향을
+            # 안 받아서 클릭 순간에도 커서가 안정적으로 유지됨.
+            center_x = float(np.mean([chosen_landmarks[i].x for i in HAND_CENTER_INDICES]))
+            center_y = float(np.mean([chosen_landmarks[i].y for i in HAND_CENTER_INDICES]))
 
-            if self._drag_hwnd is None:
-                if pinch_dist < PINCH_ON_DIST:
-                    hwnd = windowcontrol.get_window_at_point(int(screen_x), int(screen_y))
-                    if hwnd:
-                        left, top, _, _ = windowcontrol.get_window_rect(hwnd)
-                        self._drag_hwnd    = hwnd
-                        self._drag_offset  = (screen_x - left, screen_y - top)
-                        self._hand_display_text = ("WINDOW GRABBED", (0, 255, 255))
+            # [수정] 손 방향(orientation)을 여기서 먼저 계산해둠. 손날 자세는 손날을 만들면서
+            # 엄지를 검지/손바닥중심/중지 쪽에 가깝게 붙이게 되는 경우가 많아서, 그대로 두면
+            # 손날을 하는 동시에 좌클릭/우클릭/커스텀슬롯이 같이 발동하는 문제가 있었음.
+            # 그래서 orientation=="edge"인 동안은 엄지 기반 클릭류 제스처를 아예 판정하지 않음
+            orientation = get_hand_orientation(chosen_landmarks, hand_side)
+            if orientation == "edge":
+                self._last_edge_time = time.time()  # [추가] 손날+스와이프 인식률 개선용 기록
+
+            # [추가] 휠 스크롤 자세(약지+새끼 말기, 중지는 폄)인지 미리 판정
+            wheel_pose = is_wheel_pose(chosen_landmarks)
+
+            # [추가] 엄지척(예)/엄지다운(아니오) - 주먹 쥔 상태에서 엄지 방향으로 판정
+            # (손날 자세에서는 판정하지 않음)
+            # [수정] 엄지다운을 하려고 손을 움직이다가 잠깐 엄지업처럼 보이는 전환 자세를
+            # 거치면서 "예"가 먼저 오인식되는 문제가 있어서, THUMB_UPDOWN_HOLD_SEC 이상
+            # 같은 상태가 유지돼야만 확정하도록 함
+            if orientation != "edge":
+                thumb_updown = get_thumb_updown(chosen_landmarks, center_y)
+                if thumb_updown != self._thumb_updown_candidate:
+                    self._thumb_updown_candidate       = thumb_updown
+                    # [수정] thumb_updown이 None인 채로 계속 유지되면(주먹 안 쥔 상태)
+                    # 위 조건이 매번 "None != None"(False)이라 걸리지 않아 _since가 영영
+                    # None으로 남고, 그 상태에서 아래 time.time() - None 연산이 터졌었음.
+                    # thumb_updown이 None이면 유지 시간을 잴 필요가 없으니 아예 None으로 둠
+                    self._thumb_updown_candidate_since = time.time() if thumb_updown is not None else None
+
+                if thumb_updown is not None and self._thumb_updown_candidate_since is not None:
+                    held_sec = time.time() - self._thumb_updown_candidate_since
+                    if held_sec >= THUMB_UPDOWN_HOLD_SEC:
+                        if thumb_updown == "up":
+                            thumbs_up = True
+                            self._hand_display_text = ("THUMBS UP (YES)", (0, 255, 0))
+                        elif thumb_updown == "down":
+                            thumbs_down = True
+                            self._hand_display_text = ("THUMBS DOWN (NO)", (0, 0, 255))
+                    else:
+                        # [추가] 확정 전까지 얼마나 유지됐는지 화면에 표시해서 타이밍을 가늠하기 쉽게 함
+                        cv.putText(frame_vis, f"HOLD {held_sec:.1f}/{THUMB_UPDOWN_HOLD_SEC:.0f}s ({thumb_updown})",
+                                   (10, 180), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 200), 2)
             else:
-                if pinch_dist < PINCH_OFF_DIST and windowcontrol.is_window_valid(self._drag_hwnd):
-                    off_x, off_y = self._drag_offset
-                    windowcontrol.move_window_to(self._drag_hwnd, screen_x - off_x, screen_y - off_y)
-                else:
-                    self._drag_hwnd = None
-                    self._hand_display_text = ("WINDOW RELEASED", (0, 200, 0))
+                self._thumb_updown_candidate       = None
+                self._thumb_updown_candidate_since = None
 
-            # [수정] 창을 드래그하는 중에는 스와이프/손날 제스처를 판정하지 않음
+            # [수정] 프레임 전체(0~1) 대신 중앙의 좁은 영역(CURSOR_ACTIVE_MARGIN~1-MARGIN)만
+            # 화면 전체로 매핑해서, 손을 조금만 움직여도 커서가 크게 움직이도록 감도를 높임
+            active_x = (center_x - CURSOR_ACTIVE_MARGIN) / (1 - 2 * CURSOR_ACTIVE_MARGIN)
+            active_y = (center_y - CURSOR_ACTIVE_MARGIN) / (1 - 2 * CURSOR_ACTIVE_MARGIN)
+            active_x = min(max(active_x, 0.0), 1.0)  # 화면 밖으로 안 나가게 클램프
+            active_y = min(max(active_y, 0.0), 1.0)
+
+            # 랜드마크 좌표가 프레임 단위로 미세하게 떨리는 걸 그대로 커서에 반영하면
+            # 마우스가 계속 떨려서 못 쓰는 수준이 되므로, EMA(지수이동평균)로 부드럽게 함
+            raw_cursor_x = active_x * self._screen_w
+            raw_cursor_y = active_y * self._screen_h
+            if self._cursor_smooth_x is None:
+                self._cursor_smooth_x, self._cursor_smooth_y = raw_cursor_x, raw_cursor_y
+            else:
+                self._cursor_smooth_x = (self._cursor_smooth_x * CURSOR_SMOOTHING +
+                                          raw_cursor_x * (1 - CURSOR_SMOOTHING))
+                self._cursor_smooth_y = (self._cursor_smooth_y * CURSOR_SMOOTHING +
+                                          raw_cursor_y * (1 - CURSOR_SMOOTHING))
+            windowcontrol.move_cursor_to(self._cursor_smooth_x, self._cursor_smooth_y)
+
+            # 시각화: 커서 기준점(손바닥 중심)을 매 프레임 표시
+            cx, cy = int(center_x * w), int(center_y * h)
+            cv.circle(frame_vis, (cx, cy), 5, (255, 200, 0), -1)
+
+            # [수정] 엄지 기반 클릭류(좌클릭/우클릭/커스텀슬롯1)는 손날 자세가 아닐 때만 판정.
+            # 휠 자세(약지/새끼만 말기)는 엄지 위치와 무관해서(검지도 자유로움) 클릭류와
+            # 우연히 겹칠 위험이 낮아 배타 처리를 뺐음 - 자연스럽게 같이 판정됨
+            if orientation != "edge":
+                # [수정] 핀치(엄지+검지) = 실제 마우스 왼쪽 버튼. SetWindowPos로 직접 창을 옮기던
+                # 예전 방식 대신 진짜 마우스 다운/업 이벤트를 보내서 OS가 알아서 처리하게 함
+                # (제목표시줄을 잡으면 창 드래그, 아이콘/버튼 위면 클릭 등 자연스럽게 다 됨)
+                pinch_dist = ((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2) ** 0.5
+                px, py = int((thumb_tip.x + index_tip.x) / 2.0 * w), int((thumb_tip.y + index_tip.y) / 2.0 * h)
+                pinch_color = (0, 165, 255) if self._left_button_down else (0, 255, 255)
+                cv.circle(frame_vis, (px, py), 10, pinch_color, 2)
+
+                if not self._left_button_down and pinch_dist < PINCH_ON_DIST:
+                    windowcontrol.mouse_left_down()
+                    self._left_button_down = True
+                    self._hand_display_text = ("LEFT CLICK: DOWN", (0, 255, 255))
+                elif self._left_button_down and pinch_dist > PINCH_OFF_DIST:
+                    windowcontrol.mouse_left_up()
+                    self._left_button_down = False
+                    self._hand_display_text = ("LEFT CLICK: UP", (0, 200, 0))
+
+                # [수정] 엄지를 손바닥 중심 쪽으로 넣으면 우클릭(넣는 순간 1회만 발동 - rising edge)
+                thumb_center_dist = ((thumb_tip.x - center_x) ** 2 + (thumb_tip.y - center_y) ** 2) ** 0.5
+                thumb_tucked_now = thumb_center_dist < THUMB_TUCK_DIST
+                if thumb_tucked_now and not self._thumb_tucked:
+                    windowcontrol.mouse_right_click()
+                    right_click_event = True
+                    self._hand_display_text = ("RIGHT CLICK", (255, 0, 255))
+                self._thumb_tucked = thumb_tucked_now
+
+                # [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (붙는 순간 1회만 발동 - rising edge)
+                # 실제 동작은 여기서 정하지 않고 main.py가 commandmodule을 통해 결정함
+                # (commands.json에 "pinch_middle"로 등록된 명령이 있으면 실행, 없으면 아무 것도 안 함)
+                thumb_middle_dist = ((thumb_tip.x - middle_tip.x) ** 2 + (thumb_tip.y - middle_tip.y) ** 2) ** 0.5
+                pinch_middle_now = thumb_middle_dist < PINCH_MIDDLE_DIST
+                if pinch_middle_now and not self._pinch_middle_active:
+                    pinch_middle_event = True
+                    self._hand_display_text = ("PINCH: MIDDLE", (255, 165, 0))
+                self._pinch_middle_active = pinch_middle_now
+            else:
+                # [추가] 손날 자세 도중엔 클릭류 판정을 건너뛰지만, 혹시 좌클릭
+                # 버튼이 눌린 채로 손날 자세에 들어갔다면 눌린 채로 고정되지 않게 놓아줌 (안전장치)
+                if self._left_button_down:
+                    windowcontrol.mouse_left_up()
+                    self._left_button_down = False
+                self._thumb_tucked = False
+                self._pinch_middle_active = False
+
+            # [수정] 휠 스크롤 자세 (약지+새끼 말기, 중지는 절반쯤 굽힘 = 레디)
+            # 중지 끝(TIP,12)이 중지 중간관절(PIP,10) 높이까지 내려오면 "활성화".
+            # 활성화된 뒤로는 중지 끝이 중간관절보다 위=휠 업, 아래(손바닥 쪽)=휠 다운을
+            # 일정 간격으로 반복 발생. TIP/PIP 둘 다 이 손 자체의 관절이라 손 크기나
+            # 카메라와의 거리와 무관하게 항상 같은 비율로 동작함
+            if wheel_pose:
+                middle_pip = chosen_landmarks[10]
+                if not self._wheel_engaged:
+                    if middle_tip.y >= middle_pip.y:
+                        self._wheel_engaged = True
+                        self._hand_display_text = ("WHEEL: READY", (200, 200, 0))
+                else:
+                    now_wheel = time.time()
+                    if now_wheel - self._last_wheel_tick_time > WHEEL_TICK_INTERVAL_SEC:
+                        if middle_tip.y < middle_pip.y - WHEEL_DIR_MARGIN:
+                            windowcontrol.mouse_scroll(1)
+                            self._last_wheel_tick_time = now_wheel
+                            self._hand_display_text = ("WHEEL UP", (0, 255, 255))
+                        elif middle_tip.y > middle_pip.y + WHEEL_DIR_MARGIN:
+                            windowcontrol.mouse_scroll(-1)
+                            self._last_wheel_tick_time = now_wheel
+                            self._hand_display_text = ("WHEEL DOWN", (255, 100, 0))
+                        else:
+                            self._hand_display_text = ("WHEEL: READY", (200, 200, 0))
+            else:
+                self._wheel_engaged = False
+
+            # [수정] 왼쪽 버튼을 누르고 있는(드래그) 동안에는 스와이프/손날 제스처를 판정하지 않음
             # (손을 크게 움직이는 드래그 동작이 스와이프로 오인식되는 것 방지)
-            if self._drag_hwnd is None:
-                center_x = float(np.mean([chosen_landmarks[i].x for i in HAND_CENTER_INDICES]))
-                center_y = float(np.mean([chosen_landmarks[i].y for i in HAND_CENTER_INDICES]))
+            # center_x/center_y는 위에서 커서 매핑용으로 이미 계산해둔 걸 그대로 재사용
+            if not self._left_button_down:
                 now = time.time()
                 self._hand_y_history.append((now, center_y))
 
@@ -316,14 +592,12 @@ class CameraModule:
                             self._last_swipe_time = now
                             self._hand_y_history.clear()
 
-                # [추가] 손바닥/손등/손날 판별
-                orientation = get_hand_orientation(chosen_landmarks, hand_side)
+                # orientation은 위에서 이미 계산해둔 걸 재사용 (클릭류 제스처 게이팅에도 씀)
 
-                # 시각화: 손 중심점 + 방향 텍스트는 매 프레임
-                cx, cy = int(center_x * w), int(center_y * h)
-                cv.circle(frame_vis, (cx, cy), 5, (255, 200, 0), -1)
-                cv.putText(frame_vis, f"hand:{orientation}", (10, 150),
-                           cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 0), 2)
+                # 시각화: 방향 텍스트(한글) - 중심점은 위에서 이미 매 프레임 그려둠
+                orientation_label = ORIENTATION_KO.get(orientation, "판정 불가")
+                put_korean_text(frame_vis, f"손 방향: {orientation_label}", (10, 145),
+                                 font_size=24, color=(255, 200, 0))
 
                 if swipe_up:
                     self._hand_display_text = ("SWIPE UP", (255, 0, 0))  # [추가]
@@ -337,17 +611,31 @@ class CameraModule:
                 # main.py에서 commandmodule을 거쳐 처리하도록 옮김 - 사용자가 나중에
                 # 이 제스처에 다른 명령을 등록해도 여기서 하드코딩된 동작이 그대로
                 # 실행되어버리는 걸 막기 위함 (인식/실행 계층 분리 유지)
+                # [수정] "정확히 이 프레임"에 손날이어야만 인정하면, 손을 빠르게 내리치는
+                # 동작 중 프레임 사이에서 각도가 흔들려 손날 판정을 놓치기 쉬움. 최근
+                # EDGE_RECENT_SEC 안에 손날이 한 번이라도 잡혔으면 인정해서 여유를 줌
                 if swipe_down:
-                    if orientation == "edge":
+                    if orientation == "edge" or time.time() - self._last_edge_time < EDGE_RECENT_SEC:
                         close_request = True
                         self._hand_display_text = ("CLOSE? say YES/NO", (0, 0, 255))
             else:
-                self._hand_y_history.clear()  # 드래그 중엔 스와이프 히스토리 오염 방지
+                self._hand_y_history.clear()  # 왼쪽 버튼 누른(드래그) 중엔 스와이프 히스토리 오염 방지
         else:
             self._hand_y_history.clear()  # 손이 사라지면 히스토리 초기화
-            self._drag_hwnd = None        # [추가] 손이 사라지면 드래그도 해제
+            self._thumb_tucked = False    # [수정] 우클릭 rising edge 상태도 리셋
+            self._pinch_middle_active = False  # [추가] 커스텀 슬롯 1 rising edge 상태도 리셋
+            self._thumb_updown_candidate       = None  # [추가] 엄지척/다운 유지 시간 추적도 리셋
+            self._thumb_updown_candidate_since = None
+            self._wheel_engaged = False  # [추가] 휠 스크롤 활성화 상태도 리셋
+            if self._left_button_down:    # [추가] 손이 사라졌는데 버튼이 눌린 채로 고정되지 않게 놓아줌
+                windowcontrol.mouse_left_up()
+                self._left_button_down = False
+            # [추가] 손이 사라졌다 다시 나타나면 예전 위치에서 스무딩되며 슬라이드해오는
+            # 대신 새 위치로 바로 스냅하도록 커서 스무딩 상태 초기화
+            self._cursor_smooth_x = None
+            self._cursor_smooth_y = None
 
-        # [추가] 마지막으로 인식된 스와이프/닫기 텍스트를 계속 표시
+        # [추가] 마지막으로 인식된 스와이프/닫기/클릭 텍스트를 계속 표시
         if self._hand_display_text is not None:
             text, color = self._hand_display_text
             cv.putText(frame_vis, text, (10, 120),
@@ -362,16 +650,22 @@ class CameraModule:
             self.result["hand_orientation"] = orientation  # [추가]
             self.result["close_request"]    = close_request  # [수정] 손날+다운 → 닫기 확인 요청
             self.result["hands_together"]   = hands_together  # [추가] 양손 겹침 (박수 보조 판정용)
-            self.result["window_drag"]      = self._drag_hwnd is not None  # [추가] 핀치로 창을 잡아 옮기는 중인지
+            self.result["left_click"]       = self._left_button_down  # [추가] 핀치로 왼쪽 버튼을 누르고 있는지
+            self.result["right_click"]      = right_click_event  # [추가] 이번 프레임에 우클릭 발생했는지
+            self.result["thumbs_up"]        = thumbs_up    # [추가] 주먹+엄지 위 = 예
+            self.result["thumbs_down"]      = thumbs_down  # [추가] 주먹+엄지 아래 = 아니오
+            self.result["pinch_middle"]     = pinch_middle_event  # [추가] 커스텀 슬롯 1(엄지+중지)
 
     # ── 내부: 눈 깜빡임 처리 ─────────────────────────────
+    # [비활성화] 눈 관련 기능은 손 쪽 기능이 어느 정도 정리될 때까지 뒤로 미룸.
+    # 예/아니오도 손 제스처로 옮길 예정이라 블링크 판정은 통째로 꺼두고 EAR만 확인.
     def _process_blink(self, frame_rgb, frame_vis):
         h, w  = frame_vis.shape[:2]
         res   = self.face_mesh.process(frame_rgb)
         blink = False
         long_blink = False
-        double_blink = False  # [추가]
-        eye_closed = False  # [수정] 지금 눈을 감고 있는지 실시간 상태 추가
+        double_blink = False
+        eye_closed = False  # 지금 눈을 감고 있는지 (실시간)
         ear   = 0.0
 
         if res.multi_face_landmarks:
@@ -379,98 +673,81 @@ class CameraModule:
             left_ear  = get_ear(lm, LEFT_EYE,  w, h)
             right_ear = get_ear(lm, RIGHT_EYE, w, h)
             ear       = (left_ear + right_ear) / 2.0
+            eye_closed = ear < EAR_THRESHOLD  # 블링크 판정 없이 EAR로만 실시간 갱신
 
-            # [임시] 눈 인식 확인용 - 눈 랜드마크 위치에 점 표시
+            # 눈 인식 확인용 - 눈 랜드마크 위치에 점 표시
             for idx in LEFT_EYE + RIGHT_EYE:
                 px, py = int(lm[idx].x * w), int(lm[idx].y * h)
                 cv.circle(frame_vis, (px, py), 2, (0, 255, 255), -1)
 
-            # [수정] 더블 블링크로 이어지지 않고 대기 시간(DOUBLE_BLINK_WINDOW_SEC)이 지나면
-            # 그제서야 단일 블링크로 확정. (매 프레임 확인 - 눈을 뜨고 있는 동안에도 시간초과를 감지해야 함)
-            # 이전엔 첫 깜빡임이 눈을 뜨는 즉시 blink=True로 확정돼서, 더블 블링크를 하려고 해도
-            # 첫 번째 깜빡임에서 바로 '예'로 인식되어 창닫기 확인 중 의도치 않게 창이 닫히는 문제가 있었음.
-            if (self._last_blink_time is not None and
-                    time.time() - self._last_blink_time > DOUBLE_BLINK_WINDOW_SEC):
-                blink = True
-                self._last_blink_time = None
+            # if (self._last_blink_time is not None and
+            #         time.time() - self._last_blink_time > DOUBLE_BLINK_WINDOW_SEC):
+            #     blink = True
+            #     self._last_blink_time = None
+            #
+            # if ear < EAR_THRESHOLD:
+            #     if self._eye_close_start is None:
+            #         self._eye_close_start = time.time()
+            #
+            #     close_duration = time.time() - self._eye_close_start
+            #     if close_duration >= LONG_BLINK_SEC:
+            #         long_blink = True
+            #         if not self._long_blink_triggered:
+            #             windowcontrol.turn_off_monitor()
+            #             self._long_blink_triggered = True
+            #
+            #     if close_duration >= EYE_BLINK_IGNORE_SEC:
+            #         self._eye_streak_start     = None
+            #         self._eye_streak_triggered = False
+            # else:
+            #     if self._eye_close_start is not None:
+            #         close_duration = time.time() - self._eye_close_start
+            #         if MIN_BLINK_SEC <= close_duration < LONG_BLINK_SEC:
+            #             now = time.time()
+            #             if (self._last_blink_time is not None and
+            #                     now - self._last_blink_time <= DOUBLE_BLINK_WINDOW_SEC):
+            #                 double_blink = True
+            #                 self._last_blink_time = None
+            #             else:
+            #                 self._last_blink_time = now
+            #     self._eye_close_start      = None
+            #     self._long_blink_triggered = False
+            #
+            #     if self._eye_streak_start is None:
+            #         self._eye_streak_start = time.time()
+            #     streak_elapsed = time.time() - self._eye_streak_start
+            #     if streak_elapsed >= EYE_STREAK_SEC and not self._eye_streak_triggered:
+            #         windowcontrol.turn_on_monitor()
+            #         self._eye_streak_triggered = True
+            #     elif not self._eye_streak_triggered:
+            #         cv.putText(frame_vis, f"EYE STREAK {streak_elapsed:.1f}/{EYE_STREAK_SEC:.0f}s",
+            #                    (10, 210), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 0), 2)
 
-            if ear < EAR_THRESHOLD:
-                # 눈 감기 시작 시간 기록
-                if self._eye_close_start is None:
-                    self._eye_close_start = time.time()
-                eye_closed = True  # [수정] 감고 있는 동안 매 프레임 True로 표시
-
-                # [수정] 눈을 다시 뜨기 전에도 즉시 long_blink 판정
-                # (기존엔 눈을 떠야만 길게 감았는지 알 수 있어서 반응이 느렸음)
-                close_duration = time.time() - self._eye_close_start
-                if close_duration >= LONG_BLINK_SEC:
-                    long_blink = True  # [수정] 감고 있는 도중 바로 켜짐
-                    # [추가] 롱블링크 1회당 한 번만 화면 끄기 실행
-                    if not self._long_blink_triggered:
-                        windowcontrol.turn_off_monitor()
-                        self._long_blink_triggered = True
-
-                # [추가] 짧은 자연스러운 깜빡임(0.4초 미만)은 무시하고,
-                # 그보다 길게 감으면 의도적인 동작으로 보고 눈 인식 스트릭을 끊음
-                if close_duration >= EYE_BLINK_IGNORE_SEC:
-                    self._eye_streak_start     = None
-                    self._eye_streak_triggered = False
-            else:
-                # [수정] 프레임수(BLINK_FRAMES) 대신 시간(MIN_BLINK_SEC) 기준으로 노이즈 필터링
-                # → FPS가 20~40으로 변해도 동일하게 동작함
-                if self._eye_close_start is not None:
-                    close_duration = time.time() - self._eye_close_start
-                    # long_blink는 위에서 이미 실시간으로 처리했으므로 여기서는 짧은 깜빡임만 판정
-                    if MIN_BLINK_SEC <= close_duration < LONG_BLINK_SEC:
-                        # [수정] 짧은 깜빡임이 오면 바로 blink=True로 확정하지 않고 일단 "대기"만 함
-                        # (단일인지 더블의 첫 번째인지는 아직 알 수 없음 - 위쪽의 시간초과 체크에서 확정됨)
-                        now = time.time()
-                        if (self._last_blink_time is not None and
-                                now - self._last_blink_time <= DOUBLE_BLINK_WINDOW_SEC):
-                            double_blink = True   # 대기 중이던 첫 깜빡임 + 지금 이 깜빡임 = 더블 확정
-                            self._last_blink_time = None
-                        else:
-                            self._last_blink_time = now   # 대기 시작 (다음 프레임들에서 시간초과 시 단일로 확정)
-                self._eye_close_start      = None
-                self._long_blink_triggered = False  # [추가] 눈을 떴으니 다음 롱블링크는 다시 트리거 가능
-
-                # [추가] 눈 인식 스트릭 진행 - 5초 이상 계속 인식되면 화면 켜기
-                if self._eye_streak_start is None:
-                    self._eye_streak_start = time.time()
-                streak_elapsed = time.time() - self._eye_streak_start
-                if streak_elapsed >= EYE_STREAK_SEC and not self._eye_streak_triggered:
-                    windowcontrol.turn_on_monitor()
-                    self._eye_streak_triggered = True
-                elif not self._eye_streak_triggered:
-                    cv.putText(frame_vis, f"EYE STREAK {streak_elapsed:.1f}/{EYE_STREAK_SEC:.0f}s",
-                               (10, 210), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 0), 2)
-
-            # EAR 시각화
+            # EAR 시각화 (이건 계속 켜둠 - 눈 움직임 확인용)
             color = (0, 0, 255) if ear < EAR_THRESHOLD else (0, 255, 0)
             cv.putText(frame_vis, f"EAR:{ear:.2f}", (10, 60),
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-            if blink:
-                self._eye_display_text = ("BLINK!", (0, 0, 255))  # [추가]
-            if long_blink:
-                self._eye_display_text = ("LONG BLINK!", (0, 165, 255))  # [추가]
-            if double_blink:
-                self._eye_display_text = ("DOUBLE BLINK!", (255, 0, 255))  # [추가]
-        else:
-            # [추가] 얼굴이 안 보이면 눈 인식 스트릭도 신뢰할 수 없으니 리셋
-            self._eye_streak_start     = None
-            self._eye_streak_triggered = False
+            # if blink:
+            #     self._eye_display_text = ("BLINK!", (0, 0, 255))
+            # if long_blink:
+            #     self._eye_display_text = ("LONG BLINK!", (0, 165, 255))
+            # if double_blink:
+            #     self._eye_display_text = ("DOUBLE BLINK!", (255, 0, 255))
+        # else:
+        #     self._eye_streak_start     = None
+        #     self._eye_streak_triggered = False
 
-        # [추가] 마지막으로 인식된 깜빡임 텍스트를 다음 동작 전까지 계속 표시
-        if self._eye_display_text is not None:
-            text, color = self._eye_display_text
-            cv.putText(frame_vis, text, (10, 90),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+        # [비활성화] 블링크 텍스트 표시 - 위 판정 자체를 꺼뒀으므로 함께 꺼둠
+        # if self._eye_display_text is not None:
+        #     text, color = self._eye_display_text
+        #     cv.putText(frame_vis, text, (10, 90),
+        #                cv.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         with self._lock:
             self.result["blink"]        = blink
             self.result["long_blink"]   = long_blink
-            self.result["double_blink"] = double_blink  # [추가]
-            self.result["eye_closed"]   = eye_closed  # [수정] 실시간 눈감김 상태 저장
+            self.result["double_blink"] = double_blink
+            self.result["eye_closed"]   = eye_closed
             self.result["ear"]          = ear
 
     # ── 메인 루프 ─────────────────────────────────────────

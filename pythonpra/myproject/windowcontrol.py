@@ -88,6 +88,35 @@ def get_screen_size():
     return win32api.GetSystemMetrics(win32con.SM_CXSCREEN), win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
 
 
+# [추가] 검지 손가락으로 실제 OS 마우스 커서를 조작하는 기능용
+def move_cursor_to(x, y):
+    """실제 마우스 커서를 화면 좌표 (x, y)로 이동"""
+    win32api.SetCursorPos((int(x), int(y)))
+
+
+# [추가] 핀치(엄지+검지) = 실제 좌클릭, 검지+중지 겹쳐 내리기 = 실제 우클릭
+def mouse_left_down():
+    """마우스 왼쪽 버튼을 누른 상태로 (커서 이동 중에도 유지되면 드래그처럼 동작)"""
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+
+
+def mouse_left_up():
+    """마우스 왼쪽 버튼을 뗌"""
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+
+
+def mouse_right_click():
+    """마우스 오른쪽 버튼 클릭(누르고 즉시 뗌, 1회성)"""
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+
+
+# [추가] 중지 단독 제스처로 마우스 휠 스크롤
+def mouse_scroll(ticks):
+    """휠을 ticks만큼 굴림 (양수=위로 스크롤, 음수=아래로 스크롤). 1틱 = 표준 휠 한 칸(120)"""
+    win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, int(ticks * 120), 0)
+
+
 def get_window_at_point(x, y):
     """화면 좌표 (x, y) 아래에 있는 최상위 창의 핸들을 반환. 카메라 미리보기 창은 제외."""
     hwnd = win32gui.WindowFromPoint((x, y))

@@ -52,6 +52,13 @@ def run_assistant():
     prev_swipe_up   = False
     prev_swipe_down = False
 
+    # [추가] 좌클릭(누름 상태)/우클릭(1회성 이벤트) 콘솔 로그용 이전 상태 기억
+    prev_left_click  = False
+    prev_right_click = False
+
+    # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge용 이전 상태 기억
+    prev_pinch_middle = False
+
     try:
         while cam_thread.is_alive():
             cam_res   = cam.get_result()
@@ -66,8 +73,9 @@ def run_assistant():
                 visual_clap = True
                 last_visual_clap_time = now
 
-            yes_event = cam_res["blink"] or audio_res["clap"] or visual_clap
-            no_event  = cam_res["double_blink"] or audio_res["double_clap"]
+            # [수정] 엄지척/엄지다운(손 제스처)을 예/아니오 채널에 추가
+            yes_event = cam_res["blink"] or audio_res["clap"] or visual_clap or cam_res["thumbs_up"]
+            no_event  = cam_res["double_blink"] or audio_res["double_clap"] or cam_res["thumbs_down"]
 
             # [추가] rising edge만 추출 - 신호가 계속 True로 읽혀도 딱 한 번만 반응
             yes_edge = yes_event and not prev_yes
@@ -81,14 +89,34 @@ def run_assistant():
             prev_swipe_up   = cam_res["swipe_up"]
             prev_swipe_down = cam_res["swipe_down"]
 
+            # [추가] 좌클릭 다운/업 전환, 우클릭 rising edge (콘솔 로그용)
+            # - 카메라 프레임 처리 주기보다 이 폴링 주기(0.02s)가 더 빨라서, right_click도
+            #   swipe와 마찬가지로 여기서 다시 한번 rising edge를 걸러줘야 중복 로그를 피함
+            left_click_down_edge = cam_res["left_click"] and not prev_left_click
+            left_click_up_edge   = prev_left_click and not cam_res["left_click"]
+            prev_left_click      = cam_res["left_click"]
+            right_click_edge     = cam_res["right_click"] and not prev_right_click
+            prev_right_click     = cam_res["right_click"]
+
+            # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge
+            pinch_middle_edge  = cam_res["pinch_middle"] and not prev_pinch_middle
+            prev_pinch_middle  = cam_res["pinch_middle"]
+
             # [추가] 어느 채널에서 온 신호인지 출력용으로 구분
             if cam_res["blink"]:
                 yes_source = "카메라-눈깜빡임"
+            elif cam_res["thumbs_up"]:
+                yes_source = "카메라-엄지척"
             elif visual_clap:
                 yes_source = "융합-손겹침+소리"
             else:
                 yes_source = "오디오-박수"
-            no_source = "카메라-눈더블블링크" if cam_res["double_blink"] else "오디오-더블박수"
+            if cam_res["double_blink"]:
+                no_source = "카메라-눈더블블링크"
+            elif cam_res["thumbs_down"]:
+                no_source = "카메라-엄지다운"
+            else:
+                no_source = "오디오-더블박수"
 
             if pending_close:
                 if yes_edge:
@@ -124,6 +152,23 @@ def run_assistant():
                 if not ok:
                     windowcontrol.minimize_active_window()
                 _log("제스처", f"swipe_down ({'사용자 정의' if ok else '기본 동작'})")
+
+            # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - swipe와 달리 기본 동작이 없는
+            # 순수 커스텀 슬롯이라, 등록된 명령이 없으면 아무 것도 실행하지 않고 안내만 함
+            if pinch_middle_edge:
+                ok, _ = commandmodule.execute_command("pinch_middle")
+                if ok:
+                    _log("제스처", "pinch_middle (사용자 정의)")
+                else:
+                    _log("제스처", "pinch_middle - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
+
+            # [추가] 마우스 좌/우클릭도 콘솔에 로그 (실제 클릭 자체는 cameramodule에서 이미 실행됨)
+            if left_click_down_edge:
+                _log("마우스", "좌클릭 DOWN (핀치)")
+            elif left_click_up_edge:
+                _log("마우스", "좌클릭 UP")
+            if right_click_edge:
+                _log("마우스", "우클릭 (엄지 넣기)")
 
             time.sleep(0.02)
     except KeyboardInterrupt:

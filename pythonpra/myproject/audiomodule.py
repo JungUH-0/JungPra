@@ -65,6 +65,9 @@ class AudioModule:
         return band / total
 
     # ── 내부: 마이크 콜백 (블록 단위로 호출됨) ───────────────
+    # [비활성화] 박수(클랩) 감지 로직 전체 - 지금 단계에서는 카메라(손/눈) 쪽만
+    # 테스트하기 위해 꺼둠. 로직은 지우지 않고 주석 처리만 했으니 나중에 필요하면
+    # 주석만 풀면 됨.
     def _audio_callback(self, indata, frames, time_info, status):
         mono = indata[:, 0] if indata.ndim > 1 else indata
         rms  = float(np.sqrt(np.mean(mono.astype(np.float64) ** 2)) + 1e-9)
@@ -78,28 +81,29 @@ class AudioModule:
 
         clap = False
         double_clap = False
+        is_spike = False
 
-        is_spike = rms > max(self._baseline_rms * SPIKE_RATIO, MIN_ABS_RMS)
-        if is_spike and (now - self._last_clap_time) > CLAP_COOLDOWN_SEC:
-            band_ratio = self._high_band_ratio(mono)
-            if band_ratio > BAND_RATIO_THRESHOLD:
-                self._last_clap_time = now
-
-                # 더블 클랩으로 확정되면 clap/double_clap을 배타적으로 처리
-                # (안 그러면 더블의 두 번째 탭에서 clap=True와 double_clap=True가 동시에 켜져
-                #  main.py에서 예/아니오 신호가 같은 순간에 같이 발동해버림)
-                if (self._pending_single_clap_time is not None and
-                        now - self._pending_single_clap_time <= DOUBLE_CLAP_WINDOW_SEC):
-                    double_clap = True
-                    self._pending_single_clap_time = None
-                else:
-                    clap = True
-                    self._pending_single_clap_time = now
+        # is_spike = rms > max(self._baseline_rms * SPIKE_RATIO, MIN_ABS_RMS)
+        # if is_spike and (now - self._last_clap_time) > CLAP_COOLDOWN_SEC:
+        #     band_ratio = self._high_band_ratio(mono)
+        #     if band_ratio > BAND_RATIO_THRESHOLD:
+        #         self._last_clap_time = now
+        #
+        #         # 더블 클랩으로 확정되면 clap/double_clap을 배타적으로 처리
+        #         # (안 그러면 더블의 두 번째 탭에서 clap=True와 double_clap=True가 동시에 켜져
+        #         #  main.py에서 예/아니오 신호가 같은 순간에 같이 발동해버림)
+        #         if (self._pending_single_clap_time is not None and
+        #                 now - self._pending_single_clap_time <= DOUBLE_CLAP_WINDOW_SEC):
+        #             double_clap = True
+        #             self._pending_single_clap_time = None
+        #         else:
+        #             clap = True
+        #             self._pending_single_clap_time = now
 
         with self._lock:
             self.result["clap"]        = clap
             self.result["double_clap"] = double_clap
-            self.result["spike"]       = is_spike  # [추가] 박수 판정과 무관하게 순간 음량 급증 자체를 노출
+            self.result["spike"]       = is_spike
 
     # ── 메인 루프 ─────────────────────────────────────────
     def run(self):
