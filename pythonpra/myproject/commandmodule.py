@@ -24,7 +24,20 @@ ALLOWED_ACTIONS = {
     "restore_window": [],
     "turn_off_monitor": [],
     "turn_on_monitor": [],
-    "open_app": ["target"],  # target: chrome/edge/notepad/calculator/explorer/cmd/powershell 중 하나
+    "open_app": ["target"],
+    "press_shortcut": ["target"],   # [추가] 키보드 단축키 입력
+    "press_media_key": ["target"],  # [추가] 볼륨/재생 등 미디어 키 입력
+    "open_url": ["target"],         # [추가] 화이트리스트에 등록된 사이트 열기
+}
+
+# [추가] target이 필요한 action마다 어떤 화이트리스트로 검증할지 매핑
+# (windowcontrol.py에 있는 화이트리스트를 그대로 재사용 - LLM이 만든 임의 문자열이
+#  그대로 실행되지 않도록 여기서도 한 번 더 걸러냄)
+TARGET_WHITELISTS = {
+    "open_app": windowcontrol.ALLOWED_APPS,
+    "press_shortcut": windowcontrol.ALLOWED_SHORTCUTS,
+    "press_media_key": windowcontrol.ALLOWED_MEDIA_KEYS,
+    "open_url": windowcontrol.ALLOWED_URLS,
 }
 
 SYSTEM_PROMPT = f"""너는 사용자의 자연어 명령을 아래 JSON 스키마로만 변환하는 파서다.
@@ -33,7 +46,29 @@ SYSTEM_PROMPT = f"""너는 사용자의 자연어 명령을 아래 JSON 스키�
 허용된 action과 필요한 파라미터:
 {json.dumps(ALLOWED_ACTIONS, ensure_ascii=False)}
 
-open_app의 target은 반드시 다음 중 하나여야 한다: chrome, edge, notepad, calculator, explorer, cmd, powershell
+각 action의 target으로 쓸 수 있는 값 (반드시 이 중 하나):
+- open_app: {", ".join(windowcontrol.ALLOWED_APPS.keys())}
+- press_shortcut: {", ".join(windowcontrol.ALLOWED_SHORTCUTS.keys())}
+- press_media_key: {", ".join(windowcontrol.ALLOWED_MEDIA_KEYS.keys())}
+- open_url: {", ".join(windowcontrol.ALLOWED_URLS.keys())}
+
+주의:
+- target 목록에 있는 값(예: close_tab, mute)을 action 자리에 쓰면 안 된다. action은 반드시 위 action 목록 중 하나여야 한다.
+- "음소거"/"뮤트"/"소리 꺼줘"는 press_media_key(target=mute)이지, turn_off_monitor(모니터 끄기)가 아니다.
+- "탭 닫기"는 press_shortcut(target=close_tab)이다.
+
+예시:
+사용자 명령: 탭 닫아줘
+{{"action": "press_shortcut", "target": "close_tab"}}
+
+사용자 명령: 소리 꺼줘
+{{"action": "press_media_key", "target": "mute"}}
+
+사용자 명령: 화면 꺼줘
+{{"action": "turn_off_monitor", "target": null}}
+
+사용자 명령: 유튜브 켜줘
+{{"action": "open_url", "target": "youtube"}}
 
 출력 형식(JSON만):
 {{"action": "<action 이름>", "target": "<필요시 대상, 없으면 null>"}}
@@ -82,7 +117,8 @@ def register_command(gesture_name, user_text):
 
     needed_params = ALLOWED_ACTIONS[action]
     if "target" in needed_params:
-        if not target or target.strip().lower() not in windowcontrol.ALLOWED_APPS:
+        whitelist = TARGET_WHITELISTS.get(action, {})
+        if not target or target.strip().lower() not in whitelist:
             return False, f"target을 알아듣지 못했습니다: {parsed}"
 
     commands = _load_commands()
@@ -116,6 +152,12 @@ def execute_command(gesture_name):
         windowcontrol.turn_on_monitor()
     elif action == "open_app":
         return windowcontrol.open_app(target)
+    elif action == "press_shortcut":
+        return windowcontrol.press_shortcut(target)
+    elif action == "press_media_key":
+        return windowcontrol.press_media_key(target)
+    elif action == "open_url":
+        return windowcontrol.open_url(target)
     else:
         return False, f"알 수 없는 action: {action}"
 

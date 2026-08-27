@@ -120,9 +120,13 @@ def run_assistant():
 
             if pending_close:
                 if yes_edge:
-                    windowcontrol.close_active_window()
+                    # [수정] "닫기"도 commandmodule에 등록된 사용자 정의 명령이 있으면
+                    # 그걸 실행, 없으면 기본 동작(실제 창 닫기)으로 폴백
+                    ok, _ = commandmodule.execute_command("close_confirm")
+                    if not ok:
+                        windowcontrol.close_active_window()
                     pending_close = False
-                    _log("확정", f"창 닫기 실행 ({yes_source})")
+                    _log("확정", f"{'사용자 정의 명령 실행' if ok else '창 닫기 실행'} ({yes_source})")
                 elif no_edge:
                     pending_close = False
                     _log("취소", f"창 닫기 취소 ({no_source})")

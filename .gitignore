@@ -28,3 +28,4 @@ Debug/
 Release/
 .vs/
 commands.json
+debug_log.txt

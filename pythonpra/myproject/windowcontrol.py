@@ -22,6 +22,39 @@ ALLOWED_APPS = {
     "powershell": "powershell",
 }
 
+# [추가] LLM이 해석한 "단축키 입력" 명령용 화이트리스트 (수정키, 키) 조합
+ALLOWED_SHORTCUTS = {
+    "copy":          (win32con.VK_CONTROL, ord('C')),
+    "paste":         (win32con.VK_CONTROL, ord('V')),
+    "cut":           (win32con.VK_CONTROL, ord('X')),
+    "undo":          (win32con.VK_CONTROL, ord('Z')),
+    "redo":          (win32con.VK_CONTROL, ord('Y')),
+    "save":          (win32con.VK_CONTROL, ord('S')),
+    "select_all":    (win32con.VK_CONTROL, ord('A')),
+    "new_tab":       (win32con.VK_CONTROL, ord('T')),
+    "close_tab":     (win32con.VK_CONTROL, ord('W')),
+    "switch_window": (win32con.VK_MENU, win32con.VK_TAB),
+}
+
+# [추가] LLM이 해석한 "미디어 키" 명령용 화이트리스트 (수정키 없이 단일 키 입력)
+ALLOWED_MEDIA_KEYS = {
+    "volume_up":   win32con.VK_VOLUME_UP,
+    "volume_down": win32con.VK_VOLUME_DOWN,
+    "mute":        win32con.VK_VOLUME_MUTE,
+    "play_pause":  win32con.VK_MEDIA_PLAY_PAUSE,
+    "next_track":  win32con.VK_MEDIA_NEXT_TRACK,
+    "prev_track":  win32con.VK_MEDIA_PREV_TRACK,
+}
+
+# [추가] LLM이 해석한 "사이트 열기" 명령용 화이트리스트 (임의 URL 방지 - 등록된 이름만 허용)
+ALLOWED_URLS = {
+    "youtube": "https://www.youtube.com",
+    "google":  "https://www.google.com",
+    "gmail":   "https://mail.google.com",
+    "naver":   "https://www.naver.com",
+    "github":  "https://www.github.com",
+}
+
 _last_minimized_hwnd = None  # swipe_up 복원을 위해 마지막으로 최소화한 창 기억
 
 
@@ -162,6 +195,50 @@ def open_app(name):
         return False, f"허용되지 않은 앱: {name}"
     try:
         os.startfile(exe)
+        return True, None
+    except OSError as e:
+        return False, str(e)
+
+
+# [추가] LLM이 해석한 명령("단축키 입력")을 실제로 실행하는 함수
+def press_shortcut(name):
+    """ALLOWED_SHORTCUTS 화이트리스트에 있는 단축키만 입력 (수정키+키를 눌렀다 뗌)"""
+    if not name:
+        return False, "단축키 이름이 없습니다"
+    combo = ALLOWED_SHORTCUTS.get(name.strip().lower())
+    if combo is None:
+        return False, f"허용되지 않은 단축키: {name}"
+    modifier, key = combo
+    win32api.keybd_event(modifier, 0, 0, 0)          # 수정키(Ctrl 등) 누름
+    win32api.keybd_event(key, 0, 0, 0)                # 본 키 누름
+    win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)      # 본 키 뗌
+    win32api.keybd_event(modifier, 0, win32con.KEYEVENTF_KEYUP, 0) # 수정키 뗌
+    return True, None
+
+
+# [추가] LLM이 해석한 명령("미디어 키")을 실제로 실행하는 함수
+def press_media_key(name):
+    """ALLOWED_MEDIA_KEYS 화이트리스트에 있는 미디어 키만 입력 (볼륨/재생 제어 등)"""
+    if not name:
+        return False, "미디어 키 이름이 없습니다"
+    vk = ALLOWED_MEDIA_KEYS.get(name.strip().lower())
+    if vk is None:
+        return False, f"허용되지 않은 미디어 키: {name}"
+    win32api.keybd_event(vk, 0, 0, 0)
+    win32api.keybd_event(vk, 0, win32con.KEYEVENTF_KEYUP, 0)
+    return True, None
+
+
+# [추가] LLM이 해석한 명령("사이트 열기")을 실제로 실행하는 함수
+def open_url(name):
+    """ALLOWED_URLS 화이트리스트에 있는 사이트만 기본 브라우저로 열기"""
+    if not name:
+        return False, "사이트 이름이 없습니다"
+    url = ALLOWED_URLS.get(name.strip().lower())
+    if url is None:
+        return False, f"허용되지 않은 사이트: {name}"
+    try:
+        os.startfile(url)
         return True, None
     except OSError as e:
         return False, str(e)

@@ -8,10 +8,15 @@ import cv2 as cv
 import mediapipe as mp
 import numpy as np
 import time
+import os  # [추가] 디버그 로그 파일 경로용
 import threading
 from collections import deque  # [추가] 손 위치 이동(스와이프) 추적용
 from PIL import Image, ImageDraw, ImageFont  # [추가] cv.putText는 한글을 못 그려서 한글 표시용으로 사용
 import windowcontrol  # [추가] 스와이프/손날 제스처로 창 제어
+
+# [추가] 디버그용 - 특정 이벤트가 발동한 순간, 그 직전 몇 프레임의 판정값을 파일에 남겨서
+# 나중에 확인할 수 있게 함 (개발/튜닝 끝나면 지워도 되는 임시 진단 도구)
+DEBUG_LOG_PATH = os.path.join(os.path.dirname(__file__), "debug_log.txt")
 
 # [추가] 한글 텍스트 표시용 폰트 (OpenCV putText는 Hershey 폰트라 한글 렌더링이 안 됨)
 KOREAN_FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"  # 맑은 고딕(윈도우 기본 한글 폰트)
@@ -88,7 +93,19 @@ HAND_CENTER_INDICES = [0, 5, 9, 13, 17]
 # 예전엔 정규화 없이 원본 좌표차로 외적을 구해서, 손이 카메라에서 멀어져 랜드마크 간
 # 거리가 작아지면 손날이 아닌데도 cross 값이 작아져 손날로 오인식되는 문제가 있었음.
 # [수정] 0.15(약 8.6도)는 너무 엄격해서 손날 인식률이 낮았음 → 0.28(약 16.3도)로 완화
-EDGE_SIN_THRESHOLD = 0.28  # sin(각도) 기준 - 이 각도 이내로 손을 세우면 손날로 판정
+EDGE_SIN_THRESHOLD = 0.28  # sin(각도) 기준 - 이 각도 이내로 손을 세우면 손날로 판정 (edge 진입 기준)
+
+# [추가] 손날 자세를 유지하는 동안 손이 미세하게 떨리기만 해도 sin값이 EDGE_SIN_THRESHOLD를
+# 넘나들면서 edge↔손등/손바닥 사이에서 판정이 깜빡이는(flicker) 문제가 있었음. 그래서
+# "이미 edge였던 상태"에서는 더 확실히 벗어나야만(이 값을 넘어야만) 손등/손바닥으로
+# 전환되도록 진입 기준(0.28)보다 넉넉한 이탈 기준을 따로 둠 (히스테리시스)
+EDGE_EXIT_SIN_THRESHOLD = 0.42
+
+# [추가] 클릭류(좌/우클릭/커스텀슬롯1) 제스처를 미리 막기 위한 더 넉넉한 기준.
+# EDGE_SIN_THRESHOLD보다 큰 값이라, 손날로 "확정"되기 전 - 손을 세우는 과도기(전환 중)
+# 부터 미리 클릭류를 막아준다. (과도기 중에 엄지가 우연히 검지/중지에 가까워지면서
+# 아직 "손날"로 확정 안 된 그 프레임에 클릭이 튀는 문제가 있었음)
+EDGE_GATE_SIN_THRESHOLD = 0.45
 
 # [추가] 손날+스와이프다운(닫기 확인) 인식률 개선용 - "정확히 그 프레임"에 손날이어야만
 # 인정하면, 빠르게 손을 내리치는 동작 중엔 프레임 사이에서 각도가 흔들려 놓치기 쉬움.
@@ -129,17 +146,24 @@ THUMB_UPDOWN_HOLD_SEC = 1.0
 # [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (LLM/commandmodule에 등록한 사용자 정의
 # 명령 실행용). 엄지+검지 핀치(좌클릭)와 같은 방식이지만 손가락 조합만 다름 - 검증된
 # 판정 방식을 그대로 재사용해서 새 슬롯을 늘림
-PINCH_MIDDLE_DIST = 0.05  # 엄지-중지 끝 사이 거리(정규화 좌표)가 이보다 가까우면 "붙음" - 실측 후 조정 필요
+# [수정] 임계값이 하나(0.05)뿐이면 그 값 근처에서 거리가 미세하게 떨릴 때마다 붙음/떨어짐이
+# 반복되면서 여러 번 연속 발동하는 문제가 있었음. 좌클릭(PINCH_ON_DIST/OFF_DIST)처럼
+# ON/OFF 두 단계로 나눠서 여유를 줌
+PINCH_MIDDLE_ON_DIST  = 0.05  # 이 거리보다 가까우면 "붙음" 시작 - 실측 후 조정 필요
+PINCH_MIDDLE_OFF_DIST = 0.08  # 붙은 상태에서 이 이상 벌어져야 "떨어짐" (ON보다 느슨하게 잡아 떨림 방지)
+# [추가] 손을 빠르게 돌리는 도중에도 순간적으로 엄지-중지가 스치듯 가까워질 수 있어서,
+# 진짜로 붙여서 "유지"한 경우만 인정하도록 최소 유지시간을 둠 (엄지척/다운과 같은 방식)
+PINCH_MIDDLE_HOLD_SEC = 0.1
 
 # [수정] 마우스 휠 스크롤 자세 설정 - 검지/약지/새끼를 다 말아야 했던 건 손이 너무
 # 불편해서, 약지/새끼만 말면 되도록 완화 (검지는 펴져있든 말든 상관 안 함)
 WHEEL_CURL_FINGERS = [(13, 14, 16), (17, 18, 20)]  # 약지/새끼의 (MCP, PIP, TIP)
-# [수정] 손을 처음 폈을 때의 위치를 "기준점"으로 기억해서 거기서 고정 거리(0.02~0.07)
-# 만큼 움직여야 활성화하는 방식은, 카메라와의 거리/손 크기에 따라 정규화 좌표에서 그
-# 거리가 다르게 나와서 값이 안 맞았음(가까우면 너무 쉽게, 멀면 거의 불가능하게 활성화).
-# 대신 중지 손끝(TIP)과 중지 중간관절(PIP)의 상대 위치로 비교 - 둘 다 "그 손 자체"의
-# 관절이라 손 크기/카메라 거리와 무관하게 항상 같은 비율로 동작함
-WHEEL_DIR_MARGIN = 0.015  # 활성화된 뒤, 중지 끝이 중간관절보다 이 정도 이상 위/아래여야 업/다운
+# [수정] 중지 손끝 하나만 독립적으로 움직이는 건 실제로 어려운 동작이었음(약지가 인대
+# 구조상 중지/새끼랑 같이 움직이는 경우가 많아서, 중지를 펴는 순간 약지도 같이 펴져서
+# wheel_pose 자체가 깨져버림). 그래서 손가락 하나의 미세 움직임 대신, 이미 스와이프에서
+# 검증된 "손바닥 중심점 전체를 위/아래로 움직이기" 방식을 재사용 - 약지+새끼를 만 자세를
+# 유지한 채로 손 전체를 위/아래로 움직이면 휠이 동작함
+WHEEL_HAND_MARGIN = 0.06  # 손바닥 중심이 기준점보다 이 정도 이상 위/아래로 움직이면 휠 업/다운
 WHEEL_TICK_INTERVAL_SEC = 0.12  # 활성화된 동안 이 간격으로 휠 이벤트를 반복 발생시킴
 
 
@@ -180,12 +204,10 @@ def get_ear(landmarks, eye_indices, w, h):
 
 
 # ── 손바닥/손등/손날 판별 함수 ─────────────────────────────
-def get_hand_orientation(landmarks, handedness):
+def _hand_edge_sin(landmarks):
     """
-    손목(0) → 인덱스 MCP(5) → 새끼 MCP(17) 삼각형의 외적으로 방향 판별
-    - [수정] 두 벡터를 단위벡터로 정규화한 뒤 외적을 구함 (= 사잇각의 sin값, -1~1로 스케일 고정)
-      → 손이 카메라에 가깝든 멀든(=벡터 크기가 커지든 작아지든) 판정이 흔들리지 않음
-    - sin값 절댓값이 작으면 손을 세운 상태(손날), 그 외에는 부호로 손바닥/손등 구분
+    손목(0) → 인덱스 MCP(5) → 새끼 MCP(17) 벡터 사잇각의 sin값(정규화된 외적, -1~1) 계산.
+    get_hand_orientation과 클릭류 제스처 게이팅(EDGE_GATE_SIN_THRESHOLD)이 이 값을 공유해서 씀.
     """
     wrist     = landmarks[0]
     index_mcp = landmarks[5]
@@ -199,9 +221,24 @@ def get_hand_orientation(landmarks, handedness):
     if v1_len < 1e-6 or v2_len < 1e-6:
         return None  # 랜드마크가 거의 겹쳐서 방향을 판단할 수 없는 프레임
 
-    cross = (v1x * v2y - v1y * v2x) / (v1_len * v2_len)  # 정규화된 외적 = sin(사잇각)
+    return (v1x * v2y - v1y * v2x) / (v1_len * v2_len)  # 정규화된 외적 = sin(사잇각)
 
-    if abs(cross) < EDGE_SIN_THRESHOLD:
+
+def get_hand_orientation(landmarks, handedness, previous=None):
+    """
+    - [수정] 두 벡터를 단위벡터로 정규화한 뒤 외적을 구함 (= 사잇각의 sin값, -1~1로 스케일 고정)
+      → 손이 카메라에 가깝든 멀든(=벡터 크기가 커지든 작아지든) 판정이 흔들리지 않음
+    - sin값 절댓값이 작으면 손을 세운 상태(손날), 그 외에는 부호로 손바닥/손등 구분
+    - [추가] previous(직전 프레임 판정 결과)로 히스테리시스 적용 - 직전이 "edge"였으면
+      더 넉넉한 EDGE_EXIT_SIN_THRESHOLD를 기준으로 판정해서, 손날 자세 유지 중 미세한
+      떨림으로 edge↔손등/손바닥 사이에서 깜빡이는 걸 막음
+    """
+    cross = _hand_edge_sin(landmarks)
+    if cross is None:
+        return previous  # 판단 불가한 프레임은 직전 상태를 그대로 유지
+
+    edge_threshold = EDGE_EXIT_SIN_THRESHOLD if previous == "edge" else EDGE_SIN_THRESHOLD
+    if abs(cross) < edge_threshold:
         return "edge"  # 손날
 
     # [수정] front/back 부호가 실제와 반대로 나와서(손등을 손바닥으로 오판정) 뒤집음
@@ -318,13 +355,25 @@ class CameraModule:
 
         # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - rising edge(붙는 순간 1회) 상태 기억
         self._pinch_middle_active = False
+        self._pinch_middle_candidate_since = None  # [추가] 최소 유지시간(hold) 판정용
+
+        # [추가] 손 방향(front/back/edge) 히스테리시스용 - 직전 판정 결과 기억
+        self._last_orientation = None
+
+        # [추가] 디버그용 - 최근 프레임들의 판정값 기록 (이벤트 발동 시 파일로 덤프)
+        self._debug_history = deque(maxlen=40)
+        try:
+            with open(DEBUG_LOG_PATH, "w", encoding="utf-8") as f:
+                f.write(f"[디버그 로그 시작 @ {time.strftime('%H:%M:%S')}]\n")
+        except OSError:
+            pass
 
         # [추가] 엄지척/엄지다운 - 짧은 전환 자세로 오인식되지 않도록 유지 시간 추적
         self._thumb_updown_candidate       = None  # 지금 후보로 잡힌 상태 ("up"/"down"/None)
         self._thumb_updown_candidate_since = None  # 후보 상태가 시작된 시각
 
-        # [추가] 휠 스크롤 상태 - 중지 끝이 중지 중간관절(PIP) 높이까지 내려왔었는지
-        self._wheel_engaged        = False
+        # [수정] 휠 스크롤 상태 - 약지+새끼를 만 자세가 시작된 순간의 손바닥 중심 y좌표(기준점)
+        self._wheel_baseline_y     = None
         self._last_wheel_tick_time = 0.0
 
         # 결과 딕셔너리 (외부에서 읽는 곳)
@@ -359,6 +408,20 @@ class CameraModule:
         }
 
         self._lock = threading.Lock()
+
+    # ── 디버그용: 최근 프레임 판정값 기록/덤프 ─────────────
+    def _debug_record(self, **kwargs):
+        self._debug_history.append((time.time(), kwargs))
+
+    def _debug_dump(self, label):
+        try:
+            with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(f"\n=== {label} @ {time.strftime('%H:%M:%S')} ===\n")
+                for t, kwargs in self._debug_history:
+                    values = " ".join(f"{k}={v}" for k, v in kwargs.items())
+                    f.write(f"  t={t:.3f} {values}\n")
+        except OSError:
+            pass
 
     # ── 내부: 손동작 처리 ────────────────────────────────
     def _process_hands(self, frame_rgb, frame_vis):
@@ -429,9 +492,26 @@ class CameraModule:
             # 엄지를 검지/손바닥중심/중지 쪽에 가깝게 붙이게 되는 경우가 많아서, 그대로 두면
             # 손날을 하는 동시에 좌클릭/우클릭/커스텀슬롯이 같이 발동하는 문제가 있었음.
             # 그래서 orientation=="edge"인 동안은 엄지 기반 클릭류 제스처를 아예 판정하지 않음
-            orientation = get_hand_orientation(chosen_landmarks, hand_side)
+            orientation = get_hand_orientation(chosen_landmarks, hand_side, previous=self._last_orientation)
+            self._last_orientation = orientation  # [추가] 히스테리시스용 - 다음 프레임에서 참조
             if orientation == "edge":
                 self._last_edge_time = time.time()  # [추가] 손날+스와이프 인식률 개선용 기록
+
+            # [추가] "손날로 확정"되기 전 과도기(손을 세우는 중)에도 클릭류를 미리 막기 위한
+            # 더 넉넉한 판정. orientation=="edge"보다 먼저 켜져서, 손날로 전환하는 동안
+            # 엄지가 우연히 검지/중지에 가까워지면서 클릭이 튀는 문제를 막아줌
+            edge_sin = _hand_edge_sin(chosen_landmarks)
+            near_edge = edge_sin is not None and abs(edge_sin) < EDGE_GATE_SIN_THRESHOLD
+
+            # [추가] 디버그용 - 매 프레임 판정값을 기록해둠 (pinch_middle 오발동 시 덤프해서 확인)
+            _debug_thumb_middle_dist = ((thumb_tip.x - middle_tip.x) ** 2 + (thumb_tip.y - middle_tip.y) ** 2) ** 0.5
+            self._debug_record(
+                orientation=orientation,
+                edge_sin=round(edge_sin, 3) if edge_sin is not None else None,
+                near_edge=near_edge,
+                thumb_middle_dist=round(_debug_thumb_middle_dist, 4),
+                pinch_middle_active=self._pinch_middle_active,
+            )
 
             # [추가] 휠 스크롤 자세(약지+새끼 말기, 중지는 폄)인지 미리 판정
             wheel_pose = is_wheel_pose(chosen_landmarks)
@@ -492,10 +572,12 @@ class CameraModule:
             cx, cy = int(center_x * w), int(center_y * h)
             cv.circle(frame_vis, (cx, cy), 5, (255, 200, 0), -1)
 
-            # [수정] 엄지 기반 클릭류(좌클릭/우클릭/커스텀슬롯1)는 손날 자세가 아닐 때만 판정.
-            # 휠 자세(약지/새끼만 말기)는 엄지 위치와 무관해서(검지도 자유로움) 클릭류와
-            # 우연히 겹칠 위험이 낮아 배타 처리를 뺐음 - 자연스럽게 같이 판정됨
-            if orientation != "edge":
+            # [수정] 디버그 로그로 확인해보니 "손날 전환 중"만 문제가 아니라, 손이 "손등"
+            # 방향을 보고 있을 때도 카메라 2D 투영상 손가락들이 겹쳐 보이면서 엄지-중지
+            # 거리가 우연히 가까워지는 문제가 있었음(손등→손날→손바닥 회전 전체 구간에서
+            # 발생). 그래서 "edge만 제외"가 아니라 "정면(front)일 때만 허용"으로 강화함.
+            # 휠 자세(약지/새끼만 말기)는 엄지 위치와 무관해서 배타 처리를 안 함
+            if orientation == "front":
                 # [수정] 핀치(엄지+검지) = 실제 마우스 왼쪽 버튼. SetWindowPos로 직접 창을 옮기던
                 # 예전 방식 대신 진짜 마우스 다운/업 이벤트를 보내서 OS가 알아서 처리하게 함
                 # (제목표시줄을 잡으면 창 드래그, 아이콘/버튼 위면 클릭 등 자연스럽게 다 됨)
@@ -525,52 +607,75 @@ class CameraModule:
                 # [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (붙는 순간 1회만 발동 - rising edge)
                 # 실제 동작은 여기서 정하지 않고 main.py가 commandmodule을 통해 결정함
                 # (commands.json에 "pinch_middle"로 등록된 명령이 있으면 실행, 없으면 아무 것도 안 함)
+                # [수정] ON/OFF 이중 임계값 + 최소 유지시간(PINCH_MIDDLE_HOLD_SEC) 추가.
+                # 손을 빠르게 돌리는 도중 순간적으로 거리가 가까워지는 경우와, 진짜로 붙여서
+                # 유지하는 경우를 구분하기 위함 - 이미 붙어서 활성화된 상태는 즉시 반응하되
+                # (OFF_DIST 초과해야 해제), 새로 붙는 판정만 HOLD_SEC 동안 유지돼야 확정
                 thumb_middle_dist = ((thumb_tip.x - middle_tip.x) ** 2 + (thumb_tip.y - middle_tip.y) ** 2) ** 0.5
-                pinch_middle_now = thumb_middle_dist < PINCH_MIDDLE_DIST
-                if pinch_middle_now and not self._pinch_middle_active:
-                    pinch_middle_event = True
-                    self._hand_display_text = ("PINCH: MIDDLE", (255, 165, 0))
-                self._pinch_middle_active = pinch_middle_now
+                if self._pinch_middle_active:
+                    if thumb_middle_dist > PINCH_MIDDLE_OFF_DIST:
+                        self._pinch_middle_active = False
+                else:
+                    if thumb_middle_dist < PINCH_MIDDLE_ON_DIST:
+                        if self._pinch_middle_candidate_since is None:
+                            self._pinch_middle_candidate_since = time.time()
+                        elif time.time() - self._pinch_middle_candidate_since >= PINCH_MIDDLE_HOLD_SEC:
+                            self._pinch_middle_active = True
+                            pinch_middle_event = True
+                            self._hand_display_text = ("PINCH: MIDDLE", (255, 165, 0))
+                            self._debug_dump("pinch_middle 발동")  # [추가] 발동 직전 프레임들 기록을 파일로 남김
+                            self._pinch_middle_candidate_since = None
+                    else:
+                        self._pinch_middle_candidate_since = None  # 멀어졌으니 후보 취소
             else:
                 # [추가] 손날 자세 도중엔 클릭류 판정을 건너뛰지만, 혹시 좌클릭
                 # 버튼이 눌린 채로 손날 자세에 들어갔다면 눌린 채로 고정되지 않게 놓아줌 (안전장치)
+                # [수정] _thumb_tucked/_pinch_middle_active는 여기서 강제로 False로 리셋하지
+                # 않음 - 손날 전환 중 near_edge가 프레임 사이에서 깜빡이면, 리셋된 직후
+                # (2D 투영상 엄지-중지가 우연히 가까워 보이는) 손날 회전 특성 때문에 바로
+                # 다시 "새로 붙었다"고 오판정되는 문제가 있었음. 그냥 마지막 상태를 그대로
+                # 유지해서 진짜로 떨어졌을 때만 다시 판정되게 함
                 if self._left_button_down:
                     windowcontrol.mouse_left_up()
                     self._left_button_down = False
-                self._thumb_tucked = False
-                self._pinch_middle_active = False
+                # [추가] 후보 타이머는 리셋 - front가 아닌 동안 흐른 시간이 그대로 남아있으면
+                # front로 복귀하자마자 HOLD_SEC을 이미 채운 걸로 오판정될 수 있음
+                self._pinch_middle_candidate_since = None
 
-            # [수정] 휠 스크롤 자세 (약지+새끼 말기, 중지는 절반쯤 굽힘 = 레디)
-            # 중지 끝(TIP,12)이 중지 중간관절(PIP,10) 높이까지 내려오면 "활성화".
-            # 활성화된 뒤로는 중지 끝이 중간관절보다 위=휠 업, 아래(손바닥 쪽)=휠 다운을
-            # 일정 간격으로 반복 발생. TIP/PIP 둘 다 이 손 자체의 관절이라 손 크기나
-            # 카메라와의 거리와 무관하게 항상 같은 비율로 동작함
+            # [수정] 휠 스크롤 자세 (약지+새끼 말기 = 레디). 중지 손끝 하나만 독립적으로
+            # 움직이는 대신, 스와이프에서 이미 검증된 "손바닥 중심점(center_x/center_y)을
+            # 손 전체로 위/아래로 움직이기" 방식을 재사용. 자세가 시작된 순간의 손바닥
+            # 중심 y좌표를 기준점으로 기억해뒀다가, 기준점보다 위로 움직이면 휠 업,
+            # 아래로 움직이면 휠 다운을 일정 간격으로 반복 발생
+            # [수정] swipe_up/down처럼 commandmodule을 거치게 했다가 되돌림 - 휠은 손을
+            # 유지하는 동안 계속 반복 발생하는 이벤트라, 여기에 커스텀 명령을 걸면 스크롤
+            # 하는 몇 초 동안 그 명령이 초당 여러 번 반복 실행되어버려 실용성이 없음.
+            # 그래서 다시 여기서 직접 스크롤을 실행함(휠 자체는 커스터마이징 대상에서 제외)
             if wheel_pose:
-                middle_pip = chosen_landmarks[10]
-                if not self._wheel_engaged:
-                    if middle_tip.y >= middle_pip.y:
-                        self._wheel_engaged = True
-                        self._hand_display_text = ("WHEEL: READY", (200, 200, 0))
+                if self._wheel_baseline_y is None:
+                    self._wheel_baseline_y = center_y
+                    self._hand_display_text = ("WHEEL: READY", (200, 200, 0))
                 else:
                     now_wheel = time.time()
                     if now_wheel - self._last_wheel_tick_time > WHEEL_TICK_INTERVAL_SEC:
-                        if middle_tip.y < middle_pip.y - WHEEL_DIR_MARGIN:
+                        if center_y < self._wheel_baseline_y - WHEEL_HAND_MARGIN:
                             windowcontrol.mouse_scroll(1)
                             self._last_wheel_tick_time = now_wheel
                             self._hand_display_text = ("WHEEL UP", (0, 255, 255))
-                        elif middle_tip.y > middle_pip.y + WHEEL_DIR_MARGIN:
+                        elif center_y > self._wheel_baseline_y + WHEEL_HAND_MARGIN:
                             windowcontrol.mouse_scroll(-1)
                             self._last_wheel_tick_time = now_wheel
                             self._hand_display_text = ("WHEEL DOWN", (255, 100, 0))
                         else:
                             self._hand_display_text = ("WHEEL: READY", (200, 200, 0))
             else:
-                self._wheel_engaged = False
+                self._wheel_baseline_y = None
 
-            # [수정] 왼쪽 버튼을 누르고 있는(드래그) 동안에는 스와이프/손날 제스처를 판정하지 않음
-            # (손을 크게 움직이는 드래그 동작이 스와이프로 오인식되는 것 방지)
+            # [수정] 왼쪽 버튼을 누르고 있는(드래그) 동안이나 휠 스크롤 자세일 때는
+            # 스와이프/손날 제스처를 판정하지 않음 - 휠 자세로 손을 빠르게 움직이면
+            # 스와이프까지 같이 발동해서 창이 최소화/복원되는 문제가 있었음
             # center_x/center_y는 위에서 커서 매핑용으로 이미 계산해둔 걸 그대로 재사용
-            if not self._left_button_down:
+            if not self._left_button_down and not wheel_pose:
                 now = time.time()
                 self._hand_y_history.append((now, center_y))
 
@@ -619,14 +724,16 @@ class CameraModule:
                         close_request = True
                         self._hand_display_text = ("CLOSE? say YES/NO", (0, 0, 255))
             else:
-                self._hand_y_history.clear()  # 왼쪽 버튼 누른(드래그) 중엔 스와이프 히스토리 오염 방지
+                self._hand_y_history.clear()  # 왼쪽 버튼 누름(드래그)/휠 자세 중엔 스와이프 히스토리 오염 방지
         else:
             self._hand_y_history.clear()  # 손이 사라지면 히스토리 초기화
             self._thumb_tucked = False    # [수정] 우클릭 rising edge 상태도 리셋
             self._pinch_middle_active = False  # [추가] 커스텀 슬롯 1 rising edge 상태도 리셋
+            self._pinch_middle_candidate_since = None
+            self._last_orientation = None  # [추가] 손 방향 히스테리시스 상태도 리셋
             self._thumb_updown_candidate       = None  # [추가] 엄지척/다운 유지 시간 추적도 리셋
             self._thumb_updown_candidate_since = None
-            self._wheel_engaged = False  # [추가] 휠 스크롤 활성화 상태도 리셋
+            self._wheel_baseline_y = None  # [수정] 휠 스크롤 기준점도 리셋
             if self._left_button_down:    # [추가] 손이 사라졌는데 버튼이 눌린 채로 고정되지 않게 놓아줌
                 windowcontrol.mouse_left_up()
                 self._left_button_down = False
