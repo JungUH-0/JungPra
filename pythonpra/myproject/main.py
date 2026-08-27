@@ -15,6 +15,7 @@ import threading
 
 from cameramodule import CameraModule
 from audiomodule import AudioModule
+from voicemodule import VoiceModule  # [추가] 웨이크워드 감지 (음성 명령의 첫 단계)
 import windowcontrol
 import commandmodule  # [추가] LLM으로 등록한 사용자 정의 명령 실행용
 
@@ -30,11 +31,14 @@ def _log(tag, msg):
 def run_assistant():
     cam   = CameraModule(camera_id=0, show_window=True)
     audio = AudioModule()
+    voice = VoiceModule()  # [추가] Whisper 모델을 여기서 로딩함 (몇 초~몇 십 초 걸릴 수 있음)
 
     cam_thread   = threading.Thread(target=cam.run, daemon=True)
     audio_thread = threading.Thread(target=audio.run, daemon=True)
+    voice_thread = threading.Thread(target=voice.run, daemon=True)
     cam_thread.start()
     audio_thread.start()
+    voice_thread.start()
 
     print("[Assistant] 시작 - 카메라 창에서 'q'를 누르면 전체 종료")
 
@@ -59,10 +63,18 @@ def run_assistant():
     # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge용 이전 상태 기억
     prev_pinch_middle = False
 
+    # [추가] 음성 명령 트리거(웨이크워드 / 손등 5초) rising edge용 이전 상태 기억
+    prev_wake_word     = False
+    prev_voice_trigger = False
+
+    # [추가] 손등 무전기 방식 녹음 중인지 - main.py가 직접 시작/종료를 제어함
+    recording_manual = False
+
     try:
         while cam_thread.is_alive():
             cam_res   = cam.get_result()
             audio_res = audio.get_result()
+            voice_res = voice.get_result()
 
             # [추가] 양손이 겹친 상태에서 소리 스파이크가 같이 잡히면 박수로 인정
             # (오디오 단독 판정보다 느슨한 기준이라, 시각적 확인이 있을 때만 적용)
@@ -101,6 +113,14 @@ def run_assistant():
             # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge
             pinch_middle_edge  = cam_res["pinch_middle"] and not prev_pinch_middle
             prev_pinch_middle  = cam_res["pinch_middle"]
+
+            # [추가] 음성 명령 트리거(웨이크워드 / 손등 5초) rising edge
+            # - voice_res["wake_word"]는 VoiceModule이 CHECK_INTERVAL_SEC(1.5초)마다
+            #   갱신하는 값이라 이 폴링 주기(0.02s)에서는 여러 번 True로 읽힐 수 있음
+            wake_word_edge     = voice_res["wake_word"]    and not prev_wake_word
+            voice_trigger_edge = cam_res["voice_trigger"]  and not prev_voice_trigger
+            prev_wake_word     = voice_res["wake_word"]
+            prev_voice_trigger = cam_res["voice_trigger"]
 
             # [추가] 어느 채널에서 온 신호인지 출력용으로 구분
             if cam_res["blink"]:
@@ -166,6 +186,36 @@ def run_assistant():
                 else:
                     _log("제스처", "pinch_middle - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
 
+            # [수정] 음성 명령 트리거 처리
+            # - 웨이크워드: VoiceModule이 스스로 녹음을 시작하고 무음 감지로 알아서
+            #   끝냄(mode="vad") - 여기선 로그만 남기면 됨
+            # - 손등 3초 유지(무전기 방식): main.py가 직접 녹음 시작을 걸고, 이후 매
+            #   프레임 손 방향을 지켜보다가 손등 자세가 풀리는 순간 직접 종료시킴
+            if wake_word_edge:
+                _log("음성", f"웨이크워드 감지 (\"{voice_res['last_text']}\") - 명령 녹음 시작")
+            if voice_trigger_edge and not recording_manual and not voice_res["recording"]:
+                # voice_res["recording"] 체크: 웨이크워드로 이미 녹음 중이면 겹쳐서
+                # 시작하지 않음 (진행 중이던 vad 녹음 버퍼가 지워지는 것 방지)
+                voice.start_command_recording(mode="manual")
+                recording_manual = True
+                _log("음성", "손등 유지 감지 - 명령 녹음 시작 (손을 떼면 종료)")
+            if recording_manual and cam_res["hand_orientation"] != "back":
+                voice.stop_command_recording()
+                recording_manual = False
+                _log("음성", "손등 자세 풀림 - 명령 녹음 종료")
+
+            # [추가] 녹음이 끝나고 텍스트로 변환됐으면 LLM으로 해석해서 바로 실행
+            # (제스처 슬롯에 등록하는 게 아니라, 그 자리에서 한 번만 실행하는 자유 명령)
+            if voice_res["command_text"]:
+                heard_text = voice_res["command_text"]
+                voice.clear_command_text()
+                _log("음성", f"명령 인식: \"{heard_text}\"")
+                ok, err = commandmodule.execute_text(heard_text)
+                if ok:
+                    _log("음성", "명령 실행 완료")
+                else:
+                    _log("음성", f"명령 실행 실패: {err}")
+
             # [추가] 마우스 좌/우클릭도 콘솔에 로그 (실제 클릭 자체는 cameramodule에서 이미 실행됨)
             if left_click_down_edge:
                 _log("마우스", "좌클릭 DOWN (핀치)")
@@ -180,6 +230,7 @@ def run_assistant():
     finally:
         cam.stop()
         audio.stop()
+        voice.stop()
         time.sleep(0.2)
         print("[Assistant] 종료")
 

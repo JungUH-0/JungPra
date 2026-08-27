@@ -127,19 +127,11 @@ def register_command(gesture_name, user_text):
     return True, commands[gesture_name]
 
 
-def execute_command(gesture_name):
+def _run_action(action, target):
     """
-    저장된 매핑에서 gesture_name에 해당하는 동작을 실제로 실행.
-    main.py 같은 실시간 루프에서, 제스처가 인식됐을 때 호출하는 용도.
+    이미 해석된 {action, target}을 실제로 실행 - execute_command(제스처 슬롯)와
+    execute_text(자유 텍스트 즉시 실행)가 이 함수를 공유해서 씀
     """
-    commands = _load_commands()
-    cmd = commands.get(gesture_name)
-    if cmd is None:
-        return False, "등록된 명령이 없습니다"
-
-    action = cmd.get("action")
-    target = cmd.get("target")
-
     if action == "minimize_window":
         windowcontrol.minimize_active_window()
     elif action == "close_window":
@@ -162,6 +154,40 @@ def execute_command(gesture_name):
         return False, f"알 수 없는 action: {action}"
 
     return True, None
+
+
+def execute_command(gesture_name):
+    """
+    저장된 매핑에서 gesture_name에 해당하는 동작을 실제로 실행.
+    main.py 같은 실시간 루프에서, 제스처가 인식됐을 때 호출하는 용도.
+    """
+    commands = _load_commands()
+    cmd = commands.get(gesture_name)
+    if cmd is None:
+        return False, "등록된 명령이 없습니다"
+    return _run_action(cmd.get("action"), cmd.get("target"))
+
+
+def execute_text(user_text):
+    """
+    자연어 명령을 그 자리에서 해석해서 바로 실행 (제스처 슬롯에 등록하지 않는
+    1회성 실행). 음성 명령처럼, 미리 등록해두지 않고 그때그때 자유롭게
+    명령할 때 사용.
+    """
+    parsed = _ask_llm(user_text)
+    action = parsed.get("action")
+    target = parsed.get("target")
+
+    if action not in ALLOWED_ACTIONS:
+        return False, f"인식 실패 또는 지원하지 않는 동작입니다: {parsed}"
+
+    needed_params = ALLOWED_ACTIONS[action]
+    if "target" in needed_params:
+        whitelist = TARGET_WHITELISTS.get(action, {})
+        if not target or target.strip().lower() not in whitelist:
+            return False, f"target을 알아듣지 못했습니다: {parsed}"
+
+    return _run_action(action, target)
 
 
 # ── 테스트/등록용 실행 ─────────────────────────────────────

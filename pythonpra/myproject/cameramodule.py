@@ -166,6 +166,10 @@ WHEEL_CURL_FINGERS = [(13, 14, 16), (17, 18, 20)]  # 약지/새끼의 (MCP, PIP,
 WHEEL_HAND_MARGIN = 0.06  # 손바닥 중심이 기준점보다 이 정도 이상 위/아래로 움직이면 휠 업/다운
 WHEEL_TICK_INTERVAL_SEC = 0.12  # 활성화된 동안 이 간격으로 휠 이벤트를 반복 발생시킴
 
+# [추가] 음성 명령 트리거 - 손등(back)을 이 시간 이상 유지하면 음성 인식을 시작하라는
+# 신호를 1회 발생시킴 (웨이크워드의 보조/대체 수단 - 시끄러운 환경에서도 확실하게 동작)
+VOICE_TRIGGER_HOLD_SEC = 3.0  # [수정] 5초는 너무 길어서 3초로 낮춤
+
 
 # ── 특징 추출 함수 (SignBridge 동일, 55차원) ──────────────
 def extract_vector_angle_features(hand_landmarks):
@@ -360,6 +364,10 @@ class CameraModule:
         # [추가] 손 방향(front/back/edge) 히스테리시스용 - 직전 판정 결과 기억
         self._last_orientation = None
 
+        # [추가] 음성 명령 트리거(손등 5초 유지) 상태
+        self._back_hold_start     = None   # 손등 자세가 시작된 시각
+        self._voice_trigger_fired = False  # 이번 손등 유지 동안 이미 발동했는지 (중복 발동 방지)
+
         # [추가] 디버그용 - 최근 프레임들의 판정값 기록 (이벤트 발동 시 파일로 덤프)
         self._debug_history = deque(maxlen=40)
         try:
@@ -392,6 +400,7 @@ class CameraModule:
             "thumbs_up"      : False,  # [추가] 주먹+엄지 위 = 예
             "thumbs_down"    : False,  # [추가] 주먹+엄지 아래 = 아니오
             "pinch_middle"   : False,  # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - 이번 프레임에 발생했는지
+            "voice_trigger"  : False,  # [추가] 손등 5초 유지 - 이번 프레임에 음성 명령 트리거가 발생했는지
 
             # 눈 깜빡임
             "blink"          : False,  # 이번 프레임에 깜빡임 발생 여부
@@ -475,6 +484,7 @@ class CameraModule:
         thumbs_up   = False  # [추가] 주먹+엄지 위 = 예
         thumbs_down = False  # [추가] 주먹+엄지 아래 = 아니오
         pinch_middle_event = False  # [추가] 이번 프레임에 커스텀 슬롯 1(엄지+중지)이 발생했는지
+        voice_trigger_event = False  # [추가] 이번 프레임에 음성 명령 트리거(손등 5초)가 발생했는지
         if chosen_landmarks is not None:
             thumb_tip  = chosen_landmarks[4]
             index_tip  = chosen_landmarks[8]
@@ -496,6 +506,25 @@ class CameraModule:
             self._last_orientation = orientation  # [추가] 히스테리시스용 - 다음 프레임에서 참조
             if orientation == "edge":
                 self._last_edge_time = time.time()  # [추가] 손날+스와이프 인식률 개선용 기록
+
+            # [추가] 음성 명령 트리거 - 손등(back) 자세를 VOICE_TRIGGER_HOLD_SEC 이상
+            # 유지하면 1회 발동. 시끄러운 환경에서 웨이크워드가 잘 안 들릴 때의 대안
+            if orientation == "back":
+                if self._back_hold_start is None:
+                    self._back_hold_start = time.time()
+                    self._voice_trigger_fired = False
+                elif (not self._voice_trigger_fired and
+                        time.time() - self._back_hold_start >= VOICE_TRIGGER_HOLD_SEC):
+                    voice_trigger_event = True
+                    self._voice_trigger_fired = True
+                    self._hand_display_text = ("VOICE TRIGGER!", (255, 0, 255))
+                elif not self._voice_trigger_fired:
+                    held = time.time() - self._back_hold_start
+                    cv.putText(frame_vis, f"VOICE HOLD {held:.1f}/{VOICE_TRIGGER_HOLD_SEC:.0f}s",
+                               (10, 265), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
+            else:
+                self._back_hold_start     = None
+                self._voice_trigger_fired = False
 
             # [추가] "손날로 확정"되기 전 과도기(손을 세우는 중)에도 클릭류를 미리 막기 위한
             # 더 넉넉한 판정. orientation=="edge"보다 먼저 켜져서, 손날로 전환하는 동안
@@ -731,6 +760,8 @@ class CameraModule:
             self._pinch_middle_active = False  # [추가] 커스텀 슬롯 1 rising edge 상태도 리셋
             self._pinch_middle_candidate_since = None
             self._last_orientation = None  # [추가] 손 방향 히스테리시스 상태도 리셋
+            self._back_hold_start     = None  # [추가] 음성 트리거 유지 상태도 리셋
+            self._voice_trigger_fired = False
             self._thumb_updown_candidate       = None  # [추가] 엄지척/다운 유지 시간 추적도 리셋
             self._thumb_updown_candidate_since = None
             self._wheel_baseline_y = None  # [수정] 휠 스크롤 기준점도 리셋
@@ -762,6 +793,7 @@ class CameraModule:
             self.result["thumbs_up"]        = thumbs_up    # [추가] 주먹+엄지 위 = 예
             self.result["thumbs_down"]      = thumbs_down  # [추가] 주먹+엄지 아래 = 아니오
             self.result["pinch_middle"]     = pinch_middle_event  # [추가] 커스텀 슬롯 1(엄지+중지)
+            self.result["voice_trigger"]    = voice_trigger_event  # [추가] 손등 5초 유지 - 음성 명령 트리거
 
     # ── 내부: 눈 깜빡임 처리 ─────────────────────────────
     # [비활성화] 눈 관련 기능은 손 쪽 기능이 어느 정도 정리될 때까지 뒤로 미룸.
