@@ -1,0 +1,670 @@
+<title>Food-11 벤치마크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --surface-2:#F5F7FA;
+  --ink:#14181F; --ink-soft:#4A5568; --ink-mute:#7C8797;
+  --border:#DBE0E7;
+  --keras:#B3720E; --keras-bg:#FBEDD7; --keras-line:#D98A2B;
+  --pytorch:#A63A20; --pytorch-bg:#FBE4DE; --pytorch-line:#D6472E;
+  --good:#166D53; --good-bg:#DFF3EC; --good-line:#2E9E82;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'IBM Plex Sans KR','IBM Plex Sans',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10131A; --surface:#181C24; --surface-2:#1F2530;
+    --ink:#E9ECF2; --ink-soft:#A7B0BE; --ink-mute:#79839432;
+    --ink-mute:#7E8898;
+    --border:#2B313D;
+    --keras:#F0B15A; --keras-bg:#3A2C14; --keras-line:#E8A33D;
+    --pytorch:#F2896A; --pytorch-bg:#3B2119; --pytorch-line:#E2543B;
+    --good:#5FCBA8; --good-bg:#12332A; --good-line:#2E9E82;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10131A; --surface:#181C24; --surface-2:#1F2530;
+  --ink:#E9ECF2; --ink-soft:#A7B0BE; --ink-mute:#7E8898;
+  --border:#2B313D;
+  --keras:#F0B15A; --keras-bg:#3A2C14; --keras-line:#E8A33D;
+  --pytorch:#F2896A; --pytorch-bg:#3B2119; --pytorch-line:#E2543B;
+  --good:#5FCBA8; --good-bg:#12332A; --good-line:#2E9E82;
+}
+
+*{box-sizing:border-box;}
+code{font-family:var(--font-mono); font-size:.92em; background:var(--surface-2); padding:.1em .4em; border-radius:4px; color:var(--ink);}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-body); line-height:1.6; padding:2.5rem 1.25rem 4rem;}
+.page{max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:2.75rem;}
+
+/* header */
+.masthead{display:flex; flex-direction:column; gap:.6rem;}
+.eyebrow{font-family:var(--font-mono); font-size:12.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-mute);}
+h1{font-family:var(--font-display); font-weight:600; font-size:clamp(28px,4vw,40px); margin:0; text-wrap:balance; letter-spacing:-.01em;}
+.dek{color:var(--ink-soft); font-size:15.5px; max-width:62ch; margin:0;}
+.setup{display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-family:var(--font-mono); font-size:12.5px; color:var(--ink-mute); margin-top:.3rem;}
+.setup span b{color:var(--ink-soft); font-weight:500;}
+
+/* stat row */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;}
+.stat{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.2rem 1.3rem; display:flex; flex-direction:column; gap:.5rem;}
+.stat-label{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-mute);}
+.stat-value{font-family:var(--font-display); font-size:34px; font-weight:600; font-variant-numeric:tabular-nums;}
+.stat-meta{font-size:13px; color:var(--ink-soft); display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;}
+.tag{font-family:var(--font-mono); font-size:11px; padding:.15rem .5rem; border-radius:999px; border:1px solid; white-space:nowrap;}
+.tag.keras{color:var(--keras); background:var(--keras-bg); border-color:var(--keras-line);}
+.tag.pytorch{color:var(--pytorch); background:var(--pytorch-bg); border-color:var(--pytorch-line);}
+.tag.good{color:var(--good); background:var(--good-bg); border-color:var(--good-line);}
+
+/* section */
+section{display:flex; flex-direction:column; gap:1rem;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:1rem; flex-wrap:wrap; border-bottom:1px solid var(--border); padding-bottom:.6rem;}
+h2{font-family:var(--font-display); font-size:22px; font-weight:600; margin:0;}
+.section-note{font-size:13px; color:var(--ink-mute);}
+
+/* chart */
+.chart{display:flex; flex-direction:column; gap:1.1rem; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.4rem 1.5rem;}
+.chart-group{display:flex; flex-direction:column; gap:.45rem;}
+.chart-group-label{font-size:13.5px; font-weight:500; color:var(--ink-soft);}
+.bar-row{display:grid; grid-template-columns:74px 1fr 62px; align-items:center; gap:.6rem;}
+.bar-fw{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-mute);}
+.bar-track{background:var(--surface-2); border-radius:6px; height:20px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:6px;}
+.bar-fill.keras{background:var(--keras-line);}
+.bar-fill.pytorch{background:var(--pytorch-line);}
+.bar-val{font-family:var(--font-mono); font-size:13px; text-align:right; font-variant-numeric:tabular-nums;}
+
+/* table */
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:14px; background:var(--surface);}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:14px;}
+th,td{padding:.65rem .9rem; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap;}
+th{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-mute); font-weight:500;}
+td{color:var(--ink-soft);}
+td.num{font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--ink);}
+tr:last-child td{border-bottom:none;}
+tr.winner td{color:var(--ink); font-weight:500;}
+.table-wrap.compact table{min-width:920px; font-size:12.5px;}
+.table-wrap.compact th, .table-wrap.compact td{padding:.5rem .65rem;}
+.stage-cell{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-mute);}
+
+/* epoch compare */
+.epoch-compare{display:flex; flex-direction:column; gap:.9rem; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.3rem 1.5rem;}
+.epoch-compare-title{font-size:13.5px; font-weight:500; color:var(--ink-soft);}
+.epoch-rows{display:flex; flex-direction:column; gap:.7rem;}
+.epoch-row{display:grid; grid-template-columns:70px repeat(4,1fr); gap:.8rem; align-items:center;}
+.epoch-row .ehead{font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-mute);}
+.epoch-tag{font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);}
+.epoch-metric{display:flex; flex-direction:column; gap:.15rem;}
+.epoch-metric b{font-family:var(--font-mono); font-size:16px; font-variant-numeric:tabular-nums; color:var(--ink);}
+.epoch-metric span{font-size:11px; color:var(--ink-mute);}
+.epoch-metric.worse b{color:var(--pytorch);}
+.epoch-metric.flat b{color:var(--ink-soft);}
+.epoch-metric.better b{color:var(--good);}
+
+/* record callout */
+.record{border:1px solid var(--good-line); background:var(--good-bg); border-radius:14px; padding:1.3rem 1.5rem; display:flex; flex-direction:column; gap:.9rem;}
+.record-head{display:flex; align-items:baseline; justify-content:space-between; gap:.8rem; flex-wrap:wrap;}
+.record-title{font-family:var(--font-display); font-size:17px; font-weight:600; color:var(--good);}
+.record-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:.8rem;}
+.record-stat{display:flex; flex-direction:column; gap:.15rem;}
+.record-stat b{font-family:var(--font-mono); font-size:19px; font-variant-numeric:tabular-nums; color:var(--ink);}
+.record-stat span{font-size:11px; color:var(--ink-mute); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em;}
+.record p{margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.55;}
+
+/* findings */
+.findings{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;}
+.finding{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.15rem 1.25rem; display:flex; flex-direction:column; gap:.5rem;}
+.finding-title{font-family:var(--font-display); font-size:16.5px; font-weight:600;}
+.finding p{margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.55;}
+
+@media (max-width:640px){
+  .stats{grid-template-columns:1fr;}
+  .findings{grid-template-columns:1fr;}
+  .bar-row{grid-template-columns:60px 1fr 54px;}
+  .epoch-row{grid-template-columns:56px repeat(4,minmax(0,1fr)); gap:.4rem;}
+  .epoch-metric b{font-size:13px;}
+  .record-stats{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+
+<div class="page">
+
+  <div class="masthead">
+    <div class="eyebrow">실험 노트 · Food-11 이미지 분류</div>
+    <h1>ANN·DNN·CNN, 그리고 옵티마이저</h1>
+    <p class="dek">같은 데이터, 같은 5 epoch 조건에서 구조(ANN/DNN/CNN)와 옵티마이저(Adam/SGD)를 바꿔가며 Keras·PyTorch 양쪽에서 측정한 결과.</p>
+    <div class="setup">
+      <span><b>데이터셋</b> Food-11, 11개 클래스, 128×128×3</span>
+      <span><b>배치</b> 32</span>
+      <span><b>에폭</b> 5</span>
+      <span><b>학습률</b> 1e-3</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">ANN 최고</div>
+      <div class="stat-value">21.3%</div>
+      <div class="stat-meta"><span class="tag keras">Keras</span> SGD</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">DNN 최고</div>
+      <div class="stat-value">26.9%</div>
+      <div class="stat-meta"><span class="tag pytorch">PyTorch</span> Adam</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">CNN 최고</div>
+      <div class="stat-value">61.9%</div>
+      <div class="stat-meta"><span class="tag pytorch">PyTorch</span> AdamW + ReduceLR + 3Conv + BN</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <h2>CNN — 옵티마이저별 비교</h2>
+      <div class="section-note">6개 조합 전부 완료 (5 epoch)</div>
+    </div>
+
+    <div class="record">
+      <div class="record-head">
+        <div class="record-title">새 최고 기록 — Keras Adam + 데이터 증강 + Early Stopping</div>
+        <span class="tag good">14 epoch에서 자동 정지 (한도 30)</span>
+      </div>
+      <div class="record-stats">
+        <div class="record-stat"><b>54.9%</b><span>Train acc</span></div>
+        <div class="record-stat"><b>49.5%</b><span>Val acc</span></div>
+        <div class="record-stat"><b>50.9%</b><span>Test acc</span></div>
+        <div class="record-stat"><b>1.45</b><span>Test loss</span></div>
+      </div>
+      <p>RandomFlip·RandomRotation·RandomZoom을 모델 앞단에 추가하고 EarlyStopping(patience=3, restore_best_weights)을 걸어서 30 epoch 한도로 재학습. Train acc는 오히려 낮아졌지만(증강으로 매 epoch 다른 이미지를 보니 "외우기"가 어려워짐) Val/Test는 지금까지 중 가장 높고, Train-Val 격차도 5.4%p로 가장 건강함.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>프레임워크</th><th>옵티마이저 (증강+EarlyStop)</th><th>Val acc</th><th>Test acc</th><th>Test loss</th><th>정지 epoch</th></tr></thead>
+        <tbody>
+          <tr class="winner"><td>Keras</td><td>Adam</td><td class="num">49.5%</td><td class="num">50.9%</td><td class="num">1.45</td><td class="num">14/30</td></tr>
+          <tr class="winner"><td>PyTorch</td><td>Adam</td><td class="num">46.6%</td><td class="num">50.9%</td><td class="num">1.45</td><td class="num">9/30</td></tr>
+          <tr><td>PyTorch</td><td>SGD + momentum 0.9</td><td class="num">43.7%</td><td class="num">44.7%</td><td class="num">1.60</td><td class="num">20/30</td></tr>
+          <tr><td>Keras</td><td>SGD + momentum 0.9</td><td class="num">42.5%</td><td class="num">43.7%</td><td class="num">1.64</td><td class="num">14/30</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">Keras Adam과 PyTorch Adam이 test acc·loss 모두 소수점까지 거의 일치(50.9%, 1.45) — 프레임워크 무관 가설이 가장 복잡한 실험에서도 재확인됨. 단 PyTorch가 9 epoch만에, Keras가 14 epoch만에 같은 지점에 도달. SGD+momentum 계열은 두 프레임워크 다 Adam보다 뒤처지고, 더 오래 학습해야 하는 패턴도 유지됨.</div>
+
+    <div class="chart">
+      <div class="chart-group">
+        <div class="chart-group-label">Adam</div>
+        <div class="bar-row">
+          <div class="bar-fw">Keras</div>
+          <div class="bar-track"><div class="bar-fill keras" style="width:43.6%"></div></div>
+          <div class="bar-val">43.6%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-fw">PyTorch</div>
+          <div class="bar-track"><div class="bar-fill pytorch" style="width:44.1%"></div></div>
+          <div class="bar-val">44.1%</div>
+        </div>
+      </div>
+      <div class="chart-group">
+        <div class="chart-group-label">SGD + momentum 0.9</div>
+        <div class="bar-row">
+          <div class="bar-fw">Keras</div>
+          <div class="bar-track"><div class="bar-fill keras" style="width:37.6%"></div></div>
+          <div class="bar-val">37.6%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-fw">PyTorch</div>
+          <div class="bar-track"><div class="bar-fill pytorch" style="width:32.0%"></div></div>
+          <div class="bar-val">32.0%</div>
+        </div>
+      </div>
+      <div class="chart-group">
+        <div class="chart-group-label">SGD (momentum 없음)</div>
+        <div class="bar-row">
+          <div class="bar-fw">Keras</div>
+          <div class="bar-track"><div class="bar-fill keras" style="width:25.5%"></div></div>
+          <div class="bar-val">25.5%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-fw">PyTorch</div>
+          <div class="bar-track"><div class="bar-fill pytorch" style="width:20.5%"></div></div>
+          <div class="bar-val">20.5%</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>프레임워크</th><th>옵티마이저</th><th>Train acc</th><th>Val acc</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr class="winner"><td>PyTorch</td><td>Adam</td><td class="num">—</td><td class="num">40.3%</td><td class="num">44.1%</td><td class="num">1.90</td></tr>
+          <tr><td>Keras</td><td>Adam</td><td class="num">70.9%</td><td class="num">41.9%</td><td class="num">43.6%</td><td class="num">1.94</td></tr>
+          <tr><td>Keras</td><td>SGD + momentum 0.9</td><td class="num">40.0%</td><td class="num">37.4%</td><td class="num">37.6%</td><td class="num">1.75</td></tr>
+          <tr><td>PyTorch</td><td>SGD + momentum 0.9</td><td class="num">—</td><td class="num">31.5%</td><td class="num">32.0%</td><td class="num">1.94</td></tr>
+          <tr><td>Keras</td><td>SGD</td><td class="num">23.9%</td><td class="num">25.2%</td><td class="num">25.5%</td><td class="num">2.14</td></tr>
+          <tr><td>PyTorch</td><td>SGD</td><td class="num">—</td><td class="num">20.1%</td><td class="num">20.5%</td><td class="num">2.28</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="epoch-compare">
+      <div class="epoch-compare-title">에폭을 늘리면? — Keras CNN + Adam</div>
+      <div class="epoch-rows">
+        <div class="epoch-row">
+          <div class="ehead">지표</div>
+          <div class="ehead">Train acc</div>
+          <div class="ehead">Val acc</div>
+          <div class="ehead">Test acc</div>
+          <div class="ehead">Test loss</div>
+        </div>
+        <div class="epoch-row">
+          <div class="epoch-tag">5 epoch</div>
+          <div class="epoch-metric"><b>70.9%</b></div>
+          <div class="epoch-metric"><b>41.9%</b></div>
+          <div class="epoch-metric"><b>43.6%</b></div>
+          <div class="epoch-metric"><b>1.94</b></div>
+        </div>
+        <div class="epoch-row">
+          <div class="epoch-tag">15 epoch</div>
+          <div class="epoch-metric"><b>93.2%</b><span>+22.3%p</span></div>
+          <div class="epoch-metric worse"><b>40.9%</b><span>-1.1%p</span></div>
+          <div class="epoch-metric flat"><b>45.4%</b><span>+1.8%p</span></div>
+          <div class="epoch-metric worse"><b>2.93</b><span>+0.99</span></div>
+        </div>
+      </div>
+      <div class="section-note">Train은 22%p 더 오르고 Test는 겨우 1.8%p — 3배 더 학습해도 실제 성능은 거의 제자리. Dropout(0.5)만으로는 이 시점의 과적합을 못 막는다는 뜻.</div>
+    </div>
+
+    <div class="epoch-compare">
+      <div class="epoch-compare-title">에폭을 늘리면? — PyTorch CNN + SGD momentum 0.9</div>
+      <div class="epoch-rows">
+        <div class="epoch-row">
+          <div class="ehead">지표</div>
+          <div class="ehead">Train acc</div>
+          <div class="ehead">Val acc</div>
+          <div class="ehead">Test acc</div>
+          <div class="ehead">Test loss</div>
+        </div>
+        <div class="epoch-row">
+          <div class="epoch-tag">5 epoch</div>
+          <div class="epoch-metric"><b>—</b></div>
+          <div class="epoch-metric"><b>31.5%</b></div>
+          <div class="epoch-metric"><b>32.0%</b></div>
+          <div class="epoch-metric"><b>1.94</b></div>
+        </div>
+        <div class="epoch-row">
+          <div class="epoch-tag">15 epoch</div>
+          <div class="epoch-metric"><b>—</b></div>
+          <div class="epoch-metric better"><b>42.5%</b><span>+11.0%p</span></div>
+          <div class="epoch-metric better"><b>44.0%</b><span>+12.0%p</span></div>
+          <div class="epoch-metric better"><b>1.65</b><span>-0.29</span></div>
+        </div>
+      </div>
+      <div class="section-note">Adam과 정반대 패턴 — val/test acc가 같이 오르고 loss는 오히려 낮아짐. 15 epoch 만에 Adam(5 epoch, 44.1%)과 정확도는 거의 같아지면서 loss는 훨씬 낮음(1.65 vs Adam 15 epoch의 2.93) — 느리지만 더 건강하게 수렴하고 있다는 뜻.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>CNN 심화 — 구조 개선</h2>
+      <div class="section-note">Conv 블록 2개 → 3개(32→64→128) + BatchNorm + He 초기화</div>
+    </div>
+    <div class="record">
+      <div class="record-head">
+        <div class="record-title">새 최고 기록 — Keras Adam + 증강 + EarlyStop + 3Conv + BatchNorm + He</div>
+        <span class="tag good">17 epoch에서 자동 정지 (한도 30)</span>
+      </div>
+      <div class="record-stats">
+        <div class="record-stat"><b>60.2%</b><span>Train acc</span></div>
+        <div class="record-stat"><b>53.4%</b><span>Val acc</span></div>
+        <div class="record-stat"><b>56.1%</b><span>Test acc</span></div>
+        <div class="record-stat"><b>1.30</b><span>Test loss</span></div>
+      </div>
+      <p>기존 2 Conv 블록 최고 기록(50.9%, loss 1.45) 대비 <b style="color:var(--good)">+5.2%p</b>, loss도 더 낮아짐. Conv 블록을 하나 더 쌓아 더 복잡한 시각 패턴을 잡아내고, 각 블록 뒤 BatchNorm으로 깊어진 층의 학습을 안정화하고, ReLU에 맞춘 He 초기화까지 더한 결과. Train-Val 격차(6.8%p)도 여전히 건강한 수준으로 유지됨.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>구조 / 프레임워크</th><th>Train acc</th><th>Val acc</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr><td>2 Conv 블록, Keras (Glorot 기본 초기화)</td><td class="num">54.9%</td><td class="num">49.5%</td><td class="num">50.9%</td><td class="num">1.45</td></tr>
+          <tr class="winner"><td>3 Conv + BatchNorm + He, Keras</td><td class="num">60.2%</td><td class="num">53.4%</td><td class="num">56.1%</td><td class="num">1.30</td></tr>
+          <tr><td>3 Conv + BatchNorm + He, PyTorch</td><td class="num">—</td><td class="num">57.2%</td><td class="num">54.5%</td><td class="num">1.38</td></tr>
+          <tr class="winner"><td>└ + AdamW + ReduceLR (ES p=7), PyTorch</td><td class="num">—</td><td class="num">59.7%</td><td class="num">59.2%</td><td class="num">1.32</td></tr>
+          <tr><td>└ + AdamW + ReduceLR (ES p=7), Keras</td><td class="num">68.7%</td><td class="num">51.4%</td><td class="num">52.1%</td><td class="num">1.53</td></tr>
+          <tr><td>└ + AdamW + ReduceLR (ES p=3), Keras</td><td class="num">—</td><td class="num">—</td><td class="num">49.9%</td><td class="num">1.54</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note" style="border-left:3px solid var(--good-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">마지막 튜닝 — AdamW + ReduceLROnPlateau</b> <span style="color:var(--good); font-weight:500;">(아래 재현 실행에서 해석이 수정됨)</span><br>
+      1차 실행만 보면 <b>Keras는 56.1%→52.1%로 하락, PyTorch는 54.5%→59.2%로 상승</b>해 정반대로 보였다. 그러나 각 조건을 2회씩 돌린 결과 <b>Keras 쪽 하락은 실행 편차였고</b>(평균 54.3% 대 54.4%로 동일), <b>PyTorch 쪽 상승만 실재</b>했다(평균 53.6% → 60.6%, +7.0%p). 자세한 내용은 "재현 실행" 섹션 참고.<br>
+      <b style="color:var(--ink);">가설 — 헤드 구조 차이</b> 두 CNN의 분류 헤드가 실제로는 달랐음: Keras는 <code>Flatten→Dropout(0.5)→Dense(11)</code>, PyTorch는 <code>Flatten→Linear(128)→ReLU→Linear(11)</code>로 <b>Dropout이 아예 없음</b>. 정규화가 부족했던 PyTorch에서는 weight decay가 그 빈 자리를 채워 개선된 반면, 이미 Dropout(0.5)이 있던 Keras에서는 정규화가 더해지는 효과보다 patience를 7로 늘려 과적합할 시간이 길어진 쪽이 크게 작용(train-val 격차 6.8%p→17.3%p 악화)한 것으로 보임.<br>
+      <b style="color:var(--ink);">한계</b> — ① 각 조건 단일 실행이라 위 해석은 가설 수준. ② 옵티마이저·스케줄러·patience 3가지를 동시에 바꿔 원인을 하나로 특정할 수 없음(통제변수 위반). ③ Keras 1차 시도(49.9%)는 EarlyStopping patience(3)가 ReduceLROnPlateau patience(2)와 너무 가까워, 학습률을 낮춘 바로 그 epoch에 종료되며 감소 효과를 전혀 못 쓴 설정 실수였음.
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">디버깅 뒷이야기</b> — PyTorch 첫 시도는 36.5%로 Keras(56.1%)와 19.6%p나 벌어졌는데, 원인은 두 가지였음: ① Conv→BatchNorm→ReLU 순서가 Keras(Conv→ReLU→BatchNorm)와 달랐음, ② EarlyStopping patience=3이 BatchNorm의 running stats가 안정화되기 전에 학습을 멈춰버림. 순서 통일 + patience=5로 재실행하니 54.5%로 격차가 1.6%p까지 줄어듦 — 프레임워크 무관 가설이 다시 확인됨.
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>용어 — "노드" 대신 쓰는 말</h2>
+      <div class="section-note">Dense층과 Conv층은 부르는 용어가 다름</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>위치</th><th>표준 용어</th><th>의미</th></tr></thead>
+        <tbody>
+          <tr><td>Dense(완전연결)층</td><td><code>뉴런</code> / <code>유닛</code></td><td>층 하나 안의 출력 하나하나</td></tr>
+          <tr><td>Conv층 — 필터 단위</td><td><code>채널</code> / <code>특징 맵</code></td><td>필터 하나가 만들어내는 2차원 결과판 전체</td></tr>
+          <tr><td>Conv층 — 값 하나 단위</td><td><code>활성화</code></td><td>특징 맵 안의 점 하나하나 (흔히 "노드"라 부르던 단위)</td></tr>
+          <tr><td>Conv층 — 가중치</td><td><code>필터</code> / <code>커널</code></td><td>그 채널을 만들어내는 학습된 3×3 가중치 창</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Conv층 (32→64→128)</th><th>계산</th><th>출력 크기</th><th>활성화 개수</th></tr></thead>
+        <tbody>
+          <tr><td>Conv1 (32채널)</td><td class="num">128−3+1=126</td><td class="num">126×126×32</td><td class="num">508,032</td></tr>
+          <tr><td>Conv2 (64채널)</td><td class="num">63−3+1=61</td><td class="num">61×61×64</td><td class="num">238,144</td></tr>
+          <tr><td>Conv3 (128채널)</td><td class="num">30−3+1=28</td><td class="num">28×28×128</td><td class="num">100,352</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">채널 수는 32→64→128로 2배씩 늘지만, Pooling으로 공간 크기가 계속 줄어서 활성화 개수는 오히려 감소함(508K→238K→100K) — "뒤로 갈수록 더 많은 종류의 특징을 더 작은 해상도로 표현"하는 CNN의 전형적 패턴.</div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>가중치 초기화 — He vs Glorot</h2>
+      <div class="section-note">3 Conv 실험에서 Keras에만 <code>he_normal</code>을 명시한 이유</div>
+    </div>
+    <div class="findings">
+      <div class="finding">
+        <div class="finding-title">왜 시작값이 중요한가</div>
+        <p>학습 전 가중치는 랜덤값으로 채워지는데, 그 크기가 너무 크면 층을 지날 때마다 값이 증폭돼 기울기 폭발, 너무 작으면 0에 수렴해 기울기 소실이 일어남. 층마다 곱해지는 효과라 <b>깊어질수록 심해짐</b> — 2 Conv에선 무시할 만했지만 3 Conv로 넘어가며 챙긴 이유.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">He가 Glorot보다 2배 큰 이유</div>
+        <p>Glorot/Xavier는 활성함수가 신호를 그대로 통과시킨다고 가정하지만, ReLU는 음수를 전부 0으로 만들어 <b>신호의 절반을 죽임</b>. He는 이 손실분을 미리 보상해 가중치를 더 크게 잡음.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">프레임워크 기본값이 다름</div>
+        <p>Keras Conv2D/Dense의 기본값은 Glorot이라 ReLU를 쓸 때 <code>kernel_initializer="he_normal"</code>을 직접 지정해야 함. PyTorch의 <code>nn.Conv2d</code>/<code>nn.Linear</code>는 <b>기본값이 이미 Kaiming(He) 계열</b>이라 코드 변경 없이 적용돼 있었음.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>초기화</th><th>표준편차</th><th>전제</th><th>Keras</th><th>PyTorch</th></tr></thead>
+        <tbody>
+          <tr><td>Glorot / Xavier</td><td class="num">√(1 / 입력수)</td><td>활성함수가 신호를 보존</td><td>기본값</td><td>명시 필요</td></tr>
+          <tr class="winner"><td>He / Kaiming</td><td class="num">√(2 / 입력수)</td><td>ReLU가 신호 절반을 죽임</td><td><code>he_normal</code> 명시 필요</td><td>기본값</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">즉 3 Conv 실험의 두 코드는 서로 다른 설정을 한 게 아니라, <b>같은 He 초기화에 도달하기 위해 각자 다른 조치</b>를 한 것 — Keras는 기본값을 덮어썼고 PyTorch는 기본값을 그대로 뒀음. 전체 기록표에서 PyTorch 행이 "기본(He)"로 표기된 이유.</div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>DNN — 옵티마이저별 비교</h2>
+      <div class="section-note">은닉층 2개 (256 → 128)</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>프레임워크</th><th>옵티마이저</th><th>Val acc</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr class="winner"><td>PyTorch</td><td>Adam</td><td class="num">25.8%</td><td class="num">26.9%</td><td class="num">2.07</td></tr>
+          <tr><td>Keras</td><td>SGD</td><td class="num">26.1%</td><td class="num">25.6%</td><td class="num">2.12</td></tr>
+          <tr><td>PyTorch</td><td>SGD</td><td class="num">21.9%</td><td class="num">20.9%</td><td class="num">2.20</td></tr>
+          <tr><td>Keras</td><td>Adam</td><td class="num">14.6%</td><td class="num">15.0%</td><td class="num">2.27</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">Keras는 SGD가, PyTorch는 Adam이 근소하게 앞섬 — 5 epoch 표본만으론 초기화 노이즈와 구분하기 어려운 차이.</div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>ANN — 옵티마이저별 비교</h2>
+      <div class="section-note">은닉층 없음, Flatten → 단일 출력층</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>프레임워크</th><th>옵티마이저</th><th>Val acc</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr class="winner"><td>Keras</td><td>SGD</td><td class="num">21.6%</td><td class="num">21.3%</td><td class="num">2.49</td></tr>
+          <tr><td>PyTorch</td><td>SGD</td><td class="num">20.5%</td><td class="num">20.6%</td><td class="num">2.36</td></tr>
+          <tr><td>PyTorch</td><td>Adam</td><td class="num">17.2%</td><td class="num">17.0%</td><td class="num">5.51</td></tr>
+          <tr><td>Keras</td><td>Adam</td><td class="num">12.9%</td><td class="num">12.9%</td><td class="num">7.93</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>데이터 증강 기법</h2>
+      <div class="section-note">CNN + 증강 실험부터 적용, 값 자체도 하이퍼파라미터로 취급</div>
+    </div>
+    <div class="findings">
+      <div class="finding">
+        <div class="finding-title">RandomFlip — 좌우 뒤집기</div>
+        <p>Keras <code>RandomFlip("horizontal")</code> / PyTorch <code>RandomHorizontalFlip()</code>. 음식이 항상 같은 방향으로 놓여있다는 편향을 줄임.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">RandomRotation — 회전</div>
+        <p>Keras <code>RandomRotation(0.1)</code>(±36°) / PyTorch <code>RandomRotation(10)</code>(±10°). 촬영 각도가 다른 사진에도 강건하게 만듦.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">RandomZoom — 확대/축소 10%</div>
+        <p>Keras <code>RandomZoom(0.1)</code>만 적용. 음식이 화면을 꽉 안 채워도 인식하도록 도움.</p>
+      </div>
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">알아두어야 할 점</b> — 두 프레임워크의 증강 설정이 완전히 동일하진 않음: ① Keras는 Flip+Rotation+Zoom 3종, PyTorch는 Flip+Rotation 2종만 적용(Zoom 미포함). ② Keras의 <code>RandomRotation(factor)</code>는 2π의 비율(0.1→±36°)이고 PyTorch의 <code>RandomRotation(degrees)</code>는 각도 직접 지정(10→±10°)이라, 같은 숫자 "0.1"과 "10"이 실제로는 다른 강도의 회전을 의미함. 그럼에도 최종 결과(56.1% vs 54.5%)가 근접했던 건 이 정도 차이가 성능에 큰 영향을 안 줬다는 뜻으로 해석 가능.
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>고려했지만 사용 안 한 기법</th><th>효과</th></tr></thead>
+        <tbody>
+          <tr><td>Translation (이동)</td><td class="num">음식이 항상 정중앙에 있다는 편향 완화</td></tr>
+          <tr><td>Brightness/Contrast (밝기·대비)</td><td class="num">촬영 조명 환경 차이에 강건해짐</td></tr>
+          <tr><td>Random Crop (일부 확대)</td><td class="num">음식이 화면 전체를 안 채워도 인식</td></tr>
+          <tr><td>Random Erasing (일부 지우기)</td><td class="num">특정 부위에만 의존하지 않게 강제</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">시간 제약상 Flip·Rotation·Zoom 3종으로 한정 — 이미 50.9%→56.1% 개선 효과가 확인돼 우선순위가 더 높은 다른 레버(옵티마이저, 구조)에 집중.</div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>정리된 결론</h2></div>
+    <div class="findings">
+      <div class="finding">
+        <div class="finding-title">구조가 곧 성능이다</div>
+        <p>ANN(21%) → DNN(27%) → CNN(44%). 같은 데이터, 같은 5 epoch에서 구조를 바꾼 것만으로 정확도가 두 배 넘게 뛰었다. 이미지에서 위치 정보를 보존하는 CNN의 우위가 숫자로 확인됨.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">깊을수록 Adam, 얕을수록 SGD</div>
+        <p>ANN에선 SGD가 Adam을 압도(21% vs 13%)했지만, CNN에선 반대(Adam 44% vs 모멘텀 없는 SGD 21~26%). 모델이 복잡해질수록 적응형 옵티마이저의 이점이 커짐.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">모멘텀 하나로 +12%p</div>
+        <p>CNN + SGD에 momentum 0.9만 추가했을 뿐인데 정확도가 20~25% → 32~38%로 뛰었다. 순정 SGD는 복잡한 손실 지형에서 5 epoch로는 사실상 정체됨.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">더 학습해도 안 느는 건 시간이 아니라 구조 문제</div>
+        <p>Keras CNN+Adam을 5→15 epoch로 늘리자 train acc는 71%→93%로 뛰었지만 test acc는 43.6%→45.4%로 거의 그대로. 초과 학습은 과적합만 키우고, Dropout 비율 상향이나 데이터 증강 같은 별도 대책이 필요함.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">Adam은 빠르게, SGD+momentum은 건강하게</div>
+        <p>PyTorch SGD+momentum을 5→15 epoch로 늘리자 정반대로 val/test acc가 같이 오르고 loss도 낮아짐(1.94→1.65). 15 epoch 만에 Adam(5 epoch) 수준의 정확도를 따라잡으면서 loss는 Adam(15 epoch, 2.93)보다 훨씬 낮음 — 느리지만 과적합에 강한 수렴.</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">구조 개선은 여전히 남은 지렛대였다</div>
+        <p>옵티마이저·정규화를 다 맞춘 뒤에도 Conv 블록 추가 + BatchNorm + He 초기화로 50.9% → 56.1%까지 더 올랐다. 하이퍼파라미터 튜닝과 구조 개선은 서로 대체재가 아니라 누적되는 별개의 지렛대라는 뜻. <b style="color:var(--pytorch);">단, 재현 실행에서 이 조건이 52.5%로 나와 개선폭은 +5.2%p가 아니라 +1.6~3.4%p로 봐야 한다</b>(재현 실행 섹션 참고).</p>
+      </div>
+      <div class="finding">
+        <div class="finding-title">정규화는 더할수록 좋은 게 아니라 "총량"의 문제다</div>
+        <p>각 조건을 2회씩 돌린 결과, AdamW는 <b>Dropout이 없던 PyTorch에서 53.6% → 60.6%(+7.0%p)</b>를 만들었고 <b>이미 Dropout(0.5)이 있던 Keras에서는 54.3% → 54.4%로 아무 차이도 없었다.</b> PyTorch의 AdamW 두 실행이 Adam 두 실행보다 모두 높아 범위가 겹치지 않는다. 기법 자체의 우열이 아니라 모델에 이미 걸린 정규화 총량의 문제 — 부족한 곳은 채우고, 충분한 곳에는 보탤 것이 없다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>재현 실행 — 같은 조건, 두 번째 실행</h2>
+      <div class="section-note">5/6 완료 · 학습 곡선을 남기려 스크립트를 고쳐 다시 돌린 결과</div>
+    </div>
+    <div class="section-note">
+      곡선 기록이 목적이었지만, 결과적으로 <b style="color:var(--ink);">같은 설정을 두 번 돌린 재현성 실험</b>이 됐다. 앞선 26개 실험은 조합마다 1회씩만 실행했다는 것이 가장 큰 방법론적 한계였는데(실험의 한계 ③), 이 표가 <b style="color:var(--ink);">"실제로 얼마나 흔들리는가"에 대한 실측치</b>를 준다. 각 칸은 <code>1차 → 2차</code> 형식.
+    </div>
+    <div class="table-wrap compact">
+      <table>
+        <thead><tr><th>스크립트</th><th>조건</th><th>Train</th><th>Val</th><th>Test acc</th><th>Test loss</th><th>최대 편차</th></tr></thead>
+        <tbody>
+          <tr><td>keras1</td><td>2 Conv · Adam · 증강 없음 · 15 epoch</td><td class="num">93.2 → 93.6</td><td class="num">40.9 → 42.7</td><td class="num">45.4 → 46.4</td><td class="num">2.93 → 3.08</td><td class="num">1.8%p</td></tr>
+          <tr><td>keras2</td><td>3 Conv+BN+He · Adam · 증강 · ES p=3</td><td class="num">60.2 → 60.5</td><td class="num">53.4 → 49.8</td><td class="num">56.1 → 52.5</td><td class="num">1.30 → 1.49</td><td class="num" style="color:var(--pytorch); font-weight:500;">3.6%p</td></tr>
+          <tr><td>keras3</td><td>3 Conv+BN+He · AdamW+ReduceLR · ES p=7</td><td class="num">68.7 → 70.4</td><td class="num">51.4 → 52.9</td><td class="num">52.1 → 56.7</td><td class="num">1.53 → 1.44</td><td class="num" style="color:var(--pytorch); font-weight:500;">4.6%p</td></tr>
+          <tr><td>torch2</td><td>3 Conv+BN · Adam · 증강 · ES p=5</td><td class="num">— → 73.4</td><td class="num">57.2 → 51.1</td><td class="num">54.5 → 52.6</td><td class="num">1.38 → 1.47</td><td class="num" style="color:var(--pytorch); font-weight:500;">6.1%p</td></tr>
+          <tr class="winner"><td>torch3</td><td>3 Conv+BN · AdamW+ReduceLR · ES p=7</td><td class="num">— → 93.3</td><td class="num">59.7 → 59.7</td><td class="num">59.2 → <b>61.9</b></td><td class="num">1.32 → 1.30</td><td class="num">2.7%p</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">keras1 — 1.8%p 안에서 재현</b> 세 정확도 지표가 모두 2%p 미만으로 일치했다. 그동안 "1~2%p 차이는 노이즈로 봐야 한다"고 해석해온 근거가 추정이 아니라 실측이 됐다. 동시에 <b>Val이 1.8%p나 움직였다는 사실 자체가</b>, DNN 단계에서 Keras와 PyTorch의 승자가 엇갈렸던 것(26.9% vs 25.6%, 1.3%p 차)을 프레임워크 차이로 읽으면 안 되는 이유이기도 하다.
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">keras1 곡선이 추가로 보여준 것</b> — 검증 손실이 <b>3 epoch에서 1.71로 최저</b>를 찍고 이후 3.35까지 단조 상승했다. 학습 손실은 같은 구간에서 0.18까지 내려간다. 표의 최종 숫자만으로는 격차의 크기만 알 수 있지만, 곡선은 <b>과적합이 시작된 지점이 3 epoch</b>이라는 것까지 특정해준다.
+    </div>
+    <div class="section-note" style="border-left:3px solid var(--pytorch-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">keras2 — 3.6%p 편차, 기존 결론 하나에 영향</b><br>
+      Test가 56.1% → 52.5%로 <b>3.6%p 떨어졌다.</b> 이 수치는 "구조 개선(3 Conv + BatchNorm + He)이 50.9% → 56.1%로 <b>+5.2%p</b>를 만들었다"는 기존 서술의 근거였다. 재현값을 쓰면 개선폭이 <b>+1.6%p</b>, 두 실행 평균(54.3%)으로 보면 <b>+3.4%p</b>가 된다. 방향은 여전히 양(+)이지만 <b>처음 주장한 +5.2%p보다 작고 덜 확실하다</b>고 고쳐 말해야 한다.<br>
+      <b style="color:var(--ink);">왜 keras1(1.8%p)보다 두 배로 흔들렸나</b> — 검증 곡선이 눈에 띄게 들쭉날쭉하다(0.375 → 0.503 → 0.468 → 0.497). keras1의 평평한 검증선과 대조적이다. 여기에 EarlyStopping이 얹히면 편차가 두 겹으로 쌓인다: ① 가중치 초기화 차이, ② <b>어느 epoch에서 멈추고 어느 가중치를 복원할지가 달라짐</b>(1차 17 epoch, 2차 19 epoch). BatchNorm이 검증 지표를 흔들고, 그 위에서 patience=3이 최고점을 고르니 뽑히는 지점이 실행마다 바뀐다 — 앞서 정리한 BatchNorm↔EarlyStopping 상호작용이 정확도 편차로 드러난 사례.<br>
+      <b style="color:var(--ink);">덧붙여</b> — 19 epoch 시점에도 검증 정확도는 상승 중이었다(0.4851 → 0.4977). val_loss 기준으로 멈춘 탓에 <b>더 갈 수 있었는데 잘린</b> 정황이 있다.
+    </div>
+    <div class="section-note" style="border-left:3px solid var(--pytorch-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">keras3 — 4.6%p 편차, 결론 하나가 무너짐</b><br>
+      Test가 52.1% → 56.7%로 <b>4.6%p 올랐다</b>(지금까지 최대 편차). 이 수치는 "Keras에서는 AdamW가 56.1% → 52.1%로 <b>4%p 떨어뜨렸다</b>"는 서술의 근거였다. 재현값까지 넣어 평균 내면:<br>
+      <span style="font-family:var(--font-mono); font-size:12.5px;">keras2(Adam) 56.1 · 52.5 → 평균 <b>54.3%</b> &nbsp;|&nbsp; keras3(AdamW) 52.1 · 56.7 → 평균 <b>54.4%</b></span><br>
+      <b>두 조건이 사실상 동일하다.</b> 1차 실행에서 우연히 keras2가 높은 쪽, keras3가 낮은 쪽에 걸렸던 것이고, "AdamW가 Keras에서 해로웠다"는 관찰은 <b>실행 편차였다</b>고 보는 것이 맞다.<br>
+      <b style="color:var(--ink);">결론 ②에 미치는 영향</b> — "정규화는 총량의 문제"의 근거는 <span style="white-space:nowrap;">PyTorch +4.7%p</span> / <span style="white-space:nowrap;">Keras −4.0%p</span>라는 대칭이었는데, 그중 Keras 쪽이 사라졌다. PyTorch 쪽(torch2·torch3 재현)의 결과에 따라 이 결론의 유지 여부가 결정된다.
+    </div>
+    <div class="section-note" style="border-left:3px solid var(--pytorch-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">torch2 — 결론 ②의 판정이 torch3 하나에 걸렸다</b><br>
+      Test는 54.5% → 52.6%로 1.9%p 차이지만 <b>Val이 6.1%p 움직여 지금까지 최대 편차</b>다. 결론 ②의 PyTorch 쪽 근거를 재현값까지 넣어 정리하면:<br>
+      <span style="font-family:var(--font-mono); font-size:12.5px;">PyTorch Adam 54.5 · 52.6 → 평균 <b>53.6%</b> &nbsp;|&nbsp; PyTorch AdamW 59.2 · <b>61.9</b> → 평균 <b>60.6%</b></span><br>
+      torch3가 <b>57% 이상</b>이면 Adam 대비 +4%p 이상이 남아 결론 ②가 <b>"PyTorch처럼 정규화가 부족한 모델에서만 유효"</b>로 좁혀져 생존한다. <b>55% 이하</b>면 차이가 편차 범위에 들어가 <b>폐기</b>해야 한다.
+    </div>
+    <div class="record" style="margin-top:.4rem;">
+      <div class="record-head">
+        <div class="record-title">torch3 판정 — 결론 ② 생존, 그리고 최고 기록 갱신</div>
+        <span class="tag good">61.9% · 18 epoch에서 정지</span>
+      </div>
+      <div class="record-stats">
+        <div class="record-stat"><b>53.6%</b><span>PyTorch Adam 평균</span></div>
+        <div class="record-stat"><b>60.6%</b><span>PyTorch AdamW 평균</span></div>
+        <div class="record-stat"><b>+7.0%p</b><span>AdamW 이득</span></div>
+        <div class="record-stat"><b>54.3 / 54.4</b><span>Keras Adam / AdamW</span></div>
+      </div>
+      <p><b>AdamW 두 실행(59.2 · 61.9)이 Adam 두 실행(54.5 · 52.6)보다 모두 높다.</b> 범위가 겹치지 않아, 2회씩으로 낼 수 있는 가장 깨끗한 형태의 근거다. 반면 Keras는 두 조건 평균이 54.3% 대 54.4%로 차이가 없다.<br><br>
+      <b>결론 ②는 이렇게 다듬어진다</b> — 원래 서술이던 "프레임워크마다 정반대로 작용한다"에서 <b>"정규화가 부족한 모델에서는 +7%p를 만들고, 이미 Dropout이 있던 모델에서는 아무 차이도 없었다"</b>로. "Keras에서 해로웠다(−4.0%p)"는 부분은 노이즈였지만 핵심은 살아남았고, 근거는 오히려 단단해졌다. 여기에 <b>torch1 A/B에서 PyTorch가 train 99.4%까지 암기한 사실</b>이 "정규화가 부족했다"는 전제의 직접 증거로 붙는다.</p>
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">torch2 곡선이 드러낸 문제 — EarlyStopping이 손해를 봤다</b><br>
+      <span style="font-family:var(--font-mono); font-size:12.5px;">epoch 5 : val_loss <b>1.494</b>(최저) · val_acc 51.2% &nbsp;←&nbsp; 복원된 가중치<br>epoch 8 : val_loss 1.500 · val_acc <b>54.7%</b> &nbsp;←&nbsp; 실제 최고 정확도</span><br>
+      <b>val_loss가 0.006 차이로 밀려 val 정확도 3.5%p를 잃었다.</b> <code>monitor="val_loss"</code>로 최적 시점을 고른 결과다. BatchNorm 정리 문서에 "val_loss 대신 val_accuracy를 모니터링하라"고 적어둔 조언이 일반론이 아니라 <b>이 실험 데이터로 확인된 사례</b>가 됐다.
+    </div>
+
+    <div class="record" style="margin-top:.4rem;">
+      <div class="record-head">
+        <div class="record-title">지금까지 측정된 실행 간 편차</div>
+        <span class="tag good">5/6 완료</span>
+      </div>
+      <div class="record-stats" style="grid-template-columns:repeat(5,1fr);">
+        <div class="record-stat"><b>1.8%p</b><span>keras1</span></div>
+        <div class="record-stat"><b>3.6%p</b><span>keras2</span></div>
+        <div class="record-stat"><b>4.6%p</b><span>keras3</span></div>
+        <div class="record-stat"><b>6.1%p</b><span>torch2 · 최대</span></div>
+        <div class="record-stat"><b>2.7%p</b><span>torch3</span></div>
+      </div>
+      <p style="margin-bottom:.5rem;"><b>같은 설정을 다시 돌렸을 때 정확도가 최대 6.1%p까지 움직였다.</b> 앞선 실험에서 "발견"으로 기록한 차이들 중 상당수가 이 범위 안에 들어간다. 결론을 지우자는 뜻이 아니라, <b>5%p 안팎의 차이는 단독 실행 하나로 주장할 수 없다</b>는 기준선이 실측으로 생겼다는 뜻이다. 이 표 자체가 "실험의 한계 ③ 단일 실행"에 대한 가장 직접적인 답변이 된다.</p>
+    </div>
+
+    <div class="section-head" style="margin-top:1.4rem;">
+      <h2 style="font-size:18px;">덤으로 나온 것 — 프레임워크 A/B</h2>
+      <div class="section-note">재현 배치를 돌리며 추가한 새 조건 (재현이 아님)</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>2 Conv · Adam · 15 epoch · 증강 없음</th><th>Train</th><th>Val</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr><td>Keras <span style="color:var(--ink-mute);">(Dropout 0.5 있음)</span></td><td class="num">93.6%</td><td class="num">42.7%</td><td class="num">46.4%</td><td class="num">3.08</td></tr>
+          <tr><td>PyTorch <span style="color:var(--ink-mute);">(Dropout 없음, Dense 은닉층 추가)</span></td><td class="num">99.4%</td><td class="num">39.4%</td><td class="num">44.4%</td><td class="num">4.81</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">결론은 같은 곳에, 경로는 전혀 다르게</b> — Test 정확도는 46.4% 대 44.4%로 <b>2.0%p 차이</b>, 측정된 편차 범위(최대 4.6%p) 안이라 사실상 동일하다. "같은 조건이면 프레임워크는 결과에 영향 없다"는 결론과 일치.<br>
+      그런데 <b>도달 방식이 완전히 다르다.</b> PyTorch는 Train을 <b>99.4%</b>까지 끌어올렸고(Keras 93.6%), 검증 손실도 4.81로 Keras(3.08)보다 훨씬 크게 발산했다. 같은 옵티마이저·같은 epoch인데 <b>Dropout이 없는 쪽이 거의 완전히 암기</b>한 것이다.<br>
+      <b style="color:var(--ink);">결론 ②에 대한 의미</b> — keras3 재현으로 "Keras에서 AdamW가 해로웠다"는 한쪽 근거는 무너졌지만, 이 A/B는 <b>"PyTorch 모델이 실제로 정규화가 부족한 상태였다"는 전제 자체를 직접 확인</b>해준다. AdamW의 weight decay가 그 빈 자리를 채웠다는 해석의 발판은 남아 있다.
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>전체 실험 기록</h2>
+      <div class="section-note">지금까지 실행한 27개 조합 전부, 조건별 상세</div>
+    </div>
+    <div class="table-wrap compact">
+      <table>
+        <thead>
+          <tr>
+            <th>단계</th><th>구조</th><th>프레임워크</th><th>옵티마이저</th><th>증강</th><th>BatchNorm</th><th>초기화</th><th>EarlyStop</th><th>Epoch(계획/정지)</th><th>Train</th><th>Val</th><th>Test acc</th><th>Test loss</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="stage-cell">ANN</td><td>Flatten→Dense(11)</td><td>Keras</td><td>Adam</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">12.9%</td><td class="num">12.9%</td><td class="num">7.93</td></tr>
+          <tr><td class="stage-cell">ANN</td><td>Flatten→Dense(11)</td><td>Keras</td><td>SGD</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">21.6%</td><td class="num">21.3%</td><td class="num">2.49</td></tr>
+          <tr><td class="stage-cell">ANN</td><td>Flatten→Linear(11)</td><td>PyTorch</td><td>SGD</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">20.5%</td><td class="num">20.6%</td><td class="num">2.36</td></tr>
+          <tr><td class="stage-cell">ANN</td><td>Flatten→Linear(11)</td><td>PyTorch</td><td>Adam</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">17.2%</td><td class="num">17.0%</td><td class="num">5.51</td></tr>
+
+          <tr><td class="stage-cell">DNN</td><td>256→128→11</td><td>Keras</td><td>Adam</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">14.6%</td><td class="num">15.0%</td><td class="num">2.27</td></tr>
+          <tr><td class="stage-cell">DNN</td><td>256→128→11</td><td>Keras</td><td>SGD</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">26.1%</td><td class="num">25.6%</td><td class="num">2.12</td></tr>
+          <tr><td class="stage-cell">DNN</td><td>256→128→11</td><td>PyTorch</td><td>Adam</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">25.8%</td><td class="num">26.9%</td><td class="num">2.07</td></tr>
+          <tr><td class="stage-cell">DNN</td><td>256→128→11</td><td>PyTorch</td><td>SGD</td><td>—</td><td>—</td><td>기본</td><td>—</td><td class="num">5/5</td><td class="num">—</td><td class="num">21.9%</td><td class="num">20.9%</td><td class="num">2.20</td></tr>
+
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>Keras</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">70.9%</td><td class="num">41.9%</td><td class="num">43.6%</td><td class="num">1.94</td></tr>
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>Keras</td><td>SGD</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">23.9%</td><td class="num">25.2%</td><td class="num">25.5%</td><td class="num">2.14</td></tr>
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>Keras</td><td>SGD+mom0.9</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">40.0%</td><td class="num">37.4%</td><td class="num">37.6%</td><td class="num">1.75</td></tr>
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>PyTorch</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">—</td><td class="num">40.3%</td><td class="num">44.1%</td><td class="num">1.90</td></tr>
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>PyTorch</td><td>SGD</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">—</td><td class="num">20.1%</td><td class="num">20.5%</td><td class="num">2.28</td></tr>
+          <tr><td class="stage-cell">CNN 기본</td><td>32→64 Conv</td><td>PyTorch</td><td>SGD+mom0.9</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">5/5</td><td class="num">—</td><td class="num">31.5%</td><td class="num">32.0%</td><td class="num">1.94</td></tr>
+
+          <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>Keras</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">93.2%</td><td class="num">40.9%</td><td class="num">45.4%</td><td class="num">2.93</td></tr>
+          <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>PyTorch</td><td>SGD+mom0.9</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">—</td><td class="num">42.5%</td><td class="num">44.0%</td><td class="num">1.65</td></tr>
+          <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>PyTorch</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">99.4%</td><td class="num">39.4%</td><td class="num">44.4%</td><td class="num">4.81</td></tr>
+
+          <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>Keras</td><td>Adam</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/14</td><td class="num">54.9%</td><td class="num">49.5%</td><td class="num">50.9%</td><td class="num">1.45</td></tr>
+          <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>Keras</td><td>SGD+mom0.9</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/14</td><td class="num">43.2%</td><td class="num">42.5%</td><td class="num">43.7%</td><td class="num">1.64</td></tr>
+          <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>PyTorch</td><td>SGD+mom0.9</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/20</td><td class="num">—</td><td class="num">43.7%</td><td class="num">44.7%</td><td class="num">1.60</td></tr>
+          <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>PyTorch</td><td>Adam</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/9</td><td class="num">—</td><td class="num">46.6%</td><td class="num">50.9%</td><td class="num">1.45</td></tr>
+
+          <tr class="winner"><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>Keras</td><td>Adam</td><td>Y</td><td>Y</td><td>He</td><td>p=3</td><td class="num">30/17</td><td class="num">60.2%</td><td class="num">53.4%</td><td class="num">56.1%</td><td class="num">1.30</td></tr>
+          <tr><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>PyTorch</td><td>Adam</td><td>Y</td><td>Y(BN→ReLU 순서버그)</td><td>기본(He)</td><td>p=3</td><td class="num">30/8</td><td class="num">—</td><td class="num">34.3%</td><td class="num">36.5%</td><td class="num">1.81</td></tr>
+          <tr class="winner"><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>PyTorch</td><td>Adam</td><td>Y</td><td>Y(수정됨)</td><td>기본(He)</td><td>p=5</td><td class="num">30/12</td><td class="num">—</td><td class="num">57.2%</td><td class="num">54.5%</td><td class="num">1.38</td></tr>
+
+          <tr><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>Keras</td><td>AdamW(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>He</td><td>p=3</td><td class="num">30/14</td><td class="num">60.2%</td><td class="num">47.9%</td><td class="num">49.9%</td><td class="num">1.54</td></tr>
+          <tr><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>Keras</td><td>AdamW(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>He</td><td>p=7</td><td class="num">30/24</td><td class="num">68.7%</td><td class="num">51.4%</td><td class="num">52.1%</td><td class="num">1.53</td></tr>
+          <tr class="winner"><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>PyTorch</td><td>AdamW(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>기본(He)</td><td>p=7</td><td class="num">30/17</td><td class="num">—</td><td class="num">59.7%</td><td class="num">59.2%</td><td class="num">1.32</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">공통 조건: Food-11(11클래스), 128×128×3, batch_size=32, lr=1e-3. "Epoch(계획/정지)"는 EarlyStopping이 없으면 고정 epoch, 있으면 (한도/실제정지). "—"는 해당 실행에서 기록하지 않은 값.</div>
+  </section>
+
+</div>

@@ -1,0 +1,11 @@
+# 발표 자료 결과물 (ppt_build/build.js로 재생성 가능)
+*.pptx
+
+# 자동 다운로드된 데이터셋 (MNIST 등)
+data/
+
+# 학습 곡선 이미지 (Colab에서 생성)
+curve_*.png
+
+# 에디터 설정
+.vscode/

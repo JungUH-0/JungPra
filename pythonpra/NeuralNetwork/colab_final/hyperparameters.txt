@@ -1,0 +1,137 @@
+================================================================
+6개 실험 스크립트 하이퍼파라미터 정리
+================================================================
+
+
+[공통 고정값]
+----------------------------------------------------------------
+  이미지 크기      128 x 128 x 3
+  배치 크기        32
+  학습률           1e-3 (전 파일 동일)
+  클래스 수        11
+  손실함수         cross-entropy
+  데이터 분할      training / validation / evaluation (Food-11 기본 제공)
+
+
+[파일별 설정]
+----------------------------------------------------------------
+
+                keras1        keras2           keras3
+--------------------------------------------------------------
+구조            Conv 2블록     Conv 3블록        Conv 3블록
+                32-64         32-64-128        32-64-128
+BatchNorm       없음          있음              있음
+초기화          Glorot(기본)   he_normal        he_normal
+증강            없음          Flip/Rot/Zoom     Flip/Rot/Zoom
+Dropout         0.5           0.5              0.5
+옵티마이저       Adam          Adam             AdamW (wd=1e-4)
+스케줄러         없음          없음              ReduceLROnPlateau
+                                               (factor 0.5, p=2)
+EarlyStopping   없음          patience=3        patience=7
+epoch           15 고정        최대 30           최대 30
+
+
+                torch1              torch2           torch3
+--------------------------------------------------------------
+구조            Conv 2블록           Conv 3블록        Conv 3블록
+                32-64               32-64-128        32-64-128
+BatchNorm       없음                있음              있음
+초기화          Kaiming(기본)        Kaiming(기본)     Kaiming(기본)
+증강            없음                Flip/Rot          Flip/Rot
+Dropout         없음                없음              없음
+옵티마이저       SGD(momentum 0.9)   Adam             AdamW (wd=1e-4)
+스케줄러         없음                없음              ReduceLROnPlateau
+                                                     (factor 0.5, p=2)
+EarlyStopping   없음                patience=5        patience=7
+epoch           15 고정              최대 30           최대 30
+
+
+[대응 관계]
+----------------------------------------------------------------
+  keras2  <->  torch2     3Conv + BN + 증강 + EarlyStop + Adam
+  keras3  <->  torch3     위와 동일 + AdamW + ReduceLROnPlateau
+  keras1  <->  torch1     기본 CNN   (단, 옵티마이저가 서로 다름)
+
+
+================================================================
+프레임워크 간 조건 불일치 (해석 시 주의)
+================================================================
+
+1. Dropout 유무
+     Keras   Flatten 뒤 Dropout(0.5) 있음
+     PyTorch 3개 파일 모두 Dropout 없음
+   -> 정규화 총량이 달라, AdamW의 weight decay 효과가
+      두 프레임워크에서 정반대로 나타난 원인으로 추정됨
+
+2. 분류 헤드 구조
+     Keras   Flatten -> Dropout -> Dense(11)
+     PyTorch Flatten -> Linear(128) -> ReLU -> Linear(11)
+   -> PyTorch 쪽에 은닉 Dense층이 하나 더 있음
+
+3. 증강 종류
+     Keras   Flip + Rotation + Zoom   (3종)
+     PyTorch Flip + Rotation          (2종, Zoom 없음)
+
+4. 회전 강도 (같은 이름, 다른 단위)
+     Keras   RandomRotation(0.1)  -> 2pi의 비율,  약 ±36도
+     PyTorch RandomRotation(10)   -> 각도 직접,     ±10도
+
+5. EarlyStopping patience
+     keras2 = 3   /   torch2 = 5
+   -> torch2는 BatchNorm 통계 안정화를 기다리려 5로 늘린 것
+
+6. keras1 vs torch1 옵티마이저
+     keras1 = Adam   /   torch1 = SGD + momentum 0.9
+   -> 이 둘은 직접 비교 대상이 아님
+
+7. 학습률 1e-3 고정
+     Adam 계열에는 기본값이지만 SGD에는 평소의 1/10
+   -> torch1의 SGD가 불리한 조건이었을 가능성
+
+
+================================================================
+이번 수정 내용
+================================================================
+
+1. DATA_DIR 변경 (keras1, torch1)
+     /content/drive/MyDrive/food11  ->  /content/food11
+   Drive에서 직접 읽으면 이미지 파일마다 네트워크 지연이 생겨
+   학습이 수십 배 느려짐. 로컬 복사본을 사용해야 함.
+   (사전에 !cp -r /content/drive/MyDrive/food11 /content/food11 필요)
+
+2. 학습 곡선 그래프 추가 (6개 전부)
+     - epoch별 train/validation 정확도와 손실을 2패널로 출력
+     - 상단 중앙에 모델명 + 옵티마이저, 그 아래 설정값 표기
+     - curve_keras1.png ~ curve_torch3.png 로 저장 (170dpi)
+     - Colab에서 자동 다운로드 시도
+
+3. PyTorch train() 함수 수정 (torch1~3)
+     기존에는 배치 loss만 출력하고 반환값이 없어서
+     train 곡선을 그릴 수 없었음.
+     epoch 단위 평균 loss와 정확도를 반환하도록 변경.
+     test()도 (loss, accuracy) 두 값을 반환하도록 통일.
+
+4. torch2의 중복 정의 정리
+     loss_fn과 optimizer가 각각 두 번 정의돼 있던 것을 한 번으로.
+     (같은 값이라 동작에는 영향 없었음)
+
+5. 각 파일 상단에 하이퍼파라미터 주석 블록 추가
+
+
+================================================================
+주의 - 위 1~7번 불일치는 의도적으로 그대로 두었음
+================================================================
+이미 기록된 실험 결과와 어긋나면 안 되므로 구조/증강/patience는
+건드리지 않았다. 발표에서는 "한계" 항목으로 밝히는 것이 맞다.
+
+만약 완전히 공정한 재비교를 원한다면 다음을 맞춰야 한다:
+  - PyTorch에 Dropout(0.5) 추가, 은닉 Dense층 제거
+  - PyTorch 증강에 Zoom 추가, 회전 강도를 ±36도로 통일
+  - patience를 양쪽 동일하게
+  - SGD는 lr=1e-2로 별도 실험
+
+
+================================================================
+관련 기록: https://claude.ai/code/artifact/152cfb3a-8394-46b6-9587-843a299ab858
+같이 보기: batchnorm_earlystopping.txt / learning_rate.txt
+================================================================
