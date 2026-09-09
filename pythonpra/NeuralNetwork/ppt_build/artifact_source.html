@@ -518,10 +518,10 @@ tr.winner td{color:var(--ink); font-weight:500;}
   <section>
     <div class="section-head">
       <h2>재현 실행 — 같은 조건, 두 번째 실행</h2>
-      <div class="section-note">5/6 완료 · 학습 곡선을 남기려 스크립트를 고쳐 다시 돌린 결과</div>
+      <div class="section-note">6/6 완료 · 학습 곡선을 남기려 스크립트를 고쳐 다시 돌린 결과</div>
     </div>
     <div class="section-note">
-      곡선 기록이 목적이었지만, 결과적으로 <b style="color:var(--ink);">같은 설정을 두 번 돌린 재현성 실험</b>이 됐다. 앞선 26개 실험은 조합마다 1회씩만 실행했다는 것이 가장 큰 방법론적 한계였는데(실험의 한계 ③), 이 표가 <b style="color:var(--ink);">"실제로 얼마나 흔들리는가"에 대한 실측치</b>를 준다. 각 칸은 <code>1차 → 2차</code> 형식.
+      곡선 기록이 목적이었지만, 결과적으로 <b style="color:var(--ink);">같은 설정을 두 번 돌린 재현성 실험</b>이 됐다. 앞선 실험은 29개 조합을 1회씩만 실행했다는 것이 가장 큰 방법론적 한계였는데(실험의 한계 ③), 이 표가 <b style="color:var(--ink);">"실제로 얼마나 흔들리는가"에 대한 실측치</b>를 준다. 각 칸은 <code>1차 → 2차</code> 형식.
     </div>
     <div class="table-wrap compact">
       <table>
@@ -532,6 +532,7 @@ tr.winner td{color:var(--ink); font-weight:500;}
           <tr><td>keras3</td><td>3 Conv+BN+He · AdamW+ReduceLR · ES p=7</td><td class="num">68.7 → 70.4</td><td class="num">51.4 → 52.9</td><td class="num">52.1 → 56.7</td><td class="num">1.53 → 1.44</td><td class="num" style="color:var(--pytorch); font-weight:500;">4.6%p</td></tr>
           <tr><td>torch2</td><td>3 Conv+BN · Adam · 증강 · ES p=5</td><td class="num">— → 73.4</td><td class="num">57.2 → 51.1</td><td class="num">54.5 → 52.6</td><td class="num">1.38 → 1.47</td><td class="num" style="color:var(--pytorch); font-weight:500;">6.1%p</td></tr>
           <tr class="winner"><td>torch3</td><td>3 Conv+BN · AdamW+ReduceLR · ES p=7</td><td class="num">— → 93.3</td><td class="num">59.7 → 59.7</td><td class="num">59.2 → <b>61.9</b></td><td class="num">1.32 → 1.30</td><td class="num">2.7%p</td></tr>
+          <tr><td>torch4</td><td>2 Conv · SGD+momentum 0.9 · 증강 없음 · 15 epoch</td><td class="num">— → 57.0</td><td class="num">42.5 → 39.9</td><td class="num">44.0 → 43.0</td><td class="num">1.65 → 1.66</td><td class="num">2.6%p</td></tr>
         </tbody>
       </table>
     </div>
@@ -580,19 +581,30 @@ tr.winner td{color:var(--ink); font-weight:500;}
       <b>val_loss가 0.006 차이로 밀려 val 정확도 3.5%p를 잃었다.</b> <code>monitor="val_loss"</code>로 최적 시점을 고른 결과다. BatchNorm 정리 문서에 "val_loss 대신 val_accuracy를 모니터링하라"고 적어둔 조언이 일반론이 아니라 <b>이 실험 데이터로 확인된 사례</b>가 됐다.
     </div>
 
+    <div class="section-note">
+      <b style="color:var(--ink);">torch4 — 재현 6/6 완료, 그리고 2×2의 마지막 칸</b><br>
+      Test 44.0% → 43.0%로 <b>1.0%p</b>, Val은 42.5% → 39.9%로 2.6%p 움직였다. 지금까지 측정된 여섯 조건 중 <b>keras1 다음으로 안정적</b>이다. 증강도 EarlyStopping도 없이 15 epoch를 고정으로 완주하는 조건이라 <b>멈출 지점을 고르는 단계가 아예 없다</b> — keras2·keras3가 크게 흔들린 원인(EarlyStopping이 실행마다 다른 epoch을 고름)이 여기엔 없다는 것을 뒤집어 보여준다.<br>
+      동시에 이 실행은 <b>옵티마이저 A/B의 네 번째 칸</b>을 채운다. 재현 목적으로 돌린 것이 두 번째 역할을 얻은 셈이다. 아래 A/B 표 참고.<br>
+      <b style="color:var(--ink);">곡선이 보여주는 것</b> — 15 epoch에서도 train(57.0%)과 val(39.9%)이 <b>둘 다 아직 상승 중</b>이고 val loss는 1.72에서 평평하다. 같은 조건의 Adam(torch1)이 train 99.4% · val loss 4.81로 발산한 것과 정반대다. <b>SGD+momentum은 아직 학습이 끝나지 않은 상태로 끝났다</b> — epoch을 더 줬다면 어디까지 갔을지는 이 실험으로 알 수 없다.
+    </div>
+    <div class="section-note" style="border-left:3px solid var(--pytorch-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">기록 주의 — 곡선 파일의 제목이 틀렸던 건 (수정 완료)</b><br>
+      <code>curve_keras4</code> · <code>curve_keras6</code> · <code>curve_torch4</code> · <code>curve_torch5</code>의 그래프 제목이 <b>"SGD"</b>로 찍혀 있었다. 실제 설정은 <code>momentum=0.9</code>가 포함된 <b>SGD + momentum 0.9</b>. 그리기 코드의 <code>OPTIMIZER_NAME</code>을 안 고치고 돌린 결과였다. <b>데이터 자체는 정상</b> — 순정 SGD는 같은 조건 5 epoch에서 20.5%인데 이 곡선들은 1 epoch에 이미 그 근처다. 네 파일 모두 제목을 다시 그려 넣어 바로잡았고(원본은 <code>curves/orig/</code>에 보관), 발표 자료에도 수정본이 들어가 있다.
+    </div>
     <div class="record" style="margin-top:.4rem;">
       <div class="record-head">
         <div class="record-title">지금까지 측정된 실행 간 편차</div>
-        <span class="tag good">5/6 완료</span>
+        <span class="tag good">6/6 완료</span>
       </div>
-      <div class="record-stats" style="grid-template-columns:repeat(5,1fr);">
+      <div class="record-stats" style="grid-template-columns:repeat(6,1fr);">
         <div class="record-stat"><b>1.8%p</b><span>keras1</span></div>
         <div class="record-stat"><b>3.6%p</b><span>keras2</span></div>
         <div class="record-stat"><b>4.6%p</b><span>keras3</span></div>
         <div class="record-stat"><b>6.1%p</b><span>torch2 · 최대</span></div>
         <div class="record-stat"><b>2.7%p</b><span>torch3</span></div>
+        <div class="record-stat"><b>2.6%p</b><span>torch4</span></div>
       </div>
-      <p style="margin-bottom:.5rem;"><b>같은 설정을 다시 돌렸을 때 정확도가 최대 6.1%p까지 움직였다.</b> 앞선 실험에서 "발견"으로 기록한 차이들 중 상당수가 이 범위 안에 들어간다. 결론을 지우자는 뜻이 아니라, <b>5%p 안팎의 차이는 단독 실행 하나로 주장할 수 없다</b>는 기준선이 실측으로 생겼다는 뜻이다. 이 표 자체가 "실험의 한계 ③ 단일 실행"에 대한 가장 직접적인 답변이 된다.</p>
+      <p style="margin-bottom:.5rem;"><b>같은 설정을 다시 돌렸을 때 검증 정확도는 최대 6.1%p(torch2), test 정확도는 최대 4.6%p(keras3)까지 움직였다.</b> 위 카드의 숫자는 Train·Val·Test 중 가장 크게 움직인 값이고, <b>결론을 판정하는 기준선으로 쓸 값은 test 기준 4.6%p</b>다 — 발표에서 비교하는 숫자가 전부 test 정확도이기 때문이다. 앞선 실험에서 "발견"으로 기록한 차이들 중 상당수가 이 범위 안에 들어간다. 결론을 지우자는 뜻이 아니라, <b>5%p 안팎의 차이는 단독 실행 하나로 주장할 수 없다</b>는 기준선이 실측으로 생겼다는 뜻이다. 이 표 자체가 "실험의 한계 ③ 단일 실행"에 대한 가장 직접적인 답변이 된다.</p>
     </div>
 
     <div class="section-head" style="margin-top:1.4rem;">
@@ -608,9 +620,39 @@ tr.winner td{color:var(--ink); font-weight:500;}
         </tbody>
       </table>
     </div>
+    <div class="section-note" style="border-left:3px solid var(--good-line); padding-left:.9rem; border-radius:0;">
+      <b style="color:var(--ink);">torch5 — 구조가 깊어지자 옵티마이저 순위가 뒤집혔다 (30번째 조합)</b><br>
+      torch2와 <b>옵티마이저만 다른</b> 조건(3 Conv+BN · 증강 · ES p=5)에서 SGD+momentum이 <b>56.1%</b>(loss 1.35)를 냈다. 같은 조건 Adam 두 실행은 54.5% · 52.6%(평균 53.6%)였으므로 <b>단일 SGD 실행이 Adam 두 실행을 모두 넘었다.</b><br>
+      <b style="color:var(--ink);">다만 1회 실행이다</b> — 최고 Adam 실행(54.5%)과의 차이는 1.6%p로 측정된 test 편차(4.6%p) 안이다. "SGD가 이겼다"고 말할 수는 없고, <b>"차이가 사라졌다"까지</b>가 한계다. 2회차를 돌리면 판정이 가능해진다.<br>
+      <b style="color:var(--ink);">2 Conv 때와 방향이 다르다</b> — 2 Conv에서는 Adam이 train 99.4%까지 암기하고 SGD는 57.0%에 머물렀는데, 여기서는 <b>SGD 쪽 train이 89.7%로 Adam(73.4%)보다 높다.</b> BatchNorm이 들어가면서 SGD가 훨씬 잘 학습됐다는 뜻이고, "Adam이 더 많이 외운다"는 관찰이 구조에 따라 성립하지 않는다는 사례다.<br>
+      <b style="color:var(--ink);">결론 ①에 대한 의미</b> — "같은 예산을 주면 옵티마이저 우열이 사라진다"의 세 번째 근거다. 2 Conv 15 epoch(44.4 대 43.0~44.0)에 이어, 구조를 키우고 증강까지 넣은 조건에서도 두 옵티마이저가 같은 구간(53.6~56.1%)에 모였다.
+    </div>
+    <div class="section-head" style="margin-top:1.4rem;">
+      <h2 style="font-size:18px;">옵티마이저 A/B — 다른 조건을 모두 고정하고</h2>
+      <div class="section-note">2 Conv · 15 epoch · 증강 없음 · lr=1e-3 · 옵티마이저만 교체 — <b style="color:var(--ink);">2×2 완성</b></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>옵티마이저</th><th>Train</th><th>Val</th><th>Test acc</th><th>Test loss</th></tr></thead>
+        <tbody>
+          <tr><td>Keras · Adam</td><td class="num">93.6%</td><td class="num">42.7%</td><td class="num">46.4%</td><td class="num">3.08</td></tr>
+          <tr><td>Keras · SGD + momentum 0.9</td><td class="num">68.7%</td><td class="num">41.2%</td><td class="num">43.1%</td><td class="num" style="color:var(--good); font-weight:500;">1.80</td></tr>
+          <tr><td>PyTorch · Adam</td><td class="num">99.4%</td><td class="num">39.4%</td><td class="num">44.4%</td><td class="num">4.81</td></tr>
+          <tr><td>PyTorch · SGD + momentum 0.9</td><td class="num">57.0%</td><td class="num">39.9%</td><td class="num">43.0%</td><td class="num" style="color:var(--good); font-weight:500;">1.66</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-note">
+      <b style="color:var(--ink);">Adam이 사준 것은 도달점이 아니라 속도였다</b> — 네 실행을 나란히 놓으면 세 지표가 전혀 다른 이야기를 한다.<br>
+      <span style="font-family:var(--font-mono); font-size:12.5px;">Test acc &nbsp;43.0 ~ 46.4%&nbsp; → 폭 <b>3.4%p</b> (측정된 test 편차 4.6%p 안, 사실상 동률)<br>Train acc&nbsp;57.0 ~ 99.4%&nbsp; → 폭 <b>42.4%p</b><br>Test loss&nbsp;1.66 ~ 4.81&nbsp;&nbsp;&nbsp; → <b>2.9배</b></span><br>
+      <b>같은 곳에 도착했는데 Adam 쪽만 훈련 데이터를 외웠다.</b> Adam이 산 것은 훈련 정확도와 수렴 속도였지 일반화가 아니었다.<br>
+      <b style="color:var(--ink);">두 프레임워크가 같은 말을 한다</b> — Adam − SGD+momentum 차이는 Keras에서 <b>+3.3%p</b>(46.4 vs 43.1), PyTorch에서 <b>+1.4%p</b>(44.4 vs 43.0). 둘 다 편차 범위 안이라 정확도로는 승부가 안 난다. 반면 test loss는 Keras 3.08 대 1.80, PyTorch 4.81 대 1.66으로 <b>양쪽 모두 SGD+momentum이 확실히 낮다</b> — 이 크기는 편차로 설명되지 않는다. Adam은 맞히면서도 자기 답을 과신한다.<br>
+      <b style="color:var(--ink);">주의</b> — 5 epoch 시점 막대 차트에서는 Adam이 SGD+momentum을 12.1%p 앞섰다. 그 격차는 epoch을 늘리면 좁혀지므로, 차트를 인용할 때는 <b>"5 epoch 시점"</b>이라는 조건을 함께 밝혀야 한다.
+    </div>
+
     <div class="section-note">
       <b style="color:var(--ink);">결론은 같은 곳에, 경로는 전혀 다르게</b> — Test 정확도는 46.4% 대 44.4%로 <b>2.0%p 차이</b>, 측정된 편차 범위(최대 4.6%p) 안이라 사실상 동일하다. "같은 조건이면 프레임워크는 결과에 영향 없다"는 결론과 일치.<br>
-      그런데 <b>도달 방식이 완전히 다르다.</b> PyTorch는 Train을 <b>99.4%</b>까지 끌어올렸고(Keras 93.6%), 검증 손실도 4.81로 Keras(3.08)보다 훨씬 크게 발산했다. 같은 옵티마이저·같은 epoch인데 <b>Dropout이 없는 쪽이 거의 완전히 암기</b>한 것이다.<br>
+      그런데 <b>도달 방식이 완전히 다르다.</b> PyTorch는 Train을 <b>99.4%</b>까지 끌어올렸고(Keras 93.6%), 검증 손실도 4.81로 Keras(3.08)보다 훨씬 크게 발산했다.<br><b style="color:var(--ink);">원인은 두 가지다 — Dropout만이 아니다</b> 파라미터를 세어보면 두 모델은 애초에 크기가 달랐다:<br><span style="font-family:var(--font-mono); font-size:12.5px;">Keras &nbsp;&nbsp;Flatten → Dropout(0.5) → Dense(11) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;653,003<br>PyTorch Flatten → Linear(57600,128) → Linear(11) &nbsp;<b>7,393,739</b> &nbsp;(11.3배)</span><br>PyTorch 쪽에만 있는 은닉 Linear 층 하나가 737만 파라미터다. <b>Dropout이 없다는 것과 모델이 11배 크다는 것이 함께 작용</b>해 암기가 일어났다고 보는 것이 정확하다. 이 실험만으로는 둘을 분리할 수 없다.<br>
       <b style="color:var(--ink);">결론 ②에 대한 의미</b> — keras3 재현으로 "Keras에서 AdamW가 해로웠다"는 한쪽 근거는 무너졌지만, 이 A/B는 <b>"PyTorch 모델이 실제로 정규화가 부족한 상태였다"는 전제 자체를 직접 확인</b>해준다. AdamW의 weight decay가 그 빈 자리를 채웠다는 해석의 발판은 남아 있다.
     </div>
   </section>
@@ -618,7 +660,7 @@ tr.winner td{color:var(--ink); font-weight:500;}
   <section>
     <div class="section-head">
       <h2>전체 실험 기록</h2>
-      <div class="section-note">지금까지 실행한 27개 조합 전부, 조건별 상세</div>
+      <div class="section-note">지금까지 실행한 30개 조합 전부, 조건별 상세 (재현 2회차 6건은 위 "재현 실행" 표에 따로 정리)</div>
     </div>
     <div class="table-wrap compact">
       <table>
@@ -648,6 +690,8 @@ tr.winner td{color:var(--ink); font-weight:500;}
           <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>Keras</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">93.2%</td><td class="num">40.9%</td><td class="num">45.4%</td><td class="num">2.93</td></tr>
           <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>PyTorch</td><td>SGD+mom0.9</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">—</td><td class="num">42.5%</td><td class="num">44.0%</td><td class="num">1.65</td></tr>
           <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>PyTorch</td><td>Adam</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">99.4%</td><td class="num">39.4%</td><td class="num">44.4%</td><td class="num">4.81</td></tr>
+          <tr><td class="stage-cell">CNN epoch↑</td><td>32→64 Conv</td><td>Keras</td><td>SGD+mom0.9</td><td>N</td><td>N</td><td>기본</td><td>N</td><td class="num">15/15</td><td class="num">68.7%</td><td class="num">41.2%</td><td class="num">43.1%</td><td class="num">1.80</td></tr>
+          <tr><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>Keras</td><td>SGD+mom0.9(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>He</td><td>p=7</td><td class="num">30/30</td><td class="num">54.0%</td><td class="num">46.5%</td><td class="num">47.4%</td><td class="num">1.64</td></tr>
 
           <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>Keras</td><td>Adam</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/14</td><td class="num">54.9%</td><td class="num">49.5%</td><td class="num">50.9%</td><td class="num">1.45</td></tr>
           <tr><td class="stage-cell">CNN+증강+ES</td><td>32→64 Conv</td><td>Keras</td><td>SGD+mom0.9</td><td>Y</td><td>N</td><td>기본</td><td>p=3</td><td class="num">30/14</td><td class="num">43.2%</td><td class="num">42.5%</td><td class="num">43.7%</td><td class="num">1.64</td></tr>
@@ -657,6 +701,7 @@ tr.winner td{color:var(--ink); font-weight:500;}
           <tr class="winner"><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>Keras</td><td>Adam</td><td>Y</td><td>Y</td><td>He</td><td>p=3</td><td class="num">30/17</td><td class="num">60.2%</td><td class="num">53.4%</td><td class="num">56.1%</td><td class="num">1.30</td></tr>
           <tr><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>PyTorch</td><td>Adam</td><td>Y</td><td>Y(BN→ReLU 순서버그)</td><td>기본(He)</td><td>p=3</td><td class="num">30/8</td><td class="num">—</td><td class="num">34.3%</td><td class="num">36.5%</td><td class="num">1.81</td></tr>
           <tr class="winner"><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>PyTorch</td><td>Adam</td><td>Y</td><td>Y(수정됨)</td><td>기본(He)</td><td>p=5</td><td class="num">30/12</td><td class="num">—</td><td class="num">57.2%</td><td class="num">54.5%</td><td class="num">1.38</td></tr>
+          <tr><td class="stage-cell">CNN 심화</td><td>32→64→128 Conv</td><td>PyTorch</td><td>SGD+mom0.9</td><td>Y</td><td>Y</td><td>기본(He)</td><td>p=5</td><td class="num">30/13</td><td class="num">89.7%</td><td class="num">55.2%</td><td class="num">56.1%</td><td class="num">1.35</td></tr>
 
           <tr><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>Keras</td><td>AdamW(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>He</td><td>p=3</td><td class="num">30/14</td><td class="num">60.2%</td><td class="num">47.9%</td><td class="num">49.9%</td><td class="num">1.54</td></tr>
           <tr><td class="stage-cell">최종 튜닝</td><td>32→64→128 Conv</td><td>Keras</td><td>AdamW(wd=1e-4) + ReduceLR</td><td>Y</td><td>Y</td><td>He</td><td>p=7</td><td class="num">30/24</td><td class="num">68.7%</td><td class="num">51.4%</td><td class="num">52.1%</td><td class="num">1.53</td></tr>

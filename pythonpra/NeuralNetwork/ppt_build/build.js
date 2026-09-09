@@ -112,33 +112,34 @@ function bullets(slide, items, x, y, w, h, size) {
 {
   const s = newSlide(true);
 
-  s.addText("하이퍼파라미터에 정답은 없다", {
-    x: M, y: 2.25, w: 11.9, h: 0.95,
-    fontSize: 44, bold: true, color: "FFFFFF", fontFace: KF,
-    isTextBox: true, margin: 0,
-  });
-  s.addText("Food-11 이미지 분류 — 구조가 바뀌면 최적값도 바뀐다", {
-    x: M, y: 3.25, w: 11.9, h: 0.5,
-    fontSize: 21, color: LIGHT, fontFace: KF,
-    isTextBox: true, margin: 0,
-  });
+  s.addText(
+    [
+      { text: "모델 구조와 학습 조건에 따른 성능 비교", options: { breakLine: true } },
+      { text: "Food-11 이미지 분류", options: {} },
+    ],
+    {
+      x: M, y: 2.05, w: 11.9, h: 2.0,
+      fontSize: 28, color: LIGHT, fontFace: KF,
+      isTextBox: true, margin: 0,
+    }
+  );
 
   s.addText("Keras · PyTorch 두 프레임워크로 각각 구현해 비교", {
     x: M, y: 4.05, w: 8.0, h: 0.35,
     fontSize: 14, color: ACCENT_ON_DARK, fontFace: KF, isTextBox: true, margin: 0,
   });
 
-  s.addText("27개 조합 · 재현 실행 5회 · 최고 정확도 61.9%", {
+  s.addText("실험한 30개 조합 중 최고 정확도 61.9% · 재현 실행 6회", {
     x: M, y: 6.2, w: 8, h: 0.35,
     fontSize: 13, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
   });
 
-  s.addText("발표자 : 성명", {
+  s.addText("발표자 : 정의형", {
     x: W - M - 4.6, y: 6.2, w: 4.6, h: 0.35,
     fontSize: 13, color: LIGHT, fontFace: KF,
     align: "right", isTextBox: true, margin: 0,
   });
-  s.addNotes("Food-11 데이터셋으로 ANN, DNN, CNN 세 가지 구조를 Keras와 PyTorch 양쪽에서 구현하고, 옵티마이저와 정규화 기법을 바꿔가며 총 27개 조합을 비교했고, 그중 5개 조건은 재현 실행까지 진행한 실험입니다.");
+  s.addNotes("Food-11 데이터셋으로 ANN, DNN, CNN 세 가지 구조를 Keras와 PyTorch 양쪽에서 구현하고, 옵티마이저와 정규화 기법을 바꿔가며 총 30개 조합을 비교했고, 그중 6개 조건은 재현 실행까지 진행한 실험입니다.");
 }
 
 // ============ 2. DATASET ============
@@ -201,7 +202,7 @@ function bullets(slide, items, x, y, w, h, size) {
 // ============ 3. EXPERIMENT DESIGN ============
 {
   const s = newSlide(false);
-  slideTitle(s, "실험 설계", "질문 — 같은 데이터에서 무엇을 바꿔야 성능이 움직이는가");
+  slideTitle(s, "실험 설계", "같은 데이터에서 무엇을 바꿔야 성능이 움직이는가");
 
   card(s, M, 1.8, 5.75, 4.6);
   s.addText("고정한 조건", {
@@ -237,13 +238,20 @@ function bullets(slide, items, x, y, w, h, size) {
     "BatchNorm · He 초기화 · 학습률 스케줄링",
   ], 7.25, 2.95, 4.9, 3.2, 13);
 
-  s.addNotes("학습률과 배치 크기는 통제 변수로 고정했습니다. 이 점은 뒤의 한계 슬라이드에서 다시 언급합니다.");
+  s.addText(
+    "두 구현은 각 프레임워크의 공식 예제를 기준으로 작성했다 — 그 결과 분류 헤드가 서로 달라졌고, 그 차이가 얼마나 컸는지는 학습 곡선 비교에서 다룬다.",
+    {
+      x: M, y: 6.55, w: 11.9, h: 0.35,
+      fontSize: 11, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+    }
+  );
+  s.addNotes("학습률과 배치 크기는 통제 변수로 고정했습니다. 이 점은 뒤의 한계 슬라이드에서 다시 언급합니다. 하단 한 줄을 꼭 짚고 넘어가세요 — 뒤에서 Keras와 PyTorch를 계속 나란히 비교하는데, 두 모델의 분류 헤드가 애초에 달랐다는 사실을 여기서 미리 밝혀두는 것입니다. 이걸 안 밝히면 옵티마이저 비교 슬라이드에서 \"두 모델 구조는 같나요\"라는 질문이 나왔을 때 뒤로 미뤄야 하고, 앞 슬라이드들의 신뢰가 흔들립니다. 미리 말해두면 오히려 알고 측정했다는 인상이 됩니다.");
 }
 
 // ============ 4. ANN + DNN ============
 {
   const s = newSlide(false);
-  slideTitle(s, "출발점 — ANN과 DNN", "완전연결층만으로는 30%의 벽을 넘지 못했다");
+  slideTitle(s, "출발점 — ANN과 DNN");
 
   const groups = [
     {
@@ -307,8 +315,8 @@ function bullets(slide, items, x, y, w, h, size) {
   });
 
   const notes = [
-    ["은닉층의 효과는 +5.6%p에 그쳤다", "무작위 추측(9.1%)의 두 배 남짓. 옵티마이저를 어떻게 바꿔도 두 구조 모두 30%를 넘지 못했다."],
-    ["Adam 조합에서 loss가 치솟았다", "Keras ANN+Adam의 test loss는 7.93 — 정상 범위(2.4 부근)를 크게 벗어났다. 입력 49,152차원의 단순 선형 모델에서 Adam의 큰 보폭이 최적점을 지나친 것으로 보인다."],
+    ["은닉층의 효과는 +5.6%p에 그쳤다", ""],
+    ["Adam 조합에서 loss가 치솟았다", ""],
   ];
   notes.forEach((n, i) => {
     const x = M + i * 6.15;
@@ -328,7 +336,7 @@ function bullets(slide, items, x, y, w, h, size) {
 // ============ 6. CNN LEAP ============
 {
   const s = newSlide(false);
-  slideTitle(s, "기준 모델 선정 — CNN", "이후의 하이퍼파라미터 실험은 모두 이 CNN 위에서 진행했다");
+  slideTitle(s, "기준 모델 선정 — CNN");
 
   const steps = [
     ["21.3%", "ANN", "은닉층 없음"],
@@ -425,7 +433,7 @@ function bullets(slide, items, x, y, w, h, size) {
     fontSize: 16, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
   });
   const opt = [
-    ["모델이 복잡할수록 Adam", "얕은 ANN에서는 SGD가 Adam을 이겼지만, CNN에서는 반대로 뒤집혔다"],
+    ["이 차트는 5 epoch 시점", "얕은 ANN에서는 SGD가 Adam을 앞섰다. 여기 보이는 Adam의 우위는 epoch을 늘리면 좁혀진다"],
     ["모멘텀이 결정적", "순수 SGD는 5 epoch 안에 거의 제자리. momentum 0.9만 더해도 +12%p"],
     ["프레임워크는 무관", "같은 옵티마이저면 Keras·PyTorch 결과가 거의 일치한다"],
   ];
@@ -442,6 +450,76 @@ function bullets(slide, items, x, y, w, h, size) {
     });
   });
   s.addNotes("순수 SGD가 CNN에서 학습이 거의 진행되지 않은 것은 모멘텀 부재 때문입니다. 다만 학습률 1e-3은 Adam의 기본값이라 SGD에 불리했을 가능성이 있습니다.");
+}
+
+// ---------- 학습 곡선 헬퍼 ----------
+const CURVES = "../curves/"; // build.js 기준 상대 경로
+
+function curvePair(slide, leftFile, leftCap, rightFile, rightCap) {
+  const pos = [
+    { x: M, file: leftFile, cap: leftCap },
+    { x: 6.85, file: rightFile, cap: rightCap },
+  ];
+  pos.forEach((p) => {
+    slide.addImage({ path: CURVES + p.file, x: p.x, y: 1.72, w: 5.75, h: 2.13 });
+    const body = Array.isArray(p.cap)
+      ? [
+          { text: p.cap[0], options: { fontSize: 11.5, bold: true, color: INK, breakLine: true } },
+          { text: p.cap[1], options: { fontSize: 8.5, bold: false, color: MUTED } },
+        ]
+      : p.cap;
+    slide.addText(body, {
+      x: p.x, y: 3.9, w: 5.75, h: Array.isArray(p.cap) ? 0.42 : 0.3,
+      fontSize: 11.5, bold: true, color: INK, fontFace: KF,
+      align: "center", isTextBox: true, margin: 0,
+    });
+  });
+}
+
+// ============ 7-2. CURVE 1 — OPTIMIZER ============
+{
+  const s = newSlide(false);
+  slideTitle(s, "학습 곡선 — 옵티마이저", "구조·epoch·데이터를 모두 고정하고 옵티마이저만 바꿨을 때");
+
+  curvePair(
+    s,
+    "curve_torch1_adam.png", "PyTorch · Adam — 4 epoch에 정점, 이후 val loss 발산",
+    "curve_torch4.png", "PyTorch · SGD + momentum — 15 epoch에도 상승 중"
+  );
+
+  s.addTable(
+    [
+      [
+        { text: "2 Conv · 15 epoch · 증강 없음", options: { bold: true } },
+        { text: "Train", options: { bold: true } },
+        { text: "Test", options: { bold: true } },
+        { text: "Test loss", options: { bold: true } },
+      ],
+      ["Keras · Adam", "93.6%", "46.4%", { text: "3.08", options: { color: MUTED } }],
+      ["Keras · SGD + momentum", "68.7%", "43.1%", { text: "1.80", options: { color: ACCENT, bold: true } }],
+      ["PyTorch · Adam", "99.4%", "44.4%", { text: "4.81", options: { color: MUTED } }],
+      ["PyTorch · SGD + momentum", "57.0%", "43.0%", { text: "1.66", options: { color: ACCENT, bold: true } }],
+    ],
+    {
+      x: M, y: 4.28, w: 6.4, colW: [2.8, 1.2, 1.2, 1.2],
+      fontSize: 11.5, fontFace: KF, color: INK_SOFT,
+      border: { type: "solid", color: LINE, pt: 1 },
+      fill: { color: CARD }, rowH: 0.36, valign: "middle", margin: 0.07,
+    }
+  );
+
+  s.addText("Adam은 일찍 멈췄고, SGD는 계속 올라왔다", {
+    x: 7.4, y: 4.28, w: 5.2, h: 0.35,
+    fontSize: 15, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+  });
+  s.addText(
+    "epoch을 3배로 늘리자 Adam은 +0.3~1.8%p, SGD+momentum은 +5.5~12.0%p 올랐다.\n\n격차를 좁힌 쪽은 SGD였고, Train은 42%p·test loss는 2.9배 벌어졌다.",
+    {
+      x: 7.4, y: 4.75, w: 5.2, h: 1.6,
+      fontSize: 14, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+    }
+  );
+  s.addNotes("5 epoch에서 15 epoch로 늘렸을 때 각자 얼마나 올랐는지가 핵심입니다 — Keras Adam 43.6→45.4(+1.8), Keras SGD+mom 37.6→43.1(+5.5), PyTorch Adam 44.1→44.4(+0.3), PyTorch SGD+mom 32.0→44.0(+12.0). 3배의 시간을 받고 Adam은 거의 안 올랐고, 격차가 좁혀진 것은 전부 SGD가 올라왔기 때문입니다. 왜 Adam이 멈췄는지는 다음다음 장 곡선에 있습니다 — keras1의 검증 손실이 3 epoch에서 최저(1.71)를 찍고 3.35까지 단조 상승합니다. 즉 Adam은 도착한 것이 아니라 일찍 과적합에 들어간 것이고, 남은 epoch은 전부 암기로 갔습니다(train 93.2%). 반대로 SGD+momentum은 15 epoch에도 아직 상승 중이라 최종 도달점은 측정하지 못했습니다 — 그래서 'SGD가 더 낫다'까지는 말하지 마세요. 6번 막대 차트가 5 epoch 시점이라는 점도 여기서 짚어주면 좋습니다.");
 }
 
 // ============ 8. OVERFITTING ============
@@ -518,111 +596,47 @@ function bullets(slide, items, x, y, w, h, size) {
   s.addNotes("증강을 넣으면 훈련 정확도가 오히려 낮아지는데, 이는 매 epoch 변형된 이미지를 보기 때문이며 실제 일반화 성능은 향상됩니다.");
 }
 
-// ---------- 그래프 자리 헬퍼 ----------
-function graphSlot(slide, x, y, w, h, filename, caption) {
-  slide.addShape(pres.ShapeType.roundRect, {
-    x: x, y: y, w: w, h: h,
-    fill: { color: "FFFFFF" }, rectRadius: 0.06,
-    line: { color: MUTED, width: 1, dashType: "dash" },
-  });
-  slide.addText(filename, {
-    x: x, y: y + h / 2 - 0.34, w: w, h: 0.34,
-    fontSize: 12.5, color: MUTED, fontFace: NF,
-    align: "center", isTextBox: true, margin: 0,
-  });
-  slide.addText(caption, {
-    x: x, y: y + h / 2 + 0.02, w: w, h: 0.3,
-    fontSize: 10.5, color: MUTED, fontFace: KF,
-    align: "center", isTextBox: true, margin: 0,
-  });
-}
-
-// ============ 8-2. LEARNING CURVES — 과적합 ============
+// ============ 8-2. CURVE 2 — AUGMENTATION ============
 {
   const s = newSlide(false);
-  slideTitle(s, "학습 곡선 — 증강 전후", "같은 구조인데 곡선 모양이 완전히 달라진다");
+  slideTitle(s, "학습 곡선 — 과적합 대응 전후", "같은 프레임워크, 과적합 대응 전과 후");
 
-  const slots = [
-    {
-      x: M,
-      file: "curve_keras1.png",
-      cap: "증강 없음 · 15 epoch 고정",
-      title: "문제 — 두 선이 벌어진다",
-      body: "학습 정확도만 계속 오르고 검증 정확도는 40%대에서 멈춘다. 손실 그래프에서는 검증선이 3 epoch 이후 오히려 위로 꺾인다 — 모델이 훈련 데이터를 외우기 시작한 지점.",
-    },
-    {
-      x: 6.85,
-      file: "curve_keras2.png",
-      cap: "증강 + EarlyStopping · 최대 30 epoch",
-      title: "대응 — 두 선이 붙어서 간다",
-      body: "증강으로 매 epoch 다른 이미지를 보게 하니 학습 정확도가 낮아지는 대신 두 선의 간격이 좁게 유지된다. 검증 손실이 더 이상 개선되지 않는 지점에서 자동 종료.",
-    },
+  curvePair(
+    s,
+    "curve_keras1.png", "증강 없음 · 15 epoch 고정",
+    "curve_keras2.png", "증강 + EarlyStopping · 3 Conv + BatchNorm"
+  );
+
+  const pair = [
+    [
+      M,
+      "두 선이 벌어진다",
+      "학습 정확도만 계속 올라 93.6%에 이르고 검증 정확도는 40%대에서 멈춘다. 손실 그래프에서는 검증선이 3 epoch에서 최저(1.71)를 찍은 뒤 3.35까지 단조 상승 — 이 지점부터 외우기 시작했다.",
+    ],
+    [
+      6.85,
+      "두 선이 붙어서 간다",
+      "증강으로 매 epoch 다른 이미지를 보게 하니 학습 정확도가 60%대로 낮아지는 대신 두 선의 간격이 좁게 유지된다. 검증 손실이 개선을 멈춘 지점에서 자동 종료.",
+    ],
   ];
-
-  slots.forEach((sl) => {
-    graphSlot(s, sl.x, 1.85, 5.75, 2.15, sl.file, sl.cap);
-    s.addText(sl.title, {
-      x: sl.x, y: 4.2, w: 5.75, h: 0.35,
+  pair.forEach((p) => {
+    s.addText(p[1], {
+      x: p[0], y: 4.35, w: 5.75, h: 0.35,
       fontSize: 15, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
     });
-    s.addText(sl.body, {
-      x: sl.x, y: 4.58, w: 5.75, h: 1.5,
+    s.addText(p[2], {
+      x: p[0], y: 4.75, w: 5.75, h: 1.6,
       fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     });
   });
 
-  s.addText(
-    "숫자로는 Train 93.2% / Test 45.4% 같은 격차로만 보이지만, 곡선으로 보면 어느 epoch부터 갈라지기 시작했는지가 드러난다.",
-    {
-      x: M, y: 6.3, w: 11.9, h: 0.4,
-      fontSize: 11.5, color: INK_SOFT, fontFace: KF, isTextBox: true, margin: 0,
-    }
-  );
-  s.addNotes("점선 상자 자리에 curve_keras1.png와 curve_keras2.png를 넣으세요. 왼쪽은 두 선이 벌어지고 오른쪽은 붙어서 가는 대비를 짚어주면 됩니다.");
-}
-
-// ============ 8-3. LEARNING CURVES — 프레임워크 ============
-{
-  const s = newSlide(false);
-  slideTitle(s, "학습 곡선 — 두 프레임워크", "같은 조건이면 곡선의 모양도 닮는다");
-
-  const slots = [
-    { x: M, file: "curve_keras3.png", cap: "Keras · AdamW + ReduceLR", side: "Keras" },
-    { x: 6.85, file: "curve_torch3.png", cap: "PyTorch · AdamW + ReduceLR", side: "PyTorch" },
-  ];
-  slots.forEach((sl) => {
-    graphSlot(s, sl.x, 1.85, 5.75, 2.15, sl.file, sl.cap);
-  });
-
-  s.addText("곡선이 말해주는 것", {
-    x: M, y: 4.25, w: 11.9, h: 0.35,
-    fontSize: 16, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
-  });
-
-  const points = [
-    ["수렴 속도는 다르다", "PyTorch가 더 이른 epoch에서 최저 검증 손실에 도달했다."],
-    ["도달 지점은 비슷하다", "증강+EarlyStop 구간에서 두 프레임워크는 50.9%로 소수점까지 일치했다."],
-    ["벌어졌다면 조건이 달랐다", "한때 19.6%p까지 벌어진 구간이 있었으나 BatchNorm과 ReLU 순서가 서로 달랐던 설정 실수였고, 맞추자 1.6%p로 좁혀졌다."],
-  ];
-  points.forEach((p, i) => {
-    const x = M + i * 4.05;
-    numCircle(s, i + 1, x, 4.75, INK_SOFT);
-    s.addText(p[0], {
-      x: x + 0.46, y: 4.72, w: 3.3, h: 0.3,
-      fontSize: 12.5, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
-    });
-    s.addText(p[1], {
-      x: x + 0.46, y: 5.05, w: 3.3, h: 1.2,
-      fontSize: 11, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-    });
-  });
-  s.addNotes("점선 상자에 curve_keras3.png와 curve_torch3.png를 넣으세요. 결론 3번(차이가 났다면 조건이 달랐던 것)의 근거가 되는 슬라이드입니다.");
+  s.addNotes("왼쪽은 두 선이 벌어지고 오른쪽은 붙어서 가는 대비를 짚어주면 됩니다. 오른쪽은 구조도 3 Conv+BatchNorm으로 바뀌었으므로 증강만의 효과는 아니라는 점을 밝히세요.");
 }
 
 // ============ 9. ARCHITECTURE IMPROVEMENT ============
 {
   const s = newSlide(false);
-  slideTitle(s, "구조 개선", "Conv 블록 추가 + BatchNorm + He 초기화");
+  slideTitle(s, "구조 및 학습 안정화 기법 적용", "Conv 블록 추가 + BatchNorm + He 초기화");
 
   // layer flow
   const layers = [
@@ -687,7 +701,86 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
   s.addNotes("두 프레임워크의 초기화 기본값이 다르기 때문에 같은 He 초기화에 도달하려고 서로 다른 조치를 했습니다.");
 }
 
-// ============ 9-2. CNN STEP-BY-STEP ============
+// ============ 9-2. CURVE 4 — EARLYSTOP PITFALL ============
+{
+  const s = newSlide(false);
+  slideTitle(s, "EarlyStopping이 놓친 지점", "val_loss 0.006 차이로 검증 정확도 3.5%p를 잃었다");
+
+  s.addImage({ path: CURVES + "curve_torch2.png", x: 1.4, y: 1.75, w: 10.5, h: 3.89 });
+
+  s.addTable(
+    [
+      [
+        { text: "PyTorch · 3 Conv+BN · Adam · EarlyStop p=5", options: { bold: true } },
+        { text: "val_loss", options: { bold: true } },
+        { text: "val_acc", options: { bold: true } },
+      ],
+      ["epoch 5 — 복원된 가중치", { text: "1.494", options: { color: ACCENT, bold: true } }, "51.2%"],
+      ["epoch 8 — 실제 최고 정확도", "1.500", { text: "54.7%", options: { color: ACCENT, bold: true } }],
+    ],
+    {
+      x: M, y: 5.85, w: 6.6, colW: [3.6, 1.5, 1.5],
+      fontSize: 11, fontFace: KF, color: INK_SOFT,
+      border: { type: "solid", color: LINE, pt: 1 },
+      fill: { color: CARD }, rowH: 0.32, valign: "middle", margin: 0.06,
+    }
+  );
+
+  s.addText(
+    "monitor=\"val_loss\"로 최적 시점을 고른 결과, loss가 0.006 낮다는 이유로 정확도가 3.5%p 낮은 지점이 선택됐다. BatchNorm이 검증 지표를 흔드는 구간에서는 val_accuracy를 함께 보는 편이 안전하다.",
+    {
+      x: 7.5, y: 5.85, w: 5.1, h: 1.0,
+      fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+    }
+  );
+  s.addNotes("실무형 함정 사례입니다. 시간이 부족하면 이 슬라이드를 부록으로 돌려도 발표는 성립합니다.");
+}
+
+// ============ 9-3. CURVE 3 — FRAMEWORK ============
+{
+  const s = newSlide(false);
+  slideTitle(s, "학습 곡선 — 두 프레임워크", "같은 학습 설정에서도 모델 구현 차이로 학습 경로가 달라졌다");
+
+  curvePair(
+    s,
+    "curve_keras1.png", ["Keras · Dropout 있음 · 파라미터 65만", "(Keras Simple MNIST convnet 참고)"],
+    "curve_torch1_adam.png", ["PyTorch · Dropout 없음 · 파라미터 739만", "(PyTorch Quickstart 참고)"]
+  );
+
+  s.addTable(
+    [
+      [
+        { text: "2 Conv · Adam · 15 epoch", options: { bold: true } },
+        { text: "Train", options: { bold: true } },
+        { text: "Test", options: { bold: true } },
+        { text: "Test loss", options: { bold: true } },
+      ],
+      ["Keras", "93.6%", "46.4%", "3.08"],
+      ["PyTorch", { text: "99.4%", options: { color: MUTED, bold: true } }, "44.4%", { text: "4.81", options: { color: MUTED, bold: true } }],
+    ],
+    {
+      x: M, y: 4.35, w: 6.4, colW: [2.8, 1.2, 1.2, 1.2],
+      fontSize: 11.5, fontFace: KF, color: INK_SOFT,
+      border: { type: "solid", color: LINE, pt: 1 },
+      fill: { color: CARD }, rowH: 0.38, valign: "middle", margin: 0.07,
+    }
+  );
+
+  s.addText("도착점은 같고, 가는 길이 달랐다", {
+    x: 7.4, y: 4.35, w: 5.2, h: 0.35,
+    fontSize: 15, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+  });
+  s.addText(
+    "Test acc 46.4% 대 44.4% — 차이는 작다.\n\nPyTorch는 train 99.4% · val loss 4.81로 과적합이 심하다.\n\n원인은 헤드 구조 — Dropout 유무와 파라미터 11.3배 차이.",
+    {
+      x: 7.4, y: 4.75, w: 5.2, h: 1.9,
+      fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+    }
+  );
+  s.addNotes("Keras는 Flatten→Dropout→Dense(11)로 65만 파라미터, PyTorch는 은닉 Linear(57600,128)가 하나 더 있어 739만 — 11.3배입니다. 이 헤드 차이는 임의로 바꾼 게 아니라 각 프레임워크 공식 예제를 그대로 따른 결과입니다(Keras mnist_convnet에는 Dropout이 있고 PyTorch quickstart에는 없습니다). Conv 부분은 채널 수까지 맞췄습니다. 결론 ②·③의 근거이자, PyTorch 모델이 실제로 정규화가 부족했다는 직접 증거입니다. 주의 — Keras의 train 93.6%는 Dropout이 켜진 상태로 측정된 값이라 실제 용량 차이는 이보다 작습니다.");
+}
+
+// ============ 9-4. CNN STEP-BY-STEP ============
 {
   const s = newSlide(false);
   slideTitle(s, "CNN 개선 경로", "무엇을 더할 때마다 결과가 어떻게 움직였는가");
@@ -702,7 +795,7 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
         { text: "관찰", options: { bold: true } },
       ],
       ["① 기본 CNN (5 epoch)", "Conv 블록 2개", "43.6%", "44.1%", "DNN 대비 +17%p"],
-      ["② epoch 15", "학습 시간 3배", "45.4%", "44.0%", "거의 제자리, 과적합만 심화"],
+      ["② epoch 15", "학습 시간 3배", "45.4%", "44.4%", "거의 제자리, 과적합만 심화"],
       ["③ + 증강 + EarlyStop", "과적합 대응", "50.9%", "50.9%", "두 프레임워크 정확히 일치"],
       ["④ + 3Conv · BatchNorm · He", "구조 개선", "56.1%", "54.5%", "구조가 아직 남은 지렛대였음"],
       [
@@ -710,7 +803,7 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
         "옵티마이저 · 스케줄링",
         { text: "52.1%", options: { color: MUTED } },
         { text: "59.2%", options: { color: ACCENT, bold: true } },
-        "정반대로 갈림",
+        "Keras 하락은 재현 안 됨",
       ],
     ],
     {
@@ -723,9 +816,9 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
   );
 
   const obs = [
-    ["학습 시간만 늘리는 건 효과 없다", "②단계에서 epoch을 3배로 늘렸지만 test는 1.8%p 오르는 데 그쳤고, train은 93.2%까지 치솟아 과적합만 깊어졌다."],
-    ["가장 확실한 도약은 과적합 대응", "③단계에서 두 프레임워크가 나란히 50.9%로 올라섰다. 소수점까지 일치한 유일한 구간으로, 조건이 맞으면 프레임워크는 결과에 영향을 주지 않는다는 근거."],
-    ["마지막 단계에서 결론이 갈렸다", "같은 AdamW 변경인데 Keras는 하락, PyTorch는 상승. 두 CNN의 분류 헤드가 달랐던 것(Dropout 유무)이 원인으로 추정된다."],
+    ["학습 시간만 늘리는 건 효과 없다", "epoch 3배에 test는 +1.8%p, train만 93.2%까지 치솟았다."],
+    ["가장 확실한 도약은 과적합 대응", "두 프레임워크가 나란히 50.9% — 소수점까지 일치한 유일한 구간."],
+    ["다시 돌려보고 해석이 바뀐 단계", "1차엔 정반대로 보였지만, 두 번씩 돌리자 Keras 하락은 편차였다."],
   ];
   obs.forEach((o, i) => {
     const x = M + i * 4.05;
@@ -737,18 +830,18 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
     });
     s.addText(o[1], {
       x: x + 0.32, y: 5.74, w: 3.2, h: 0.8,
-      fontSize: 10, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+      fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     });
   });
 
   s.addText(
-    "②단계는 Keras가 Adam, PyTorch가 SGD+momentum으로 서로 다른 옵티마이저를 확장했다 — 이 행만 직접 비교 대상이 아니다.",
+    "④단계 조건에서 PyTorch를 SGD+momentum으로 돌리면 56.1% — 같은 조건 Adam 두 실행(54.5 · 52.6)보다 높았다. 구조가 커지자 옵티마이저 우열이 사라졌다.",
     {
-      x: M, y: 6.72, w: 11.0, h: 0.3,
+      x: M, y: 6.72, w: 11.9, h: 0.3,
       fontSize: 10, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     }
   );
-  s.addNotes("CNN 내부에서 다섯 단계를 거치며 44%에서 59%까지 올라간 경로입니다. 각 단계가 무엇을 해결했는지 설명하면서 진행하면 좋습니다.");
+  s.addNotes("CNN 내부에서 다섯 단계를 거쳐 44%에서 61.9%까지 올라간 경로입니다. 카드별로 덧붙일 내용 — ① ②단계는 epoch을 3배로 늘렸는데 test는 1.8%p뿐이고 train이 93.2%까지 올라 과적합만 깊어졌습니다. ② ③단계의 50.9%는 두 프레임워크가 소수점까지 일치한 유일한 구간이라, 조건이 맞으면 프레임워크는 결과에 영향을 주지 않는다는 근거가 됩니다. ③ ⑤단계는 1차만 보면 Keras 하락·PyTorch 상승으로 정반대였는데, 각 조건을 두 번씩 돌리자 Keras 쪽 하락은 실행 편차였고(평균 54.3% 대 54.4%) PyTorch 쪽 상승만 남았습니다. 다섯 단계 모두 Keras·PyTorch 양쪽 다 Adam으로 맞춘 값이라 행마다 직접 비교가 됩니다(②단계 PyTorch 44.4%는 나중에 따로 돌린 Adam 실행입니다). 하단 각주는 표에 없는 30번째 조합입니다 — ④단계와 같은 조건에서 옵티마이저만 SGD+momentum으로 바꾸니 56.1%가 나왔고, Adam 두 실행보다 모두 높았습니다. 다만 SGD 쪽은 1회 실행이라 최고 Adam 실행(54.5%)과의 차이 1.6%p는 측정 편차(4.6%p) 안입니다. 'SGD가 이겼다'가 아니라 '구조가 커지니 차이가 사라졌다'까지만 말하세요.");
 }
 
 // ============ 10. FINAL RESULT ============
@@ -797,166 +890,52 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
     fontSize: 14, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
   });
   s.addText(
-    "이 조건은 두 번 돌려 59.2%와 61.9%가 나왔다. 같은 구조를 Adam으로 돌린 두 실행(54.5% · 52.6%)보다 모두 높아 범위가 겹치지 않는다.\n\nPyTorch에는 Dropout이 없어 weight decay가 그 빈 자리를 채운 것으로 보인다. 이미 Dropout(0.5)이 있던 Keras에서는 같은 변경이 아무 차이도 만들지 않았다.",
+    "이 조건은 두 번 돌려 59.2%와 61.9%가 나왔다. 같은 구조를 Adam으로 돌린 두 실행(54.5% · 52.6%)보다 모두 높아 범위가 겹치지 않는다.\n\n여섯 조건을 두 번씩 돌려 test 정확도가 최대 4.6%p까지 흔들린다는 것도 함께 측정했다 — 이 발표에서 차이가 있다고 말할 수 있는 기준선이다.",
     {
-      x: 8.5, y: 4.55, w: 4.1, h: 1.8,
+      x: 8.5, y: 4.55, w: 4.1, h: 2.1,
       fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     }
   );
-  s.addNotes("정규화는 기법을 더할수록 좋아지는 것이 아니라, 모델에 이미 걸린 정규화 총량에 달린 문제라는 해석입니다. 단일 실행이므로 가설 수준으로 제시합니다.");
-}
-
-// ============ 10-2. REPRODUCIBILITY ============
-{
-  const s = newSlide(false);
-  slideTitle(s, "재현 실행 — 우리 결론을 검증하다", "곡선을 남기려 다시 돌렸더니, 결론 하나가 갈렸다");
-
-  s.addTable(
-    [
-      [
-        { text: "조건", options: { bold: true } },
-        { text: "1차", options: { bold: true } },
-        { text: "2차", options: { bold: true } },
-        { text: "편차", options: { bold: true } },
-      ],
-      ["Keras · 2Conv · Adam", "45.4%", "46.4%", "1.8%p"],
-      ["Keras · 3Conv+BN · Adam", "56.1%", "52.5%", "3.6%p"],
-      ["Keras · 3Conv+BN · AdamW", "52.1%", "56.7%", "4.6%p"],
-      ["PyTorch · 3Conv+BN · Adam", "54.5%", "52.6%", "6.1%p"],
-      [
-        "PyTorch · 3Conv+BN · AdamW",
-        "59.2%",
-        { text: "61.9%", options: { color: ACCENT, bold: true } },
-        "2.7%p",
-      ],
-    ],
-    {
-      x: M, y: 1.85, w: 6.6, colW: [3.0, 1.2, 1.2, 1.2],
-      fontSize: 11.5, fontFace: KF, color: INK_SOFT,
-      border: { type: "solid", color: LINE, pt: 1 },
-      fill: { color: CARD }, rowH: 0.4, valign: "middle",
-      margin: 0.07,
-    }
-  );
-
-  card(s, 7.4, 1.85, 5.2, 2.4);
-  s.addText("같은 설정, 다시 돌렸을 때", {
-    x: 7.8, y: 2.08, w: 4.4, h: 0.32,
-    fontSize: 13, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-  });
-  s.addText("최대 6.1%p", {
-    x: 7.8, y: 2.42, w: 4.4, h: 0.75,
-    fontSize: 38, bold: true, color: INK, fontFace: NF, isTextBox: true, margin: 0,
-  });
-  s.addText(
-    "5%p 안팎의 차이는 단독 실행 하나로 주장할 수 없다는 기준선이 실측으로 생겼다.",
-    {
-      x: 7.8, y: 3.22, w: 4.4, h: 0.85,
-      fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-    }
-  );
-
-  const findings = [
-    [
-      "절반은 노이즈였다",
-      "\"Keras에서 AdamW가 4%p 떨어뜨렸다\"는 관찰은 재현되지 않았다. 두 조건 평균이 54.3% 대 54.4%로 사실상 동일 — 1차에서 우연히 한쪽이 높게 나온 것이었다.",
-    ],
-    [
-      "절반은 더 단단해졌다",
-      "PyTorch의 AdamW 이득은 재현됐다. 두 실행(59.2 · 61.9)이 Adam 두 실행(54.5 · 52.6)보다 모두 높아 범위가 겹치지 않는다. 평균 +7.0%p.",
-    ],
-    [
-      "결론을 지운 게 아니라 다듬었다",
-      "\"프레임워크마다 정반대\"에서 \"정규화가 부족한 모델에서만 효과\"로. 검증을 거친 뒤 남은 주장이 처음보다 정확해졌다.",
-    ],
-  ];
-  findings.forEach((f, i) => {
-    const x = M + i * 4.05;
-    card(s, x, 4.5, 3.8, 1.9);
-    numCircle(s, i + 1, x + 0.32, 4.72, i === 2 ? ACCENT : INK_SOFT);
-    s.addText(f[0], {
-      x: x + 0.32, y: 5.16, w: 3.2, h: 0.3,
-      fontSize: 12.5, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
-    });
-    s.addText(f[1], {
-      x: x + 0.32, y: 5.48, w: 3.2, h: 0.85,
-      fontSize: 10, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-    });
-  });
-
-  s.addText(
-    "곡선 기록이 목적이었지만, 결과적으로 각 조건을 2회씩 돌린 재현성 실험이 됐다 — 다음 장의 한계 ③에 대한 직접적인 답변이다.",
-    {
-      x: M, y: 6.55, w: 11.9, h: 0.35,
-      fontSize: 11, color: INK_SOFT, fontFace: KF, isTextBox: true, margin: 0,
-    }
-  );
-  s.addNotes("결론을 방어하지 않고 스스로 검증해 걸러냈다는 점을 강조하세요. 편차 6.1%p라는 실측치가 이 발표에서 가장 단단한 숫자입니다.");
+  s.addNotes("정규화는 기법을 더할수록 좋아지는 것이 아니라, 모델에 이미 걸린 정규화 총량에 달린 문제라는 해석입니다. 여섯 조건을 2회씩 재현해 범위가 겹치지 않는 것까지 확인했으므로 가설이 아니라 근거를 갖춘 주장으로 말해도 됩니다. 재현 실행 표 전체는 결과 페이지에 있으니 질문이 나오면 그때 띄우세요.");
 }
 
 // ============ 11. LIMITATIONS ============
 {
   const s = newSlide(false);
-  slideTitle(s, "실험의 한계", "결과를 해석할 때 함께 고려해야 할 점");
+  slideTitle(s, "실험의 한계", "결론별로, 어떤 근거가 아직 약한가");
 
   const lims = [
-    ["SGD에 불리한 학습률", "전 구간 lr=1e-3으로 고정했으나 이는 Adam의 기본값이다. SGD의 일반적 기본값은 1e-2로 10배 크다."],
-    ["두 CNN의 구조 불일치", "Keras는 Flatten→Dropout→Dense, PyTorch는 Flatten→Linear(128)→Linear로 헤드가 달랐다."],
-    ["단일 실행 결과 (부분 해소)", "26개 조합을 1회씩만 돌렸다. 다만 5개 조건을 재현해 편차가 최대 6.1%p임을 실측했고, 그 결과 결론 하나를 수정했다 — 앞 장 참고."],
-    ["test set 반복 관찰", "26회 실행마다 test 정확도를 확인했다. 선택 과정에 test 정보가 일부 새어 들어갔다."],
-    ["미탐색 하이퍼파라미터", "배치 크기와 학습률 자체는 한 번도 바꾸지 않았다. 둘 다 영향력이 큰 변수다."],
+    ["두 CNN이 같은 모델이 아니었다", "결론 ② ③", "파라미터 653K 대 7.39M — 11.3배. Dropout 유무만의 문제가 아니다."],
+    ["한 단계에서 변수를 여러 개 바꿨다", "결론 ②", "④⑤단계가 각각 세 개씩. AdamW의 몫만 떼어낼 수 없다."],
+    ["61.9%는 35번 측정 중 최댓값이다", "최고 기록", "학습·검증·평가는 분리했지만, 35번의 결과를 보며 조건을 정했다. 2회 평균은 60.6%다."],
+    ["SGD에 불리했을 수 있는 학습률", "결론 ①", "lr=1e-3은 Adam 기본값. 다만 momentum이 유효 보폭을 10배로 키운다."],
   ];
 
   lims.forEach((l, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const x = M + col * 6.15;
-    const y = 1.9 + row * 1.55;
-    numCircle(s, i + 1, x, y, INK_SOFT);
+    const y = 2.15 + i * 1.12;
+    numCircle(s, i + 1, M, y, INK_SOFT);
     s.addText(l[0], {
-      x: x + 0.48, y: y - 0.03, w: 5.3, h: 0.3,
-      fontSize: 14, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+      x: M + 0.5, y: y - 0.02, w: 4.3, h: 0.4,
+      fontSize: 16, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+    });
+    s.addText(l[2], {
+      x: 5.7, y: y - 0.02, w: 5.1, h: 0.75,
+      fontSize: 12.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     });
     s.addText(l[1], {
-      x: x + 0.48, y: y + 0.3, w: 5.3, h: 1.05,
-      fontSize: 11.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+      x: 10.95, y: y + 0.02, w: 1.65, h: 0.3,
+      fontSize: 11, bold: true, color: ACCENT, fontFace: KF,
+      align: "right", isTextBox: true, margin: 0,
     });
   });
 
-  s.addText(
-    "후속 과제 — SGD를 lr=1e-2로 재실험, 두 프레임워크의 헤드 구조 통일, 조합별 3회 반복 후 평균 비교",
-    {
-      x: M, y: 6.35, w: 11.9, h: 0.45,
-      fontSize: 12.5, bold: true, color: INK_SOFT, fontFace: KF, isTextBox: true, margin: 0,
-    }
-  );
-  s.addNotes("한계를 먼저 밝히면 결과의 신뢰도가 올라갑니다. 특히 SGD 학습률 문제는 질문이 나올 가능성이 높습니다.");
+  s.addNotes("한계를 결론별로 묶은 것이 핵심입니다. 각 항목에 덧붙일 내용 — ① PyTorch 헤드에만 Linear(57600,128)이 있어 파라미터가 11.3배입니다. 증강 회전 폭(±36° 대 ±10°)과 EarlyStop patience(3 대 5)도 어긋나 있었습니다. 결론 ②의 \"Dropout이 없어서\"가 유일한 원인이 아닐 수 있다는 뜻입니다. ② ④단계는 Conv 블록·BatchNorm·He를, ⑤단계는 AdamW·ReduceLR·patience(3→7)를 함께 바꿨습니다. ReduceLR이 실제로 발동했는지도 확인하지 않았습니다. ③ 분할 자체는 지켰습니다 — 학습은 training, EarlyStopping은 validation, evaluation은 실행 끝에 한 번뿐입니다. 다만 35회의 test 결과를 보며 다음 조건을 정했고(patience 3→5 변경이 그 예), 61.9%는 그중 최댓값입니다. 인용할 때 단서를 붙이세요. ④ 질문이 나올 가능성이 가장 높습니다. momentum 0.9가 유효 보폭을 lr/(1-0.9) = 10배로 키워 lr=1e-2를 근사하고, 그 조건에서 SGD가 43.0~43.1%로 Adam과 동률이었다는 점까지 답하면 방어가 아니라 근거 제시가 됩니다.");
 }
 
 // ============ 12. WHY THE CEILING ============
 {
   const s = newSlide(false);
-  slideTitle(s, "왜 62%에서 멈췄나", "남은 격차는 튜닝이 아니라 접근법의 문제");
-
-  card(s, M, 1.85, 5.75, 1.5);
-  s.addText("61.9%", {
-    x: M + 0.4, y: 2.05, w: 2.3, h: 0.75,
-    fontSize: 40, bold: true, color: INK, fontFace: NF, isTextBox: true, margin: 0,
-  });
-  s.addText("이번 실험 — 사전학습 없이 밑바닥부터 학습", {
-    x: M + 0.4, y: 2.82, w: 5.0, h: 0.35,
-    fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-  });
-
-  card(s, 6.85, 1.85, 5.75, 1.5);
-  s.addText("85~90%", {
-    x: 7.25, y: 2.05, w: 3.2, h: 0.75,
-    fontSize: 40, bold: true, color: ACCENT, fontFace: NF, isTextBox: true, margin: 0,
-  });
-  s.addText("전이학습 — ImageNet 사전학습 모델을 미세조정할 때 일반적으로 보고되는 범위", {
-    x: 7.25, y: 2.82, w: 5.0, h: 0.45,
-    fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
-  });
+  slideTitle(s, "이번 실험에서는 61.9%에서 멈춘 이유", "하이퍼파라미터로는 좁히기 어려운 조건들");
 
   const causes = [
     ["사전학습 없음", "랜덤 가중치에서 시작해 \"엣지란 무엇인가\"부터 전부 스스로 배워야 했다. 격차의 대부분이 여기서 나온다."],
@@ -966,26 +945,47 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
   ];
   causes.forEach((c, i) => {
     const x = M + i * 3.05;
-    card(s, x, 3.65, 2.75, 2.45);
-    numCircle(s, i + 1, x + 0.32, 3.9, INK_SOFT);
+    card(s, x, 1.9, 2.75, 4.05);
+    numCircle(s, i + 1, x + 0.32, 2.2, INK_SOFT);
     s.addText(c[0], {
-      x: x + 0.32, y: 4.38, w: 2.15, h: 0.35,
-      fontSize: 13.5, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+      x: x + 0.32, y: 2.8, w: 2.11, h: 0.72,
+      fontSize: 15, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
     });
     s.addText(c[1], {
-      x: x + 0.32, y: 4.74, w: 2.15, h: 1.25,
-      fontSize: 10.5, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+      x: x + 0.32, y: 3.58, w: 2.11, h: 2.2,
+      fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     });
   });
 
-  s.addText(
-    "이번 튜닝(21% → 62%)은 밑바닥 학습이라는 조건 안에서 뽑아낼 수 있는 것을 거의 다 뽑아낸 결과 — 다음 단계는 튜닝이 아니라 전이학습으로 접근법을 바꾸는 것이다.",
-    {
-      x: M, y: 6.35, w: 11.9, h: 0.5,
-      fontSize: 12.5, bold: true, color: INK_SOFT, fontFace: KF, isTextBox: true, margin: 0,
-    }
-  );
-  s.addNotes("\"왜 59%밖에 안 되나요\"라는 질문에 대한 답변 슬라이드입니다. 성능 상한이 하이퍼파라미터가 아니라 사전학습 유무와 데이터 규모에서 온다는 점을 설명합니다.");
+  s.addNotes("\"왜 61.9%밖에 안 되나요\"라는 질문에 대한 답변 슬라이드입니다. 네 가지 모두 옵티마이저나 epoch을 바꿔서는 좁히기 어려운 조건이라는 점을 짚으세요. 화면에는 원인만 있으니 마무리는 말로 하세요 — '이 네 가지는 하이퍼파라미터로 줄일 수 없는 조건이고, 다음 단계는 튜닝이 아니라 사전학습 모델을 미세조정하는 전이학습입니다.' 정도면 충분합니다. 다만 \"여기가 한계입니다\"라고 단정하지 마세요 — 학습률과 배치 크기는 한 번도 바꾸지 않았고(15번 한계), 이 실험은 한 가지 구조 계열만 다뤘습니다. 전이학습이 유력해 보인다는 것도 문헌에서 알려진 방향이지 저희가 측정한 결과는 아니라고 밝히는 편이 안전합니다. 확인한 것과 추정한 것을 구분해 말하는 것이 이 슬라이드의 핵심입니다.");
+}
+
+// ============ 12-2. FUTURE WORK ============
+{
+  const s = newSlide(false);
+  slideTitle(s, "추가 하이퍼파라미터 실험 — 확장 가능성", "이번 실험에서 고정했거나 충분히 분리하지 못한 조건");
+
+  const next = [
+    ["학습률", "현재 1e-3으로 고정. 1e-4·3e-4·1e-3·3e-3처럼 범위를 나눠 옵티마이저별 적정 학습률을 비교할 수 있다."],
+    ["배치 크기", "현재 32로 고정. 16·32·64를 비교해 학습 안정성, 속도, 일반화 성능이 어떻게 달라지는지 확인할 수 있다."],
+    ["정규화 강도", "Dropout 비율과 weight decay를 독립적으로 조정해 과적합 억제 효과를 분리해서 측정할 수 있다."],
+    ["증강 강도", "회전·확대·이동 범위를 단계적으로 바꿔 어느 수준까지 일반화에 도움이 되고, 언제 정보 손실이 커지는지 비교할 수 있다."],
+  ];
+  next.forEach((c, i) => {
+    const x = M + i * 3.05;
+    card(s, x, 1.9, 2.75, 4.05);
+    numCircle(s, i + 1, x + 0.32, 2.2, INK_SOFT);
+    s.addText(c[0], {
+      x: x + 0.32, y: 2.8, w: 2.11, h: 0.72,
+      fontSize: 15, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
+    });
+    s.addText(c[1], {
+      x: x + 0.32, y: 3.58, w: 2.11, h: 2.2,
+      fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
+    });
+  });
+
+  s.addNotes("15번 한계에서 밝힌 것들을 어떻게 풀지로 이어가는 장입니다. 가장 먼저 할 일은 앞 장에서 말한 헤드 구조 통일이고, 그 위에서 이 네 가지를 봅니다. 하단 한 줄이 핵심입니다 — 이번 실험의 가장 큰 방법론적 약점이 한 단계에서 여러 변수를 동시에 바꾼 것과 조합당 1회 실행이었으므로, 다음 실험은 그 둘을 먼저 고쳐야 합니다.");
 }
 
 // ============ 13. CONCLUSION ============
@@ -998,29 +998,29 @@ function graphSlot(slide, x, y, w, h, filename, caption) {
   });
 
   const concl = [
-    ["최적 옵티마이저는 모델에 따라 뒤집힌다", "얕은 ANN에서는 순수 SGD가 Adam을 21.3% 대 12.9%로 앞섰지만, CNN에서는 Adam이 44.1% 대 20.5%로 압도했다. momentum 0.9를 더하는 것만으로 +12%p가 움직이기도 했다. \"일단 Adam\"이라는 기본값은 성립하지 않았다."],
-    ["정규화는 더하기가 아니라 총량의 문제", "각 조건을 2회씩 돌린 결과, AdamW의 weight decay는 Dropout이 없던 PyTorch에서 53.6% → 60.6%(+7.0%p)를 만들었고 이미 Dropout(0.5)이 있던 Keras에서는 54.3% → 54.4%로 아무 차이도 없었다. 부족한 곳은 채우고, 충분한 곳에는 보탤 것이 없다."],
-    ["차이가 났다면 조건이 달랐던 것이다", "조건을 맞춘 구간에서 두 프레임워크는 50.9%로 소수점까지 일치했다. 19.6%p까지 벌어졌던 구간은 BatchNorm과 ReLU 순서가 서로 달랐던 설정 실수였고, 바로잡자 1.6%p로 좁혀졌다."],
+    ["같은 예산을 주자 옵티마이저의 우열이 사라졌다", "epoch 3배에 Adam은 +0.3~1.8%p, SGD+momentum은 +5.5~12.0%p 올라 격차가 좁혀졌다."],
+    ["정규화는 더하기가 아니라 총량의 문제였다", "AdamW + ReduceLR 조합은 Dropout이 없던 PyTorch에서 +7.0%p, 이미 Dropout이 있던 Keras에서는 거의 변화가 없었다."],
+    ["차이가 났다면 조건이 달랐던 것이다", "조건을 맞춘 구간에서 두 프레임워크는 50.9%로 소수점까지 일치했다."],
   ];
 
   concl.forEach((c, i) => {
-    const y = 2.05 + i * 1.5;
+    const y = 2.25 + i * 1.45;
     numCircle(s, i + 1, M, y, ACCENT_ON_DARK, INK);
     s.addText(c[0], {
-      x: M + 0.5, y: y - 0.05, w: 11.3, h: 0.35,
-      fontSize: 18, bold: true, color: "FFFFFF", fontFace: KF, isTextBox: true, margin: 0,
+      x: M + 0.5, y: y - 0.08, w: 11.3, h: 0.42,
+      fontSize: 21, bold: true, color: "FFFFFF", fontFace: KF, isTextBox: true, margin: 0,
     });
     s.addText(c[1], {
-      x: M + 0.5, y: y + 0.35, w: 11.3, h: 0.85,
-      fontSize: 12.5, color: LIGHT, fontFace: KF, isTextBox: true, margin: 0,
+      x: M + 0.5, y: y + 0.42, w: 11.3, h: 0.62,
+      fontSize: 14, color: LIGHT, fontFace: KF, isTextBox: true, margin: 0,
     });
   });
 
-  s.addText("Food-11 · 27개 조합 · 재현 실행 5회 · 최고 정확도 61.9%", {
+  s.addText("Food-11 · 30개 실험 · 재현 실행 6회 · 실험한 조합 중 최고 정확도 61.9%", {
     x: M, y: 6.5, w: 11.9, h: 0.4,
     fontSize: 12, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
   });
-  s.addNotes("세 가지 결론으로 마무리합니다. 질문은 전체 실험 기록 페이지를 띄워두고 답변하면 좋습니다.");
+  s.addNotes("세 줄만 읽고, 아래 근거는 질문이 나올 때 꺼내세요. ① 얕은 ANN에서는 순수 SGD가 21.3% 대 12.9%로 Adam을 앞섰고, CNN 5 epoch에서는 Adam이 12.1%p 앞섰습니다. epoch을 15로 늘리자 Adam은 +0.3~1.8%p밖에 못 올랐고 SGD+momentum이 +5.5~12.0%p 올라와 격차가 사라졌습니다(네 실행 모두 43.0~46.4%, 측정 편차 4.6%p 안). Adam이 멈춘 이유는 3 epoch부터 과적합에 들어갔기 때문입니다. 다만 SGD 쪽은 15 epoch에도 상승 중이라 최종 도달점은 모릅니다. ② 두 조건을 2회씩 돌린 평균입니다 — PyTorch Adam 53.6% → AdamW 60.6%, Keras 54.3% → 54.4%. PyTorch에는 Dropout이 없고 헤드 파라미터가 11배 많았습니다. ③ 19.6%p까지 벌어졌던 구간은 BatchNorm과 ReLU 순서가 달랐던 설정 실수였고, 맞추자 1.6%p로 좁혀졌습니다. 질문은 결과 페이지(아티팩트)를 띄워두고 답변하세요.");
 }
 
 pres.writeFile({ fileName: "food11_presentation.pptx" }).then(() => {
