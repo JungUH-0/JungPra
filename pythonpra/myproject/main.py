@@ -13,14 +13,36 @@
 import time
 import threading
 
-from cameramodule import CameraModule
+from cameramodule import CameraModule, PINCH_SLOTS
+from posemodule import PoseModule  # [추가] 전신 포즈 인식 (포즈 모드)
 from audiomodule import AudioModule
 from voicemodule import VoiceModule  # [추가] 웨이크워드 감지 (음성 명령의 첫 단계)
 import windowcontrol
 import commandmodule  # [추가] LLM으로 등록한 사용자 정의 명령 실행용
 
+# [추가] 커스텀 명령 슬롯 이름 목록 (엄지+중지/약지/새끼) - cameramodule의 정의를 그대로 사용
+PINCH_SLOT_NAMES = [name for name, _ in PINCH_SLOTS]
+
+# [추가] 인식 모드 - 손동작 인식(cameramodule)과 전신 포즈 인식(posemodule)을 번갈아 사용.
+# 둘을 동시에 돌리면 FPS가 크게 떨어지고 제스처끼리 충돌해서, 한 번에 하나만 켠다.
+MODE_HAND = "hand"
+MODE_POSE = "pose"
+MODE_SWITCH_COOLDOWN_SEC = 1.5  # 전환 직후 같은 박수로 곧바로 되돌아가는 것 방지
+
+# [추가] 박수 소리와 "양손 모임"이 정확히 같은 순간에 잡히길 요구하면 거의 안 맞는다:
+#  - clap 신호는 약 30ms만 유지되는데 카메라는 33ms에 한 프레임이라 겹칠 확률이 낮고,
+#  - 손바닥이 맞닿는 순간엔 두 손이 하나로 보여서 mediapipe가 양손 검출에 실패한다.
+# 그래서 "박수 직전/직후 이 시간 안에 양손이 모여 있었으면" 인정하는 방식으로 바꿈.
+# (손날+스와이프다운에서 EDGE_RECENT_SEC를 쓴 것과 같은 방식)
+HANDS_TOGETHER_RECENT_SEC = 1.0
+
+# [수정] 주변에 사람이 많아 박수를 계속 칠 수 없는 상황이라, 당분간 소리 없이
+# "양손 모으기"만으로 전환한다. 조용한 환경에서 박수 조건을 다시 켜려면 True로 바꾸면 됨.
+MODE_SWITCH_REQUIRE_CLAP = False
+# 손이 스치듯 잠깐 겹치는 것으로 전환되지 않도록, 이 시간 이상 모으고 있어야 인정
+MODE_SWITCH_HOLD_SEC = 1.0
+
 CLOSE_CONFIRM_TIMEOUT_SEC = 5.0  # 닫기 확인 요청 후 응답 없으면 자동 취소(안전 기본값)
-VISUAL_CLAP_COOLDOWN_SEC  = 0.5  # 손이 겹친 채로 있는 동안 같은 박수가 중복 인식되는 것 방지
 
 
 # [추가] 콘솔에 시각 태그를 붙여 어느 시점에 무슨 신호가 찍혔는지 구분하기 쉽게 함
@@ -28,8 +50,21 @@ def _log(tag, msg):
     print(f"[{time.strftime('%H:%M:%S')}] [{tag}] {msg}")
 
 
+# [추가] 음성 명령 실행 - 별도 스레드에서 돌린다.
+# LLM 응답이 늦어도 메인 루프(제스처 처리)가 멈추지 않게 하기 위함이고,
+# 혹시 모를 예외가 비서 전체를 죽이지 않도록 여기서 한 번 더 감싼다.
+def _run_voice_command(text):
+    try:
+        ok, err = commandmodule.execute_text(text)
+        _log("음성", "명령 실행 완료" if ok else f"명령 실행 실패: {err}")
+    except Exception as e:
+        _log("음성", f"명령 실행 중 오류: {e}")
+
+
 def run_assistant():
-    cam   = CameraModule(camera_id=0, show_window=True)
+    # [추가] 포즈 모듈은 카메라를 직접 열지 않고 cameramodule이 읽은 프레임을 넘겨받음
+    pose  = PoseModule()
+    cam   = CameraModule(camera_id=0, show_window=True, pose_module=pose)
     audio = AudioModule()
     voice = VoiceModule()  # [추가] Whisper 모델을 여기서 로딩함 (몇 초~몇 십 초 걸릴 수 있음)
 
@@ -44,7 +79,14 @@ def run_assistant():
 
     pending_close        = False
     pending_close_since  = None
-    last_visual_clap_time = 0.0  # [추가] 손겹침+소리스파이크 박수 보조 판정용 쿨다운
+
+    # [추가] 인식 모드 상태 - 시작은 손동작 모드
+    mode = MODE_HAND
+    last_mode_switch_time = 0.0
+    last_hands_together_time = 0.0   # [추가] 양손이 마지막으로 모여 있던 시각 (박수 방식용)
+    hands_together_start     = None  # [추가] 양손을 모으기 시작한 시각 (유지시간 판정용)
+    mode_switch_armed        = True  # [추가] 한 번 전환 후엔 손을 떼야 다시 전환 가능
+    cam.set_mode(mode)
 
     # [추가] 신호가 "새로 켜진 순간(rising edge)"에만 반응하기 위한 이전 상태 기억
     # (폴링 주기(0.02s)가 카메라/오디오 처리 주기보다 빨라서, 같은 신호를 여러 번 읽어
@@ -60,10 +102,10 @@ def run_assistant():
     prev_left_click  = False
     prev_right_click = False
 
-    # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge용 이전 상태 기억
-    prev_pinch_middle = False
+    # [수정] 커스텀 명령 슬롯 3개(엄지+중지/약지/새끼) rising edge용 이전 상태 기억
+    prev_pinch_slots = {name: False for name in PINCH_SLOT_NAMES}
 
-    # [추가] 음성 명령 트리거(웨이크워드 / 손등 5초) rising edge용 이전 상태 기억
+    # [추가] 음성 명령 트리거(웨이크워드 / 손등 3초) rising edge용 이전 상태 기억
     prev_wake_word     = False
     prev_voice_trigger = False
 
@@ -73,21 +115,51 @@ def run_assistant():
     try:
         while cam_thread.is_alive():
             cam_res   = cam.get_result()
+            pose_res  = pose.get_result()
             audio_res = audio.get_result()
             voice_res = voice.get_result()
 
-            # [추가] 양손이 겹친 상태에서 소리 스파이크가 같이 잡히면 박수로 인정
-            # (오디오 단독 판정보다 느슨한 기준이라, 시각적 확인이 있을 때만 적용)
             now = time.time()
-            visual_clap = False
-            if (cam_res["hands_together"] and audio_res["spike"] and
-                    now - last_visual_clap_time > VISUAL_CLAP_COOLDOWN_SEC):
-                visual_clap = True
-                last_visual_clap_time = now
 
-            # [수정] 엄지척/엄지다운(손 제스처)을 예/아니오 채널에 추가
-            yes_event = cam_res["blink"] or audio_res["clap"] or visual_clap or cam_res["thumbs_up"]
-            no_event  = cam_res["double_blink"] or audio_res["double_clap"] or cam_res["thumbs_down"]
+            # [수정] 모드 전환 - "박수 소리 + 양손 모임(시각 확인)"이 동시에 있어야 인정.
+            # 소리만으로 판정하면 주변 소음(문 닫는 소리, 남의 박수 등)에 오작동하는데,
+            # 눈으로 본 확인까지 요구하면 사실상 오작동이 없어짐.
+            # 양손 모임은 지금 켜져 있는 인식기에서 가져온다 - 손 모드는 mediapipe 손
+            # 중심점 거리, 포즈 모드는 포즈의 손목 거리(÷어깨 너비)로 판정함.
+            hands_together = (cam_res["hands_together"] if mode == MODE_HAND
+                              else pose_res["hands_together"])
+            if hands_together:
+                last_hands_together_time = now
+                if hands_together_start is None:
+                    hands_together_start = now
+            else:
+                hands_together_start = None
+                mode_switch_armed = True  # 손을 떼면 다시 전환 가능해짐
+
+            if MODE_SWITCH_REQUIRE_CLAP:
+                # [박수 방식] 박수와 양손 모임이 "동시"가 아니라 "최근"이면 인정
+                switch_trigger = (audio_res["clap"] and
+                                  (now - last_hands_together_time) < HANDS_TOGETHER_RECENT_SEC)
+            else:
+                # [현재 방식] 소리 없이 양손을 MODE_SWITCH_HOLD_SEC 이상 모으고 있으면 전환
+                switch_trigger = (hands_together_start is not None and
+                                  now - hands_together_start >= MODE_SWITCH_HOLD_SEC)
+
+            # mode_switch_armed: 손을 계속 모으고 있어도 반복 전환되지 않게, 한 번 전환한
+            # 뒤에는 손을 떼야만 다시 전환되도록 잠금
+            if (switch_trigger and mode_switch_armed and
+                    now - last_mode_switch_time > MODE_SWITCH_COOLDOWN_SEC):
+                mode = MODE_POSE if mode == MODE_HAND else MODE_HAND
+                last_mode_switch_time = now
+                hands_together_start  = None
+                mode_switch_armed     = False
+                cam.set_mode(mode)
+                _log("모드", f"{'전신 포즈' if mode == MODE_POSE else '손동작'} 모드로 전환")
+
+            # [수정] 예/아니오는 엄지척/엄지다운 담당 (박수는 모드 전환 전용이 됐고,
+            # 눈 깜빡임은 현재 비활성화 상태라 blink/double_blink는 항상 False임)
+            yes_event = cam_res["blink"] or cam_res["thumbs_up"]
+            no_event  = cam_res["double_blink"] or cam_res["thumbs_down"]
 
             # [추가] rising edge만 추출 - 신호가 계속 True로 읽혀도 딱 한 번만 반응
             yes_edge = yes_event and not prev_yes
@@ -111,8 +183,10 @@ def run_assistant():
             prev_right_click     = cam_res["right_click"]
 
             # [추가] 커스텀 명령 슬롯 1(엄지+중지) rising edge
-            pinch_middle_edge  = cam_res["pinch_middle"] and not prev_pinch_middle
-            prev_pinch_middle  = cam_res["pinch_middle"]
+            pinch_slot_edges = {}
+            for slot_name in PINCH_SLOT_NAMES:
+                pinch_slot_edges[slot_name] = cam_res[slot_name] and not prev_pinch_slots[slot_name]
+                prev_pinch_slots[slot_name] = cam_res[slot_name]
 
             # [추가] 음성 명령 트리거(웨이크워드 / 손등 5초) rising edge
             # - voice_res["wake_word"]는 VoiceModule이 CHECK_INTERVAL_SEC(1.5초)마다
@@ -122,21 +196,10 @@ def run_assistant():
             prev_wake_word     = voice_res["wake_word"]
             prev_voice_trigger = cam_res["voice_trigger"]
 
-            # [추가] 어느 채널에서 온 신호인지 출력용으로 구분
-            if cam_res["blink"]:
-                yes_source = "카메라-눈깜빡임"
-            elif cam_res["thumbs_up"]:
-                yes_source = "카메라-엄지척"
-            elif visual_clap:
-                yes_source = "융합-손겹침+소리"
-            else:
-                yes_source = "오디오-박수"
-            if cam_res["double_blink"]:
-                no_source = "카메라-눈더블블링크"
-            elif cam_res["thumbs_down"]:
-                no_source = "카메라-엄지다운"
-            else:
-                no_source = "오디오-더블박수"
+            # [수정] 어느 채널에서 온 신호인지 출력용으로 구분
+            # (박수 채널이 모드 전환 전용으로 빠지면서 예/아니오는 손/눈만 남음)
+            yes_source = "카메라-눈깜빡임" if cam_res["blink"] else "카메라-엄지척"
+            no_source  = "카메라-눈더블블링크" if cam_res["double_blink"] else "카메라-엄지다운"
 
             if pending_close:
                 if yes_edge:
@@ -177,14 +240,16 @@ def run_assistant():
                     windowcontrol.minimize_active_window()
                 _log("제스처", f"swipe_down ({'사용자 정의' if ok else '기본 동작'})")
 
-            # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - swipe와 달리 기본 동작이 없는
-            # 순수 커스텀 슬롯이라, 등록된 명령이 없으면 아무 것도 실행하지 않고 안내만 함
-            if pinch_middle_edge:
-                ok, _ = commandmodule.execute_command("pinch_middle")
-                if ok:
-                    _log("제스처", "pinch_middle (사용자 정의)")
-                else:
-                    _log("제스처", "pinch_middle - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
+            # [수정] 커스텀 명령 슬롯 3개(엄지를 중지/약지/새끼에 붙이기) - swipe와 달리
+            # 기본 동작이 없는 순수 커스텀 슬롯이라, 등록된 명령이 없으면 아무 것도
+            # 실행하지 않고 안내만 함
+            for slot_name in PINCH_SLOT_NAMES:
+                if pinch_slot_edges[slot_name]:
+                    ok, _ = commandmodule.execute_command(slot_name)
+                    if ok:
+                        _log("제스처", f"{slot_name} (사용자 정의)")
+                    else:
+                        _log("제스처", f"{slot_name} - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
 
             # [수정] 음성 명령 트리거 처리
             # - 웨이크워드: VoiceModule이 스스로 녹음을 시작하고 무음 감지로 알아서
@@ -206,15 +271,14 @@ def run_assistant():
 
             # [추가] 녹음이 끝나고 텍스트로 변환됐으면 LLM으로 해석해서 바로 실행
             # (제스처 슬롯에 등록하는 게 아니라, 그 자리에서 한 번만 실행하는 자유 명령)
+            # [수정] LLM 호출을 별도 스레드로 돌림 - 여기서 바로 호출하면 응답이 올 때까지
+            # (최대 60초) 이 루프가 통째로 멈춰서 그동안 제스처가 전혀 처리되지 않는다.
             if voice_res["command_text"]:
                 heard_text = voice_res["command_text"]
                 voice.clear_command_text()
                 _log("음성", f"명령 인식: \"{heard_text}\"")
-                ok, err = commandmodule.execute_text(heard_text)
-                if ok:
-                    _log("음성", "명령 실행 완료")
-                else:
-                    _log("음성", f"명령 실행 실패: {err}")
+                threading.Thread(target=_run_voice_command,
+                                 args=(heard_text,), daemon=True).start()
 
             # [추가] 마우스 좌/우클릭도 콘솔에 로그 (실제 클릭 자체는 cameramodule에서 이미 실행됨)
             if left_click_down_edge:

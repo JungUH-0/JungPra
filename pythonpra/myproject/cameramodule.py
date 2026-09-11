@@ -143,17 +143,24 @@ THUMB_UPDOWN_Y_MARGIN = 0.08  # 엄지 끝이 손바닥 중심보다 이 정도 
 # "예"가 먼저 오인식되는 문제가 있어서, 이 시간 이상 같은 상태를 유지해야 확정하도록 함
 THUMB_UPDOWN_HOLD_SEC = 1.0
 
-# [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (LLM/commandmodule에 등록한 사용자 정의
-# 명령 실행용). 엄지+검지 핀치(좌클릭)와 같은 방식이지만 손가락 조합만 다름 - 검증된
-# 판정 방식을 그대로 재사용해서 새 슬롯을 늘림
+# [추가] 커스텀 명령 슬롯 - 엄지를 중지/약지/새끼에 붙이기 (LLM/commandmodule에 등록한
+# 사용자 정의 명령 실행용). 엄지+검지 핀치(좌클릭)와 같은 방식이지만 손가락 조합만 다름
 # [수정] 임계값이 하나(0.05)뿐이면 그 값 근처에서 거리가 미세하게 떨릴 때마다 붙음/떨어짐이
 # 반복되면서 여러 번 연속 발동하는 문제가 있었음. 좌클릭(PINCH_ON_DIST/OFF_DIST)처럼
 # ON/OFF 두 단계로 나눠서 여유를 줌
-PINCH_MIDDLE_ON_DIST  = 0.05  # 이 거리보다 가까우면 "붙음" 시작 - 실측 후 조정 필요
-PINCH_MIDDLE_OFF_DIST = 0.08  # 붙은 상태에서 이 이상 벌어져야 "떨어짐" (ON보다 느슨하게 잡아 떨림 방지)
-# [추가] 손을 빠르게 돌리는 도중에도 순간적으로 엄지-중지가 스치듯 가까워질 수 있어서,
+PINCH_SLOT_ON_DIST  = 0.05  # 이 거리보다 가까우면 "붙음" 시작 - 실측 후 조정 필요
+PINCH_SLOT_OFF_DIST = 0.08  # 붙은 상태에서 이 이상 벌어져야 "떨어짐" (ON보다 느슨하게 잡아 떨림 방지)
+# [추가] 손을 빠르게 돌리는 도중에도 순간적으로 손가락이 스치듯 가까워질 수 있어서,
 # 진짜로 붙여서 "유지"한 경우만 인정하도록 최소 유지시간을 둠 (엄지척/다운과 같은 방식)
-PINCH_MIDDLE_HOLD_SEC = 0.1
+PINCH_SLOT_HOLD_SEC = 0.1
+
+# [추가] 커스텀 슬롯 정의 - (슬롯 이름, 엄지와 붙일 손가락 끝 랜드마크 인덱스)
+# commands.json에 이 이름으로 명령을 등록하면 해당 제스처로 실행됨
+PINCH_SLOTS = [
+    ("pinch_middle", 12),  # 슬롯 1 - 엄지+중지
+    ("pinch_ring",   16),  # 슬롯 2 - 엄지+약지
+    ("pinch_pinky",  20),  # 슬롯 3 - 엄지+새끼
+]
 
 # [수정] 마우스 휠 스크롤 자세 설정 - 검지/약지/새끼를 다 말아야 했던 건 손이 너무
 # 불편해서, 약지/새끼만 말면 되도록 완화 (검지는 펴져있든 말든 상관 안 함)
@@ -299,10 +306,20 @@ class CameraModule:
     외부에서 self.result를 읽어서 명령 매핑에 사용
     """
 
-    def __init__(self, camera_id=0, show_window=True):
+    def __init__(self, camera_id=0, show_window=True, pose_module=None):
         self.camera_id   = camera_id
         self.show_window = show_window
         self.running     = False
+
+        # [추가] 현재 모드 - "hand"(손동작 인식) / "pose"(전신 포즈 인식).
+        # 두 인식기를 동시에 돌리면 FPS가 크게 떨어지고 제스처끼리 충돌하므로,
+        # 매 프레임 모드에 해당하는 인식기 하나만 돌린다. (main.py가 set_mode()로 바꿈)
+        self._mode = "hand"
+
+        # [추가] 포즈 모드일 때 프레임을 넘겨줄 모듈.
+        # 카메라는 하나뿐이라 posemodule이 따로 열 수 없어서, 여기서 읽은 프레임을
+        # 넘겨주는 방식으로 공유한다.
+        self.pose_module = pose_module
 
         # 손 인식기
         self.hands = mp_hands.Hands(
@@ -357,9 +374,10 @@ class CameraModule:
         # 중심 쪽으로 넣는 동작으로 변경. rising edge(넣는 순간 1회)만 발동하도록 상태 기억
         self._thumb_tucked = False
 
-        # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - rising edge(붙는 순간 1회) 상태 기억
-        self._pinch_middle_active = False
-        self._pinch_middle_candidate_since = None  # [추가] 최소 유지시간(hold) 판정용
+        # [수정] 커스텀 명령 슬롯(엄지+중지/약지/새끼) - 슬롯별로 상태를 따로 관리.
+        # rising edge(붙는 순간 1회) + 최소 유지시간(hold) 판정용
+        self._pinch_slot_active = {name: False for name, _ in PINCH_SLOTS}
+        self._pinch_slot_since  = {name: None for name, _ in PINCH_SLOTS}
 
         # [추가] 손 방향(front/back/edge) 히스테리시스용 - 직전 판정 결과 기억
         self._last_orientation = None
@@ -399,8 +417,11 @@ class CameraModule:
             "right_click"    : False,  # [추가] 엄지를 손 중앙으로 넣기 - 이번 프레임에 우클릭 발생했는지
             "thumbs_up"      : False,  # [추가] 주먹+엄지 위 = 예
             "thumbs_down"    : False,  # [추가] 주먹+엄지 아래 = 아니오
-            "pinch_middle"   : False,  # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기) - 이번 프레임에 발생했는지
-            "voice_trigger"  : False,  # [추가] 손등 5초 유지 - 이번 프레임에 음성 명령 트리거가 발생했는지
+            # [수정] 커스텀 명령 슬롯 3개 - 이번 프레임에 발생했는지 (엄지+중지/약지/새끼)
+            "pinch_middle"   : False,
+            "pinch_ring"     : False,
+            "pinch_pinky"    : False,
+            "voice_trigger"  : False,  # [추가] 손등 3초 유지 - 이번 프레임에 음성 명령 트리거가 발생했는지
 
             # 눈 깜빡임
             "blink"          : False,  # 이번 프레임에 깜빡임 발생 여부
@@ -483,12 +504,16 @@ class CameraModule:
         right_click_event = False  # [추가] 이번 프레임에 우클릭 제스처가 확정됐는지
         thumbs_up   = False  # [추가] 주먹+엄지 위 = 예
         thumbs_down = False  # [추가] 주먹+엄지 아래 = 아니오
-        pinch_middle_event = False  # [추가] 이번 프레임에 커스텀 슬롯 1(엄지+중지)이 발생했는지
-        voice_trigger_event = False  # [추가] 이번 프레임에 음성 명령 트리거(손등 5초)가 발생했는지
-        if chosen_landmarks is not None:
+        # [수정] 커스텀 슬롯 3개 - 이번 프레임에 각 슬롯이 발생했는지
+        pinch_slot_events = {name: False for name, _ in PINCH_SLOTS}
+        voice_trigger_event = False  # [추가] 이번 프레임에 음성 명령 트리거(손등 3초)가 발생했는지
+        # [수정] pose 모드에서는 손 제스처 판정을 통째로 건너뜀. 손이 사라졌을 때와
+        # 같은 경로(else)로 빠져서 눌린 마우스 버튼 해제 등 정리까지 같이 처리됨.
+        # (hands_together는 위에서 이미 계산했으므로 모드 전환은 계속 가능)
+        if chosen_landmarks is not None and self._mode == "hand":
             thumb_tip  = chosen_landmarks[4]
             index_tip  = chosen_landmarks[8]
-            middle_tip = chosen_landmarks[12]  # [추가] 커스텀 명령 슬롯 1(엄지+중지 붙이기)용
+            middle_tip = chosen_landmarks[12]  # 휠 자세 판정/디버그 로그용
 
             # [수정] 손목+4개 MCP 관절(0,5,9,13,17) 평균 = 손바닥 중심점.
             # 커서 기준점을 검지 끝에서 이 손바닥 중심점으로 바꿈 - 검지 끝을 기준으로 하면
@@ -539,7 +564,7 @@ class CameraModule:
                 edge_sin=round(edge_sin, 3) if edge_sin is not None else None,
                 near_edge=near_edge,
                 thumb_middle_dist=round(_debug_thumb_middle_dist, 4),
-                pinch_middle_active=self._pinch_middle_active,
+                pinch_middle_active=self._pinch_slot_active["pinch_middle"],
             )
 
             # [추가] 휠 스크롤 자세(약지+새끼 말기, 중지는 폄)인지 미리 판정
@@ -633,33 +658,35 @@ class CameraModule:
                     self._hand_display_text = ("RIGHT CLICK", (255, 0, 255))
                 self._thumb_tucked = thumb_tucked_now
 
-                # [추가] 커스텀 명령 슬롯 1 - 엄지+중지 붙이기 (붙는 순간 1회만 발동 - rising edge)
-                # 실제 동작은 여기서 정하지 않고 main.py가 commandmodule을 통해 결정함
-                # (commands.json에 "pinch_middle"로 등록된 명령이 있으면 실행, 없으면 아무 것도 안 함)
-                # [수정] ON/OFF 이중 임계값 + 최소 유지시간(PINCH_MIDDLE_HOLD_SEC) 추가.
-                # 손을 빠르게 돌리는 도중 순간적으로 거리가 가까워지는 경우와, 진짜로 붙여서
-                # 유지하는 경우를 구분하기 위함 - 이미 붙어서 활성화된 상태는 즉시 반응하되
-                # (OFF_DIST 초과해야 해제), 새로 붙는 판정만 HOLD_SEC 동안 유지돼야 확정
-                thumb_middle_dist = ((thumb_tip.x - middle_tip.x) ** 2 + (thumb_tip.y - middle_tip.y) ** 2) ** 0.5
-                if self._pinch_middle_active:
-                    if thumb_middle_dist > PINCH_MIDDLE_OFF_DIST:
-                        self._pinch_middle_active = False
-                else:
-                    if thumb_middle_dist < PINCH_MIDDLE_ON_DIST:
-                        if self._pinch_middle_candidate_since is None:
-                            self._pinch_middle_candidate_since = time.time()
-                        elif time.time() - self._pinch_middle_candidate_since >= PINCH_MIDDLE_HOLD_SEC:
-                            self._pinch_middle_active = True
-                            pinch_middle_event = True
-                            self._hand_display_text = ("PINCH: MIDDLE", (255, 165, 0))
-                            self._debug_dump("pinch_middle 발동")  # [추가] 발동 직전 프레임들 기록을 파일로 남김
-                            self._pinch_middle_candidate_since = None
+                # [수정] 커스텀 명령 슬롯 3개 - 엄지를 중지/약지/새끼에 붙이기
+                # (붙는 순간 1회만 발동 - rising edge). 실제 동작은 여기서 정하지 않고
+                # main.py가 commandmodule을 통해 결정함 (commands.json에 슬롯 이름으로
+                # 등록된 명령이 있으면 실행, 없으면 아무 것도 안 함)
+                # ON/OFF 이중 임계값 + 최소 유지시간(PINCH_SLOT_HOLD_SEC)을 적용해서,
+                # 손을 빠르게 돌리는 도중 순간적으로 거리가 가까워지는 경우와 진짜로
+                # 붙여서 유지하는 경우를 구분함
+                for slot_name, tip_idx in PINCH_SLOTS:
+                    other_tip = chosen_landmarks[tip_idx]
+                    dist = ((thumb_tip.x - other_tip.x) ** 2 + (thumb_tip.y - other_tip.y) ** 2) ** 0.5
+                    if self._pinch_slot_active[slot_name]:
+                        if dist > PINCH_SLOT_OFF_DIST:
+                            self._pinch_slot_active[slot_name] = False
                     else:
-                        self._pinch_middle_candidate_since = None  # 멀어졌으니 후보 취소
+                        if dist < PINCH_SLOT_ON_DIST:
+                            if self._pinch_slot_since[slot_name] is None:
+                                self._pinch_slot_since[slot_name] = time.time()
+                            elif time.time() - self._pinch_slot_since[slot_name] >= PINCH_SLOT_HOLD_SEC:
+                                self._pinch_slot_active[slot_name] = True
+                                pinch_slot_events[slot_name] = True
+                                self._hand_display_text = (f"PINCH: {slot_name}", (255, 165, 0))
+                                self._debug_dump(f"{slot_name} 발동")  # [추가] 발동 직전 프레임들 기록
+                                self._pinch_slot_since[slot_name] = None
+                        else:
+                            self._pinch_slot_since[slot_name] = None  # 멀어졌으니 후보 취소
             else:
                 # [추가] 손날 자세 도중엔 클릭류 판정을 건너뛰지만, 혹시 좌클릭
                 # 버튼이 눌린 채로 손날 자세에 들어갔다면 눌린 채로 고정되지 않게 놓아줌 (안전장치)
-                # [수정] _thumb_tucked/_pinch_middle_active는 여기서 강제로 False로 리셋하지
+                # [수정] _thumb_tucked/_pinch_slot_active는 여기서 강제로 False로 리셋하지
                 # 않음 - 손날 전환 중 near_edge가 프레임 사이에서 깜빡이면, 리셋된 직후
                 # (2D 투영상 엄지-중지가 우연히 가까워 보이는) 손날 회전 특성 때문에 바로
                 # 다시 "새로 붙었다"고 오판정되는 문제가 있었음. 그냥 마지막 상태를 그대로
@@ -669,7 +696,8 @@ class CameraModule:
                     self._left_button_down = False
                 # [추가] 후보 타이머는 리셋 - front가 아닌 동안 흐른 시간이 그대로 남아있으면
                 # front로 복귀하자마자 HOLD_SEC을 이미 채운 걸로 오판정될 수 있음
-                self._pinch_middle_candidate_since = None
+                for slot_name, _ in PINCH_SLOTS:
+                    self._pinch_slot_since[slot_name] = None
 
             # [수정] 휠 스크롤 자세 (약지+새끼 말기 = 레디). 중지 손끝 하나만 독립적으로
             # 움직이는 대신, 스와이프에서 이미 검증된 "손바닥 중심점(center_x/center_y)을
@@ -757,8 +785,9 @@ class CameraModule:
         else:
             self._hand_y_history.clear()  # 손이 사라지면 히스토리 초기화
             self._thumb_tucked = False    # [수정] 우클릭 rising edge 상태도 리셋
-            self._pinch_middle_active = False  # [추가] 커스텀 슬롯 1 rising edge 상태도 리셋
-            self._pinch_middle_candidate_since = None
+            for slot_name, _ in PINCH_SLOTS:  # [수정] 커스텀 슬롯 3개 상태도 리셋
+                self._pinch_slot_active[slot_name] = False
+                self._pinch_slot_since[slot_name]  = None
             self._last_orientation = None  # [추가] 손 방향 히스테리시스 상태도 리셋
             self._back_hold_start     = None  # [추가] 음성 트리거 유지 상태도 리셋
             self._voice_trigger_fired = False
@@ -792,8 +821,9 @@ class CameraModule:
             self.result["right_click"]      = right_click_event  # [추가] 이번 프레임에 우클릭 발생했는지
             self.result["thumbs_up"]        = thumbs_up    # [추가] 주먹+엄지 위 = 예
             self.result["thumbs_down"]      = thumbs_down  # [추가] 주먹+엄지 아래 = 아니오
-            self.result["pinch_middle"]     = pinch_middle_event  # [추가] 커스텀 슬롯 1(엄지+중지)
-            self.result["voice_trigger"]    = voice_trigger_event  # [추가] 손등 5초 유지 - 음성 명령 트리거
+            for slot_name, _ in PINCH_SLOTS:  # [수정] 커스텀 슬롯 3개(엄지+중지/약지/새끼)
+                self.result[slot_name] = pinch_slot_events[slot_name]
+            self.result["voice_trigger"]    = voice_trigger_event  # [추가] 손등 3초 유지 - 음성 명령 트리거
 
     # ── 내부: 눈 깜빡임 처리 ─────────────────────────────
     # [비활성화] 눈 관련 기능은 손 쪽 기능이 어느 정도 정리될 때까지 뒤로 미룸.
@@ -914,11 +944,16 @@ class CameraModule:
             frame = cv.flip(frame, 1)
             frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
-            # 손동작 처리
-            self._process_hands(frame_rgb, frame)
+            # [수정] 모드에 따라 인식기 하나만 실행 - 동시에 돌리면 FPS가 떨어짐
+            if self._mode == "hand":
+                # 손동작 처리
+                self._process_hands(frame_rgb, frame)
 
-            # 눈 깜빡임 처리
-            self._process_blink(frame_rgb, frame)
+                # 눈 깜빡임 처리
+                self._process_blink(frame_rgb, frame)
+            elif self.pose_module is not None:
+                # 전신 포즈 처리 (카메라를 공유하기 위해 프레임을 넘겨줌)
+                self.pose_module.process(frame_rgb, frame)
 
             # FPS 계산 및 표시
             curr_time = time.time()
@@ -928,6 +963,13 @@ class CameraModule:
                 self.result["fps"] = fps
             cv.putText(frame, f"FPS:{fps:.1f}", (10, 30),
                        cv.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,100), 2)
+
+            # [추가] 지금 어떤 모드인지 항상 화면에 표시 (모드를 모르면 왜 반응이
+            # 없는지 알 수 없어서 혼란스러움)
+            mode_label = "손동작 모드" if self._mode == "hand" else "전신 포즈 모드"
+            mode_color = (0, 255, 100) if self._mode == "hand" else (255, 140, 0)
+            put_korean_text(frame, mode_label, (frame.shape[1] - 200, 8),
+                            font_size=26, color=mode_color)
 
             if self.show_window:
                 cv.imshow("AI Assistant - Camera", frame)
@@ -943,6 +985,52 @@ class CameraModule:
         """현재 감지 결과 반환 (스레드 안전)"""
         with self._lock:
             return dict(self.result)
+
+    def set_mode(self, mode):
+        """
+        [추가] main.py가 모드를 바꿀 때 호출.
+        포즈 모드에서는 _process_hands가 아예 호출되지 않으므로, 여기서 손 관련
+        상태와 결과를 직접 정리해준다. (정리 안 하면 전환 직전 값이 그대로 남아서
+        main.py가 이미 지나간 제스처를 계속 True로 읽게 됨)
+        """
+        self._mode = mode
+
+        if mode != "hand":
+            # 마우스 버튼을 누른 채로 모드가 바뀌면 계속 눌린 상태로 고정되므로 놓아줌
+            if self._left_button_down:
+                windowcontrol.mouse_left_up()
+                self._left_button_down = False
+
+            # 제스처 판정 상태 초기화
+            self._thumb_tucked = False
+            for slot_name, _ in PINCH_SLOTS:
+                self._pinch_slot_active[slot_name] = False
+                self._pinch_slot_since[slot_name]  = None
+            self._thumb_updown_candidate       = None
+            self._thumb_updown_candidate_since = None
+            self._back_hold_start     = None
+            self._voice_trigger_fired = False
+            self._wheel_baseline_y = None
+            self._last_orientation = None
+            self._hand_y_history.clear()
+            self._cursor_smooth_x = None
+            self._cursor_smooth_y = None
+
+            # 결과에 남아있는 손 관련 값들도 전부 꺼줌
+            with self._lock:
+                for key in ("hand_detected", "swipe_up", "swipe_down", "close_request",
+                            "hands_together", "left_click", "right_click",
+                            "thumbs_up", "thumbs_down", "voice_trigger",
+                            "blink", "double_blink", "long_blink", "eye_closed"):
+                    self.result[key] = False
+                self.result["hand_orientation"] = None
+                self.result["hand_features"]    = None
+                for slot_name, _ in PINCH_SLOTS:
+                    self.result[slot_name] = False
+        else:
+            # 손 모드로 돌아올 때는 포즈 쪽 결과를 비움
+            if self.pose_module is not None:
+                self.pose_module.reset()
 
     def stop(self):
         self.running = False

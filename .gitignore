@@ -29,3 +29,5 @@ Release/
 .vs/
 commands.json
 debug_log.txt
+debug_audio.txt
+debug_pose.txt

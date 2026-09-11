@@ -15,6 +15,8 @@ import windowcontrol
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "qwen2.5:3b-instruct"
+# [추가] 모델이 VRAM에서 내려갔다가 다시 올라오는 경우 첫 응답이 오래 걸려서 넉넉히 잡음
+OLLAMA_TIMEOUT_SEC = 60
 COMMANDS_FILE = os.path.join(os.path.dirname(__file__), "commands.json")
 
 # action별로 필요한 파라미터 정의 - LLM 출력 검증 및 프롬프트 스키마로 함께 사용
@@ -78,27 +80,53 @@ SYSTEM_PROMPT = f"""너는 사용자의 자연어 명령을 아래 JSON 스키�
 
 
 def _ask_llm(user_text):
-    """자연어 명령을 Ollama에 보내 구조화된 JSON으로 변환 요청"""
+    """
+    자연어 명령을 Ollama에 보내 구조화된 JSON으로 변환 요청.
+    반환값: (파싱된 dict, None) 또는 (None, 에러 메시지)
+
+    [수정] 예전에는 예외를 그대로 위로 던져서, Ollama 응답이 늦거나 서버가 꺼져
+    있으면 main.py의 메인 루프에서 그대로 터지며 프로그램 전체가 종료됐다.
+    비서가 통째로 죽는 것보다 그 명령만 실패하는 게 맞으므로 여기서 다 잡는다.
+    """
     prompt = f"{SYSTEM_PROMPT}\n\n사용자 명령: {user_text}"
-    resp = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL_NAME,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",  # Ollama가 valid JSON만 생성하도록 강제
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return json.loads(resp.json()["response"])
+    try:
+        resp = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": MODEL_NAME,
+                "prompt": prompt,
+                "stream": False,
+                "format": "json",  # Ollama가 valid JSON만 생성하도록 강제
+                # [추가] 모델을 VRAM에 계속 올려둠. 기본값(5분)으로는 조금만 안 쓰면
+                # 언로드됐다가 다시 올라오느라 첫 응답이 수십 초씩 걸린다.
+                "keep_alive": "30m",
+            },
+            timeout=OLLAMA_TIMEOUT_SEC,
+        )
+        resp.raise_for_status()
+        return json.loads(resp.json()["response"]), None
+    except requests.exceptions.Timeout:
+        return None, f"Ollama 응답이 {OLLAMA_TIMEOUT_SEC}초 안에 오지 않았습니다"
+    except requests.exceptions.ConnectionError:
+        return None, "Ollama에 연결할 수 없습니다 (서버가 꺼져 있는지 확인하세요)"
+    except (ValueError, KeyError) as e:
+        return None, f"Ollama 응답을 해석하지 못했습니다: {e}"
+    except requests.exceptions.RequestException as e:
+        return None, f"Ollama 요청 실패: {e}"
 
 
 def _load_commands():
+    # [수정] 파일이 깨져 있거나 읽기에 실패해도 비서 전체가 죽지 않도록 감쌈.
+    # 이 함수는 제스처가 인식될 때마다(실시간 루프에서) 호출되기 때문에,
+    # 여기서 예외가 나면 main.py의 루프가 통째로 멈춘다.
     if not os.path.exists(COMMANDS_FILE):
         return {}
-    with open(COMMANDS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(COMMANDS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError) as e:
+        print(f"[CommandModule] commands.json을 읽지 못했습니다: {e}")
+        return {}
 
 
 def _save_commands(commands):
@@ -108,7 +136,9 @@ def _save_commands(commands):
 
 def register_command(gesture_name, user_text):
     """자연어 명령을 해석해서 gesture_name에 대한 동작으로 저장"""
-    parsed = _ask_llm(user_text)
+    parsed, err = _ask_llm(user_text)
+    if parsed is None:
+        return False, err
     action = parsed.get("action")
     target = parsed.get("target")
 
@@ -174,7 +204,9 @@ def execute_text(user_text):
     1회성 실행). 음성 명령처럼, 미리 등록해두지 않고 그때그때 자유롭게
     명령할 때 사용.
     """
-    parsed = _ask_llm(user_text)
+    parsed, err = _ask_llm(user_text)
+    if parsed is None:
+        return False, err
     action = parsed.get("action")
     target = parsed.get("target")
 
@@ -195,7 +227,7 @@ if __name__ == "__main__":
     print("[CommandModule] 명령 등록 - Ctrl+C로 종료")
     while True:
         try:
-            gesture = input("\n제스처 이름 (예: double_clap, swipe_left): ").strip()
+            gesture = input("\n제스처 이름 (예: pinch_middle, pinch_ring, swipe_up): ").strip()
             if not gesture:
                 continue
             text = input("무엇을 하고 싶으세요? (자연어로 입력): ").strip()
