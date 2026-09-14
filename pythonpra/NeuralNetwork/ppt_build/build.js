@@ -226,7 +226,7 @@ function bullets(slide, items, x, y, w, h, size) {
     x: 7.25, y: 2.1, w: 4.9, h: 0.4,
     fontSize: 17, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
   });
-  s.addText("단계별로 하나씩 추가 — 조작 변수", {
+  s.addText("단계적으로 조건을 추가 — 조작 변수", {
     x: 7.25, y: 2.48, w: 4.9, h: 0.3,
     fontSize: 11, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
   });
@@ -239,9 +239,9 @@ function bullets(slide, items, x, y, w, h, size) {
   ], 7.25, 2.95, 4.9, 3.2, 13);
 
   s.addText(
-    "두 구현은 각 프레임워크의 공식 예제를 기준으로 작성했다 — 그 결과 분류 헤드가 서로 달라졌고, 그 차이가 얼마나 컸는지는 학습 곡선 비교에서 다룬다.",
+    "두 구현은 각 프레임워크의 공식 예제를 기준으로 작성해 분류 헤드가 서로 달라졌다 — 그 차이는 학습 곡선 비교에서 다룬다. 배치 크기·패딩·풀링 크기·은닉층 수는 기본값을 그대로 썼고 탐색하지 않았다.",
     {
-      x: M, y: 6.55, w: 11.9, h: 0.35,
+      x: M, y: 6.42, w: 11.9, h: 0.5,
       fontSize: 11, color: MUTED, fontFace: KF, isTextBox: true, margin: 0,
     }
   );
@@ -428,14 +428,10 @@ function bullets(slide, items, x, y, w, h, size) {
   );
 
   card(s, 8.2, 1.8, 4.4, 4.5);
-  s.addText("읽는 법", {
-    x: 8.6, y: 2.05, w: 3.6, h: 0.35,
-    fontSize: 16, bold: true, color: INK, fontFace: KF, isTextBox: true, margin: 0,
-  });
   const opt = [
     ["이 차트는 5 epoch 시점", "얕은 ANN에서는 SGD가 Adam을 앞섰다. 여기 보이는 Adam의 우위는 epoch을 늘리면 좁혀진다"],
     ["모멘텀이 결정적", "순수 SGD는 5 epoch 안에 거의 제자리. momentum 0.9만 더해도 +12%p"],
-    ["프레임워크는 무관", "같은 옵티마이저면 Keras·PyTorch 결과가 거의 일치한다"],
+    ["이 조건에서는 프레임워크 차이가 작다", "같은 옵티마이저면 Keras·PyTorch 결과가 거의 일치한다"],
   ];
   opt.forEach((o, i) => {
     const y = 2.55 + i * 1.2;
@@ -907,8 +903,8 @@ function curvePair(slide, leftFile, leftCap, rightFile, rightCap) {
   const lims = [
     ["두 CNN이 같은 모델이 아니었다", "결론 ② ③", "파라미터 653K 대 7.39M — 11.3배. Dropout 유무만의 문제가 아니다."],
     ["한 단계에서 변수를 여러 개 바꿨다", "결론 ②", "④⑤단계가 각각 세 개씩. AdamW의 몫만 떼어낼 수 없다."],
-    ["61.9%는 35번 측정 중 최댓값이다", "최고 기록", "학습·검증·평가는 분리했지만, 35번의 결과를 보며 조건을 정했다. 2회 평균은 60.6%다."],
-    ["SGD에 불리했을 수 있는 학습률", "결론 ①", "lr=1e-3은 Adam 기본값. 다만 momentum이 유효 보폭을 10배로 키운다."],
+    ["61.9%는 35번 측정 중 최댓값이다", "최고 기록", "시드를 고정하지 않아 실행마다 결과가 흔들렸고, 그중 최댓값을 골랐다. 2회 평균은 60.6%다."],
+    ["SGD에 불리했을 수 있는 학습률", "결론 ①", "lr=1e-3은 Adam 기본값. momentum이 보폭을 10배로 키우지만, 순정 SGD를 1e-2로 돌려 확인하지는 않았다."],
   ];
 
   lims.forEach((l, i) => {
@@ -998,9 +994,9 @@ function curvePair(slide, leftFile, leftCap, rightFile, rightCap) {
   });
 
   const concl = [
-    ["같은 예산을 주자 옵티마이저의 우열이 사라졌다", "epoch 3배에 Adam은 +0.3~1.8%p, SGD+momentum은 +5.5~12.0%p 올라 격차가 좁혀졌다."],
-    ["정규화는 더하기가 아니라 총량의 문제였다", "AdamW + ReduceLR 조합은 Dropout이 없던 PyTorch에서 +7.0%p, 이미 Dropout이 있던 Keras에서는 거의 변화가 없었다."],
-    ["차이가 났다면 조건이 달랐던 것이다", "조건을 맞춘 구간에서 두 프레임워크는 50.9%로 소수점까지 일치했다."],
+    ["epoch을 늘리자 옵티마이저 격차가 줄었다", "epoch 3배: Adam +0.3~1.8%p · SGD+momentum +5.5~12.0%p"],
+    ["정규화 정도에 따라 효과가 달라졌다", "AdamW + ReduceLR: PyTorch +7.0%p · Keras는 거의 변화 없음"],
+    ["조건 차이가 결과 차이에 영향을 줬다", "조건을 맞춘 구간: Keras 50.9% · PyTorch 50.9%"],
   ];
 
   concl.forEach((c, i) => {
