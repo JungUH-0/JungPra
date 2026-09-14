@@ -51,6 +51,13 @@ class Config:
     dropout: float = 0.5           # Flatten 뒤
     spatial_dropout: float = 0.0   # Conv 블록 뒤. v1에 없던 축
 
+    # --- 두 프레임워크를 맞추기 위해 명시하는 값들 ---
+    #     기본값에 맡기면 서로 다른 값이 적용된다. 아래 6개가 그 목록.
+    bn_momentum: float = 0.1       # PyTorch 관례(배치당 갱신 비율).
+                                   # Keras에는 1 - 값 을 넘긴다
+    bn_eps: float = 1e-5           # Keras 기본 1e-3, PyTorch 1e-5 -> 후자로 통일
+    adam_eps: float = 1e-8         # Keras 기본 1e-7, PyTorch 1e-8 -> 후자로 통일
+
     # --- 학습 ---
     optimizer: str = "adam"        # sgd | sgd_momentum | adam | adamw
     lr: float = 1e-3
@@ -161,23 +168,27 @@ def build_keras(cfg: Config):
                                    fill_mode="constant", fill_value=0.0))
 
     pad = "same" if cfg.padding else "valid"
+    init = dict(kernel_initializer="he_normal", bias_initializer="zeros")
+
     for c in cfg.conv_channels:
         L.append(layers.Conv2D(c, cfg.kernel, padding=pad,
-                               activation="relu",
-                               kernel_initializer="he_normal"))
+                               activation="relu", **init))
         if cfg.use_batchnorm:
-            L.append(layers.BatchNormalization())
+            # Keras의 momentum은 "유지 비율"이라 PyTorch와 의미가 반대다
+            L.append(layers.BatchNormalization(
+                momentum=1.0 - cfg.bn_momentum, epsilon=cfg.bn_eps))
         L.append(layers.MaxPooling2D(cfg.pool))
         if cfg.spatial_dropout:
             L.append(layers.SpatialDropout2D(cfg.spatial_dropout))
 
     L.append(layers.Flatten())
     if cfg.head_hidden:
-        L.append(layers.Dense(cfg.head_hidden, activation="relu",
-                              kernel_initializer="he_normal"))
+        L.append(layers.Dense(cfg.head_hidden, activation="relu", **init))
     if cfg.dropout:
         L.append(layers.Dropout(cfg.dropout))
-    L.append(layers.Dense(NUM_CLASSES, activation="softmax"))
+    # softmax를 넣지 않는다 — PyTorch와 같이 logit을 내보내고
+    # 손실함수에서 from_logits=True로 처리한다 (수치적으로도 더 안정적)
+    L.append(layers.Dense(NUM_CLASSES, **init))
     return keras.Sequential(L)
 
 
@@ -188,10 +199,11 @@ def keras_optimizer(cfg: Config):
     if cfg.optimizer == "sgd_momentum":
         return keras.optimizers.SGD(learning_rate=cfg.lr, momentum=cfg.momentum)
     if cfg.optimizer == "adam":
-        return keras.optimizers.Adam(learning_rate=cfg.lr)
+        return keras.optimizers.Adam(learning_rate=cfg.lr, epsilon=cfg.adam_eps)
     if cfg.optimizer == "adamw":
         return keras.optimizers.AdamW(learning_rate=cfg.lr,
-                                      weight_decay=cfg.weight_decay)
+                                      weight_decay=cfg.weight_decay,
+                                      epsilon=cfg.adam_eps)
     raise ValueError(cfg.optimizer)
 
 
@@ -229,7 +241,8 @@ def build_torch(cfg: Config):
         layers_.append(nn.Conv2d(c_in, c, cfg.kernel, padding=cfg.padding))
         layers_.append(nn.ReLU())
         if cfg.use_batchnorm:
-            layers_.append(nn.BatchNorm2d(c))
+            layers_.append(nn.BatchNorm2d(c, eps=cfg.bn_eps,
+                                          momentum=cfg.bn_momentum))
         layers_.append(nn.MaxPool2d(cfg.pool, cfg.pool))
         if cfg.spatial_dropout:
             layers_.append(nn.Dropout2d(cfg.spatial_dropout))
@@ -244,7 +257,25 @@ def build_torch(cfg: Config):
     if cfg.dropout:
         layers_.append(nn.Dropout(cfg.dropout))
     layers_.append(nn.Linear(f, NUM_CLASSES))   # logit 그대로
-    return nn.Sequential(*layers_)
+
+    model = nn.Sequential(*layers_)
+    apply_he_init(model)
+    return model
+
+
+def apply_he_init(model):
+    """Keras의 he_normal + bias zeros에 맞춘다.
+
+    PyTorch 기본은 kaiming_uniform_(a=sqrt(5))인데, 이는 He가 아니다.
+    fan_in=288에서 표준편차가 0.034로, 진짜 He(0.083)보다 2.45배 작다.
+    bias도 기본은 uniform(+-1/sqrt(fan_in))이라 zeros가 아니다.
+    """
+    from torch import nn
+    for m in model.modules():
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
 
 
 def torch_optimizer(cfg: Config, model):
@@ -309,19 +340,78 @@ def count_torch(model) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
+def keras_shapes(model) -> list:
+    """Keras 가중치 shape를 PyTorch 표기로 바꿔 순서대로.
+
+    Conv  (kh, kw, in, out) -> (out, in, kh, kw)
+    Dense (in, out)         -> (out, in)
+    """
+    out = []
+    for w in model.trainable_weights:
+        s = tuple(int(d) for d in w.shape)
+        if len(s) == 4:
+            s = (s[3], s[2], s[0], s[1])
+        elif len(s) == 2:
+            s = (s[1], s[0])
+        out.append(s)
+    return out
+
+
+def torch_shapes(model) -> list:
+    return [tuple(p.shape) for p in model.parameters() if p.requires_grad]
+
+
 def assert_param_match(cfg: Config, verbose=True):
-    k, t = count_keras(build_keras(cfg)), count_torch(build_torch(cfg))
-    e = expected_params(cfg)
+    """개수만이 아니라 층별 shape까지 비교한다.
+
+    개수가 같아도 구조가 다를 수 있다. v1에서 초기화 표준편차가 2.45배
+    달랐던 것처럼, 총합 검사로는 안 잡히는 차이가 실재한다.
+    """
+    km, tm = build_keras(cfg), build_torch(cfg)
+    ks, ts = keras_shapes(km), torch_shapes(tm)
+    k, t, e = count_keras(km), count_torch(tm), expected_params(cfg)
+
     if verbose:
         print(f"[파라미터] Keras {k:,} · PyTorch {t:,} · 예상 {e:,}")
+        print(f"[가중치 텐서] Keras {len(ks)}개 · PyTorch {len(ts)}개")
+
+    if ks != ts:
+        lines = ["두 모델의 구조가 다르다 (층별 shape 불일치):"]
+        for i in range(max(len(ks), len(ts))):
+            a = ks[i] if i < len(ks) else None
+            b = ts[i] if i < len(ts) else None
+            mark = "  " if a == b else "<-"
+            lines.append(f"  {i:>2} Keras {str(a):<22} PyTorch {str(b):<22}{mark}")
+        raise AssertionError("\n".join(lines))
+
     if k != t:
         raise AssertionError(
-            f"두 모델의 파라미터 수가 다르다: Keras {k:,} vs PyTorch {t:,}\n"
-            f"  이 상태로 비교하면 v1과 같은 실수를 반복한다. Config를 고칠 것."
+            f"파라미터 수가 다르다: Keras {k:,} vs PyTorch {t:,}\n"
+            f"  이 상태로 비교하면 v1과 같은 실수를 반복한다."
         )
     if k != e:
-        print(f"  ⚠ 예상값과 다름 ({k:,} vs {e:,}) — flatten_dim 계산을 확인할 것")
+        print(f"  ⚠ 예상값과 다름 ({k:,} vs {e:,}) — flatten_dim 계산 확인")
+    if verbose:
+        print("  ✓ 층별 shape·파라미터 수 일치")
     return k
+
+
+def compare_init(cfg: Config, n=3):
+    """초기화 분포까지 같은지 실제 가중치로 확인한다.
+
+    파라미터 수와 shape가 같아도 초기값 분포가 다르면 다른 모델이다.
+    """
+    import numpy as np
+    km, tm = build_keras(cfg), build_torch(cfg)
+    kw = [w for w in km.trainable_weights if len(w.shape) == 4]
+    tw = [p for p in tm.parameters() if p.dim() == 4]
+    print(f"{'층':<6}{'Keras std':>12}{'PyTorch std':>14}{'비율':>9}")
+    print("-" * 41)
+    for i, (a, b) in enumerate(zip(kw[:n], tw[:n])):
+        sa = float(np.std(np.asarray(a)))
+        sb = float(b.detach().std())
+        print(f"conv{i+1:<2}{sa:>12.5f}{sb:>14.5f}{sb/sa:>9.2f}")
+    print("\n비율이 1.00 근처면 통일된 것. v1은 0.41이었다.")
 
 
 # ============================================================

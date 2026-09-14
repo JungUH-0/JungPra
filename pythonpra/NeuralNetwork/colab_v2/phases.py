@@ -19,9 +19,12 @@ def run_keras(cfg, phase=""):
     set_all_seeds(cfg.seed)
     train_ds, val_ds, test_ds = keras_data(cfg)
     model = build_keras(cfg)
-    model.compile(optimizer=keras_optimizer(cfg),
-                  loss="sparse_categorical_crossentropy",
-                  metrics=["accuracy"])
+    # 모델이 logit을 내보내므로 from_logits=True.
+    # PyTorch의 nn.CrossEntropyLoss와 같은 계산이 된다.
+    model.compile(
+        optimizer=keras_optimizer(cfg),
+        loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"])
 
     mode = "max" if cfg.es_monitor == "val_accuracy" else "min"
     cbs = [keras.callbacks.EarlyStopping(

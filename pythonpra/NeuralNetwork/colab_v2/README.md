@@ -38,13 +38,39 @@ v1에서 "고정한 조건"과 "그냥 기본값을 쓴 것"이 섞였던 게 �
 증강 강도는 **도(degree) 단위 하나로** 정의하고 각 어댑터가 변환한다.
 v1에서 `RandomRotation(0.1)`=±36°와 `RandomRotation(10)`=±10°가 어긋났던 사고 방지.
 
-### 원칙 3 — 실행 전에 검사한다
+### 원칙 3 — 두 모델을 명시적으로 통일한다
+
+**파라미터 수가 같은 것으로는 부족하다.** 개수가 같아도 다른 모델일 수 있다.
+기본값에 맡기면 서로 달라지는 것이 여섯 개 있고, `Config`가 전부 명시한다.
+
+| # | 항목 | Keras 기본 | PyTorch 기본 | v2에서 |
+|---|---|---|---|---|
+| 1 | 가중치 초기화 | `glorot_uniform` | `kaiming_uniform_(a=√5)` | **둘 다 He normal** |
+| 2 | bias 초기화 | `zeros` | `uniform(±1/√fan_in)` | **둘 다 zeros** |
+| 3 | BatchNorm momentum | `0.99` (유지 비율) | `0.1` (갱신 비율) | `bn_momentum=0.1`, Keras엔 `1-값` |
+| 4 | BatchNorm epsilon | `1e-3` | `1e-5` | **`1e-5`** |
+| 5 | 출력 | 모델에 softmax | logit | **둘 다 logit** + `from_logits=True` |
+| 6 | Adam epsilon | `1e-7` | `1e-8` | **`1e-8`** |
+
+**1번이 가장 컸다.** PyTorch의 `kaiming_uniform_(a=√5)`는 이름과 달리 He가 아니다.
+`fan_in=288`에서 표준편차가 **0.034**로, 진짜 He(**0.083**)보다 **2.45배 작다**.
+v1의 "PyTorch는 기본이 이미 He 계열이라 안 건드렸다"는 부정확한 설명이었다.
+v2는 `apply_he_init()`으로 명시적으로 맞춘다.
+
+**5번**은 수학적으로 같지만 수치가 다르다. logit으로 통일하면 두 프레임워크가
+같은 log_softmax 경로를 타므로 계산이 일치하고, 수치적으로도 더 안정적이다.
+
+### 실행 전 검사 3종
 
 ```python
-assert_param_match(cfg)   # 파라미터 수가 다르면 예외
+assert_param_match(cfg)   # 층별 shape + 파라미터 수. 하나라도 다르면 예외
+compare_init(cfg)         # 초기화 표준편차 비교. 비율이 1.00 근처여야 함
+smoke_test()              # 1 epoch 실제 학습으로 배선 확인
 ```
 
-이 줄을 통과하지 못하면 실험이 시작되지 않는다.
+`assert_param_match`는 총합만 보지 않고 **가중치 텐서를 순서대로 대조**한다.
+Keras의 `(kh,kw,in,out)`을 PyTorch 표기 `(out,in,kh,kw)`로 바꿔 비교하므로
+층 하나가 어긋나도 어느 층인지 짚어준다.
 
 ### 원칙 4 — 결과는 즉시 디스크에
 
