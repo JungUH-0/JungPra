@@ -1,0 +1,4 @@
+# 생성물 — 용량이 커서 git에서 뺀다 (outputs 436MB, work 324MB, 2026-09-29 기준)
+# 다른 PC로 옮길 때 무엇을 복사해야 하는지는 HANDOFF.md 의 '환경과 데이터' 참고
+outputs/
+work/

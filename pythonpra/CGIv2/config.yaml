@@ -1,0 +1,53 @@
+# CGIv2 설정
+#
+# 가중치 라인의 파라미터(steps, cfg, control_strength)는 추론 시 조작이라
+# 가중치와 무관하다. 마음껏 바꿔도 된다.
+#
+# 반면 process_pairs 의 숫자(224 / 512 / 1.3~3.0배)는 여기 없다. 가중치가
+# 55만 표본에서 학습한 규약이라 바꾸면 에러 없이 품질만 떨어지기 때문이다.
+
+paths:
+  anydoor_root: D:/JungPra/pythonpra/CGI/AnyDoor
+  ckpt: D:/JungPra/pythonpra/CGI/AnyDoor/path/anydoor_pruned.ckpt
+  dinov2_root: D:/JungPra/pythonpra/CGI/AnyDoor/dinov2
+  dinov2_weight: D:/JungPra/pythonpra/CGI/AnyDoor/path/dinov2_vitg14_pretrain.pth
+
+  objects: D:/JungPra/pythonpra/CGI/AnyDoor/data_test/objects
+  masks: D:/JungPra/pythonpra/CGI/AnyDoor/data_test/masks
+  backgrounds: D:/JungPra/pythonpra/CGI/AnyDoor/data_test/backgrounds
+  out: D:/JungPra/pythonpra/CGIv2/outputs
+
+engine:
+  save_memory: true        # 10GB 카드. 24GB 면 false 로 두는 쪽이 훨씬 빠르다
+  device: cuda
+
+# ── 가중치 라인 파라미터 ────────────────────────────────────────────────
+sampling:
+  steps: 50
+  cfg: 5.0                 # 높이면 정체성, 낮추면 배경 융합
+  control_strength: 1.0    # 고주파 힌트를 얼마나 따를지 (0 ~ 2)
+  seed: 1234               # 베이스라인 재현용. null 이면 매번 랜덤
+
+# ── 전처리 ──────────────────────────────────────────────────────────────
+prep:
+  normalize_object: true   # 면적비를 관문(1~64%) 안쪽으로 밀어 넣는다
+  shape_control: false     # 배치 마스크를 사각형 대신 실루엣으로
+                           #   강체(시계·자동차) = true 를 시험
+                           #   사람 = false (자세가 변해야 자연스럽다)
+  tar_crop_ratio: 2.0      # 추론 고정값. 원본은 1.5~3.0 랜덤이라 재현이 안 된다
+
+# ── 후처리 ──────────────────────────────────────────────────────────────
+# 전부 꺼진 상태가 기본이다. 베이스라인을 먼저 돌려 실패 유형을 세고,
+# 그 유형에 해당하는 것만 켠다. 다 켜면 무엇이 효과였는지 알 수 없고,
+# AnyDoor 가 이미 한 보정 위에 덧칠해 이중 보정이 된다.
+post:
+  feather: 0               # 경계 페더링 픽셀. 0 = 원본과 같은 하드 대입
+  color_match: 0.0         # LAB 통계 매칭 강도 (0 ~ 1)
+  shadow: false            # 접지 그림자 기하 근사
+
+# ── 격자 탐색 ───────────────────────────────────────────────────────────
+# run_batch.py 가 이 조합을 모두 돈다. 기본값은 3 x 3 = 9 조합.
+grid:
+  cfg: [3.0, 5.0, 9.0]
+  control_strength: [0.6, 0.8, 1.0]
+  shape_control: [false]
