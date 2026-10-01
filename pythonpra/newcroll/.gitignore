@@ -1,0 +1,15 @@
+__pycache__/
+.vscode/
+*_debug.html
+naver_page1.html
+*.csv
+classfile/레고이미지/
+classfile/멜론앨범이미지/
+SHK/news.db
+SHK/news.db-wal
+SHK/news.db-shm
+SHK/backup/
+SHK/price_cache/
+SHK/collect_log.txt
+SHK/validation_daily.csv
+SHK/validation_chart.png

@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>뉴스 감성 트렌드</title>
+<style>
+  :root {
+    --ground: #f5f6f4;
+    --surface: #ffffff;
+    --ink: #1b2120;
+    --muted: #5a6562;
+    --faint: #8a9491;
+    --line: #dde2df;
+    --soft: #eef0ee;
+    --accent: #0e5f5b;
+    --accent-soft: #e1efed;
+    /* 긍정·상승 = 빨강, 부정·하락 = 파랑 (국내 증시 관례) */
+    --up: #c8323b;
+    --down: #2657b3;
+    --flat: #a3aba8;
+    --up-text: #b0262f;
+    --down-text: #2350a6;
+    --flat-text: #5a6562;
+    --up-soft: #fbe9ea;
+    --down-soft: #e7eefa;
+    --flat-soft: #eef0ef;
+    --warn: #8a5a00;
+    --warn-soft: #fbf1dc;
+    --sans: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --ground: #121615;
+      --surface: #191e1d;
+      --ink: #e4e9e7;
+      --muted: #9aa5a1;
+      --faint: #6f7a76;
+      --line: #2c3432;
+      --soft: #212725;
+      --accent: #5cc2bb;
+      --accent-soft: #1b2e2c;
+      --up: #d9535c;
+      --down: #5a88e0;
+      --flat: #4f5654;
+      --up-text: #f07078;
+      --down-text: #7ea6f2;
+      --flat-text: #9aa5a1;
+      --up-soft: #3a1f22;
+      --down-soft: #1c2740;
+      --flat-soft: #242a29;
+      --warn: #e2b155;
+      --warn-soft: #33290f;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    padding-inline: 20px;
+    padding-block: 28px 64px;
+    word-break: keep-all;
+  }
+  .page { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* 머리 */
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; }
+  .title { display: grid; gap: 2px; }
+  h1 { margin: 0; font-size: 24px; line-height: 1.3; font-weight: 700; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .tabs { display: inline-flex; background: var(--soft); border-radius: 10px; padding: 4px; gap: 4px; }
+  .tabs button {
+    font: inherit; font-size: 14px; font-weight: 600; color: var(--muted);
+    background: transparent; border: 0; border-radius: 7px; padding: 7px 16px; cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 요약 */
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+  .stat .k { font-size: 12.5px; color: var(--muted); }
+  .stat .v { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat .v small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+  .stat .s { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.pos { color: var(--up-text); background: var(--up-soft); }
+  .chip.neg { color: var(--down-text); background: var(--down-soft); }
+  .chip.neu { color: var(--flat-text); background: var(--flat-soft); }
+  .chip.better { color: var(--accent); background: var(--accent-soft); }
+  .chip.plain { color: var(--muted); background: var(--soft); font-weight: 500; }
+
+  /* 카드 */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 12px; min-width: 0; }
+  .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+  h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  .hint { color: var(--muted); font-size: 12.5px; }
+  .chart-label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .chart-box { position: relative; width: 100%; }
+  .chart-box.tall { height: 220px; }
+  .chart-box.mid { height: 170px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend i.hollow { border-radius: 50%; border: 2px solid var(--accent); background: var(--surface); }
+  .legend i.dot { border-radius: 50%; background: var(--accent); }
+
+  .notes { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .notes li { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 7px 12px; }
+
+  .error { font-size: 14px; color: var(--muted); background: var(--soft); border-radius: 8px; padding: 16px; }
+
+  /* 기사 목록 */
+  .articles { list-style: none; margin: 0; padding: 0; display: grid; }
+  .articles li { display: grid; grid-template-columns: 92px 48px 58px 1fr; gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
+  .articles li:first-child { border-top: 0; }
+  .articles time { color: var(--muted); font-size: 13px; }
+  .articles .idx { font-size: 13px; text-align: right; }
+  .articles a { color: var(--ink); text-decoration: none; }
+  .articles a:hover, .articles a:focus-visible { color: var(--accent); text-decoration: underline; outline: none; }
+  .articles .also { margin-left: 6px; }
+
+  footer { color: var(--muted); font-size: 12.5px; display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+  @media (max-width: 860px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    body { padding-block: 20px 48px; }
+    .summary { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat .v { font-size: 22px; }
+    .card { padding: 14px; }
+    .articles li { grid-template-columns: 1fr auto auto; gap: 4px 10px; }
+    .articles li .title { grid-column: 1 / -1; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="title">
+      <h1>뉴스 감성 트렌드</h1>
+      <div class="meta" id="meta">불러오는 중…</div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </header>
+
+  <section class="summary" id="summary" aria-label="요약"></section>
+
+  <section class="card" aria-labelledby="cmp-title">
+    <div class="card-head">
+      <h2 id="cmp-title">감성지수와 주가</h2>
+      <span class="hint" id="price-source"></span>
+    </div>
+    <div id="cmp-body">
+      <div class="legend">
+        <span><i class="dot"></i>거래일 평균 감성지수</span>
+        <span><i class="hollow"></i>기사 5건 미만 (참고용)</span>
+        <span><i style="background:var(--up)"></i>상승</span>
+        <span><i style="background:var(--down)"></i>하락</span>
+      </div>
+      <div class="chart-label" style="margin-top:10px">감성지수 (−1 부정 ~ +1 긍정)</div>
+      <div class="chart-box tall"><canvas id="chart-index" aria-label="거래일별 감성지수 그래프" role="img"></canvas></div>
+      <div class="chart-label" style="margin-top:6px">당일 등락률 (%)</div>
+      <div class="chart-box mid"><canvas id="chart-return" aria-label="거래일별 당일 등락률 그래프" role="img"></canvas></div>
+    </div>
+    <ul class="notes" id="notes"></ul>
+  </section>
+
+  <section class="card" aria-labelledby="label-title">
+    <div class="card-head">
+      <h2 id="label-title">긍정 · 중립 · 부정 기사 수</h2>
+      <span class="hint">거래일 기준, 주말·휴장일 기사는 다음 거래일에 포함</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--up)"></i>긍정</span>
+      <span><i style="background:var(--flat)"></i>중립</span>
+      <span><i style="background:var(--down)"></i>부정</span>
+    </div>
+    <div class="chart-box mid"><canvas id="chart-labels" aria-label="거래일별 감성 라벨 기사 수" role="img"></canvas></div>
+  </section>
+
+  <section class="card" aria-labelledby="art-title">
+    <div class="card-head">
+      <h2 id="art-title">최근 기사</h2>
+      <span class="hint">최신순 20건 · 제목을 누르면 원문이 새 탭에서 열립니다</span>
+    </div>
+    <ul class="articles" id="articles"></ul>
+  </section>
+
+  <footer>
+    <span>감성은 기사 제목만 보고 AI 모델(KR-FinBert-SC)이 판정한 결과입니다. 투자 판단의 근거로 사용하지 마세요.</span>
+    <span>감성지수는 긍정 확률에서 부정 확률을 뺀 값입니다. 방향 일치는 감성지수가 +인 날을 상승, −인 날을 하락으로 봤을 때 맞은 비율이고, 기준선은 뉴스 없이 기간 중 더 자주 나온 방향만 찍었을 때의 비율입니다.</span>
+    <span>거래일 수가 적어 우연의 영향이 큽니다. 경향을 보는 용도로만 해석하세요.</span>
+  </footer>
+</div>
+
+<script src="/static/chart.umd.js"></script>
+<script>
+(function () {
+  const LABEL_KO = { positive: "긍정", neutral: "중립", negative: "부정" };
+  const LABEL_CHIP = { positive: "pos", neutral: "neu", negative: "neg" };
+  const charts = {};
+  let keywords = [];
+  let current = null;
+
+  // ---------- 공통 ----------
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const signed = (v, digits = 2) => (v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(digits));
+  const mmdd = (iso) => iso.slice(5, 10);
+
+  async function getJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${url} 응답 ${res.status}`);
+    const data = await res.json();
+    if (data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  function baseOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? false : { duration: 300 },
+      interaction: { mode: "index", intersect: false },
+      layout: { padding: { left: 4, right: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: css("--surface"),
+          titleColor: css("--ink"),
+          bodyColor: css("--ink"),
+          borderColor: css("--line"),
+          borderWidth: 1,
+          padding: 10,
+          boxPadding: 4,
+          titleFont: { weight: "600" },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: css("--line") },
+          ticks: { color: css("--muted"), font: { size: 12 } },
+        },
+        y: {
+          border: { display: false },
+          ticks: { color: css("--muted"), font: { size: 12 } },
+          grid: {
+            color: (ctx) => (ctx.tick && ctx.tick.value === 0 ? css("--muted") : css("--line")),
+            lineWidth: (ctx) => (ctx.tick && ctx.tick.value === 0 ? 1.2 : 0.8),
+          },
+          afterFit: (scale) => { scale.width = 52; },   // 위아래 그래프의 x축 위치를 맞춤
+        },
+      },
+    };
+  }
+
+  function draw(id, config) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart($(id), config);
+    return charts[id];
+  }
+
+  // 위아래 그래프에서 같은 날짜를 같이 강조
+  function linkHover(a, b) {
+    const sync = (from, to) => {
+      from.options.onHover = (evt, active) => {
+        const idx = active.length ? active[0].index : null;
+        const els = idx == null ? [] : to.data.datasets.map((_, di) => ({ datasetIndex: di, index: idx }));
+        to.setActiveElements(els);
+        to.tooltip.setActiveElements(els, { x: 0, y: 0 });
+        to.update("none");
+      };
+    };
+    sync(a, b); sync(b, a);
+  }
+
+  // ---------- 그리기 ----------
+  function renderSummary(sentiment, validate) {
+    const m = validate && validate.metrics ? validate.metrics : {};
+    const hitTile = (title, r) => {
+      if (!r || !r.days) {
+        return `<div class="stat"><span class="k">${title}</span><span class="v">–</span><span class="s">비교할 날 없음</span></div>`;
+      }
+      const verdict = r.hit > r.baseline ? '<span class="chip better">기준선보다 높음</span>'
+        : r.hit === r.baseline ? '<span class="chip plain">기준선과 같음</span>'
+        : '<span class="chip plain">기준선보다 낮음</span>';
+      return `<div class="stat"><span class="k">${title}</span>
+        <span class="v num">${r.hit}<small>/ ${r.days}일</small></span>
+        <span class="s">기준선(매일 ${r.baseline_dir}) <span class="num">${r.baseline}/${r.baseline_n}</span> ${verdict}</span></div>`;
+    };
+    const idx = sentiment.avg_sentiment_index;
+    const tone = idx > 0.05 ? "pos" : idx < -0.05 ? "neg" : "neu";
+    const toneText = { pos: "긍정 쪽", neg: "부정 쪽", neu: "중립에 가까움" }[tone];
+    const lc = sentiment.label_counts || {};
+    $("summary").innerHTML = `
+      <div class="stat"><span class="k">수집한 기사</span>
+        <span class="v num">${sentiment.total_articles}<small>건</small></span>
+        <span class="s">긍정 ${lc.positive || 0} · 중립 ${lc.neutral || 0} · 부정 ${lc.negative || 0}</span></div>
+      <div class="stat"><span class="k">평균 감성지수</span>
+        <span class="v num">${signed(idx, 3)}</span>
+        <span class="s"><span class="chip ${tone}">${toneText}</span></span></div>
+      ${hitTile("같은 날 방향 일치", m.same_day)}
+      ${hitTile("다음 거래일 방향 일치", m.next_day)}`;
+  }
+
+  function renderComparison(v) {
+    const daily = v.daily;
+    const labels = daily.map((d) => mmdd(d.trade_date));
+    const accent = css("--accent"), surface = css("--surface");
+
+    const idxChart = draw("chart-index", {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "감성지수",
+          data: daily.map((d) => d.avg_index),
+          borderColor: accent,
+          borderWidth: 2,
+          tension: 0,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBorderWidth: 2,
+          pointBorderColor: daily.map((d) => (d.few_articles ? accent : surface)),
+          pointBackgroundColor: daily.map((d) => (d.few_articles ? surface : accent)),
+        }],
+      },
+      options: (() => {
+        const o = baseOptions();
+        o.scales.y.min = -1; o.scales.y.max = 1;
+        o.scales.y.ticks.stepSize = 0.5;
+        o.scales.y.grace = 0;
+        o.scales.x.ticks.display = false;
+        o.scales.x.offset = true;          // 점을 아래 막대 가운데와 같은 위치에 둠
+        o.plugins.tooltip.callbacks = {
+          title: (items) => `${daily[items[0].dataIndex].trade_date} 거래일`,
+          label: (item) => {
+            const d = daily[item.dataIndex];
+            return [
+              `감성지수 ${signed(d.avg_index, 3)}`,
+              `기사 ${d.n_articles}건 (긍정 ${d.positive} · 중립 ${d.neutral} · 부정 ${d.negative})${d.few_articles ? " · 참고용" : ""}`,
+              `뉴스 날짜 ${d.news_dates} · 수집 ${d.sessions}`,
+            ];
+          },
+        };
+        return o;
+      })(),
+    });
+
+    const rets = daily.map((d) => d.ret_same);
+    // 위아래 대칭, 눈금은 1·2·5 단위로 떨어지게
+    const rawMax = Math.max(1, ...rets.filter((r) => r != null).map(Math.abs));
+    const step = [0.5, 1, 2, 5, 10].find((s) => rawMax / s <= 2.5) || 10;
+    const maxAbs = Math.ceil((rawMax * 1.05) / step) * step;
+    const retChart = draw("chart-return", {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "당일 등락률",
+          data: rets,
+          backgroundColor: rets.map((r) => (r != null && r < 0 ? css("--down") : css("--up"))),
+          borderRadius: 4,
+          borderSkipped: false,
+          barPercentage: 0.6,
+          categoryPercentage: 0.8,
+        }],
+      },
+      options: (() => {
+        const o = baseOptions();
+        o.scales.y.min = -maxAbs; o.scales.y.max = maxAbs;
+        o.scales.y.ticks.stepSize = step;
+        o.scales.y.ticks.callback = (val) => `${val > 0 ? "+" : ""}${Number(val).toFixed(step < 1 ? 1 : 0)}`;
+        o.plugins.tooltip.callbacks = {
+          title: (items) => `${daily[items[0].dataIndex].trade_date} 거래일`,
+          label: (item) => {
+            const d = daily[item.dataIndex];
+            return [
+              `당일 등락률 ${signed(d.ret_same)}%`,
+              `다음 거래일 ${d.ret_next == null ? "아직 없음" : signed(d.ret_next) + "%"}`,
+            ];
+          },
+        };
+        return o;
+      })(),
+    });
+
+    linkHover(idxChart, retChart);
+
+    const p = v.price || {};
+    $("price-source").textContent = p.source
+      ? `가격: ${p.source} · ${mmdd(p.last_date)}까지${p.fetched_at ? ` · ${p.fetched_at.slice(5, 16).replace("T", " ")} 받음` : ""}`
+      : "";
+    $("notes").innerHTML = (v.notes || []).map((n) => `<li>${esc(n)}</li>`).join("");
+  }
+
+  function renderLabels(daily) {
+    const labels = daily.map((d) => mmdd(d.trade_date));
+    const surface = css("--surface");
+    const ds = (label, key, color) => ({
+      label, data: daily.map((d) => d[key]), backgroundColor: color,
+      borderColor: surface, borderWidth: 2, borderRadius: 3, borderSkipped: false,
+      barPercentage: 0.6, categoryPercentage: 0.8,
+    });
+    draw("chart-labels", {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          ds("부정", "negative", css("--down")),
+          ds("중립", "neutral", css("--flat")),
+          ds("긍정", "positive", css("--up")),
+        ],
+      },
+      options: (() => {
+        const o = baseOptions();
+        o.scales.x.stacked = true;
+        o.scales.y.stacked = true;
+        o.scales.y.beginAtZero = true;
+        o.scales.y.ticks.precision = 0;
+        o.plugins.tooltip.itemSort = (a, b) => b.datasetIndex - a.datasetIndex;
+        o.plugins.tooltip.callbacks = {
+          title: (items) => `${daily[items[0].dataIndex].trade_date} 거래일`,
+          label: (item) => `${item.dataset.label} ${item.raw}건`,
+          footer: (items) => `합계 ${daily[items[0].dataIndex].n_articles}건`,
+        };
+        return o;
+      })(),
+    });
+  }
+
+  function renderArticles(list) {
+    if (!list.length) {
+      $("articles").innerHTML = '<li><span class="hint">기사가 없습니다.</span></li>';
+      return;
+    }
+    $("articles").innerHTML = list.map((a) => {
+      const others = a.keywords.filter((k) => k !== current);
+      return `<li>
+        <time class="num" datetime="${esc(a.collected_at)}">${esc(a.collected_at.slice(5, 16))}</time>
+        <span class="chip ${LABEL_CHIP[a.label]}">${LABEL_KO[a.label] || esc(a.label)}</span>
+        <span class="idx num">${signed(a.sentiment_index)}</span>
+        <span class="title"><a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.title)}</a>${
+          others.map((k) => `<span class="chip plain also">${esc(k)}</span>`).join("")}</span>
+      </li>`;
+    }).join("");
+  }
+
+  function showCompareError(message) {
+    Object.keys(charts).forEach((id) => { if (id !== "chart-labels") { charts[id].destroy(); delete charts[id]; } });
+    $("cmp-body").hidden = true;
+    $("price-source").textContent = "";
+    $("notes").innerHTML = `<li>${esc(message)}</li>`;
+  }
+
+  // ---------- 불러오기 ----------
+  let lastData = null;
+
+  async function load(keyword) {
+    current = keyword;
+    document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.kw === keyword)));
+    try { history.replaceState(null, "", "#" + encodeURIComponent(keyword)); } catch (e) {}
+
+    const enc = encodeURIComponent(keyword);
+    const [sentiment, validate, articles] = await Promise.allSettled([
+      getJSON(`/sentiment/${enc}`),
+      getJSON(`/validate/${enc}`),
+      getJSON(`/articles/${enc}?limit=20`),
+    ]);
+    if (keyword !== current) return;   // 그 사이 다른 탭을 눌렀으면 무시
+    lastData = { sentiment, validate, articles };
+    render();
+  }
+
+  function render() {
+    const { sentiment, validate, articles } = lastData;
+
+    if (sentiment.status === "rejected") {
+      $("summary").innerHTML = `<div class="error" style="grid-column:1/-1">${esc(sentiment.reason.message)}</div>`;
+    } else {
+      renderSummary(sentiment.value, validate.status === "fulfilled" ? validate.value : null);
+    }
+
+    if (validate.status === "fulfilled" && validate.value.daily.length) {
+      $("cmp-body").hidden = false;
+      renderComparison(validate.value);
+      renderLabels(validate.value.daily);
+    } else {
+      showCompareError(validate.status === "rejected" ? validate.reason.message : "비교할 거래일이 없습니다.");
+    }
+
+    if (articles.status === "fulfilled") {
+      renderArticles(articles.value.articles);
+      const latest = articles.value.articles[0];
+      $("meta").textContent = latest ? `마지막 수집 ${latest.collected_at.slice(0, 16)} · 삼성전자 · SK하이닉스 · 코스피 네이버 뉴스 제목 기준` : "";
+    } else {
+      $("articles").innerHTML = `<li><span class="hint">${esc(articles.reason.message)}</span></li>`;
+    }
+  }
+
+  async function init() {
+    try {
+      keywords = (await getJSON("/keywords")).keywords;
+    } catch (e) {
+      keywords = ["삼성전자", "SK하이닉스", "코스피"];
+    }
+    $("tabs").innerHTML = keywords.map((k) =>
+      `<button type="button" role="tab" id="tab-${esc(k)}" data-kw="${esc(k)}" aria-selected="false">${esc(k)}</button>`).join("");
+    $("tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-kw]");
+      if (btn && btn.dataset.kw !== current) load(btn.dataset.kw);
+    });
+
+    const fromHash = decodeURIComponent(location.hash.slice(1));
+    load(keywords.includes(fromHash) ? fromHash : keywords[0]);
+
+    // 다크 모드로 바뀌면 그래프 색을 다시 그림
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (lastData) render(); });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
