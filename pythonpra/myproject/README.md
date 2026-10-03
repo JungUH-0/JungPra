@@ -167,6 +167,29 @@ python commandmodule.py
 
 ---
 
+## 다른 PC에서 이어하기
+
+저장소 루트가 `D:\JungPra` 전체라서 `myproject`만 따로 받을 수 없고, 같은 저장소의
+다른 프로젝트도 함께 clone된다. 코드는 그대로 따라오지만 아래는 **git에 없으므로 직접 준비**해야 한다.
+
+| 항목 | 이유 | 할 일 |
+|---|---|---|
+| 파이썬 환경 | git에 안 들어감 | 위 `pip install` 한 줄 (Python 3.10) |
+| Ollama + 모델 | 별도 프로그램 | `winget install Ollama.Ollama`, `ollama pull qwen2.5:3b-instruct` |
+| Whisper `medium` (약 1.5GB) | 자동 다운로드 | 첫 실행 때 받음 |
+| `commands.json` | `.gitignore` 대상 | 등록한 제스처 명령이 사라지므로 `python commandmodule.py`로 다시 등록 |
+| `debug_*.txt` | `.gitignore` 대상 | 실행하면 다시 생성됨 |
+
+**막힐 수 있는 지점**
+
+- **Windows 전용** — `pywin32`로 마우스·키보드·창을 제어하므로 Mac·Linux에서는 동작하지 않는다.
+- **GPU가 없으면 음성 인식이 느리거나 실패한다** — `voicemodule.py`의
+  `WhisperModel(MODEL_SIZE, device="cuda", compute_type="float16")` 가 CUDA 고정이다.
+  GPU가 없으면 `device="cpu", compute_type="int8"` 로 바꾸고, `MODEL_SIZE`도 `small` 이하로 낮추는 게 좋다.
+- **카메라 번호** — `main.py`의 `CameraModule(camera_id=0, ...)`. 카메라가 여러 개면 번호를 바꿔야 할 수 있다.
+
+---
+
 ## 현재 상태 / 다음 단계
 
 **미완성**
@@ -175,6 +198,11 @@ python commandmodule.py
 - 눈 관련 기능 — 블링크 · 롱블링크(모니터 끄기) 등은 주석 처리 상태이며,
   EAR 수치와 눈 감김 표시만 동작한다 (개인차가 커서 우선순위를 뒤로 미룸)
 - UI 통합 — 현재는 `main.py`와 `commandmodule.py`를 따로 실행해야 한다
+- 웨이크워드 **"웨이크"는 임시값** — 확정 전이며 `voicemodule.py`의 `WAKE_WORD`에서 바꾼다
+- **음성 명령 실사용 테스트 대기** — 트리거와 로그까지만 확인했고, 녹음한 음성 파일로
+  Whisper → LLM → 실행 전체 경로는 아직 검증하지 않았다
+- **전신 포즈 로그 분석 대기** — `debug_pose.txt`(팔꿈치·머리 특징 기록)를 테스트 후 확인할 예정
+- IoT(홈캠 연동)는 의도적으로 보류
 
 **다음 단계 (자세 학습)**
 
