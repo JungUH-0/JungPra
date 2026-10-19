@@ -1,6 +1,6 @@
 // 개인 AI 비서 — 시행착오로 보는 개발 과정 (발표용)
 // 소스는 이 파일, .pptx는 산출물. 내용 근거는 ../DEVLOG.md
-// v7 = v2 기반, 12장(다음 단계 삭제, 교훈 4개, 포즈 카드 3개): 목차 · 흐름 · 음성 · 포즈 추가, 영역 태그 제거)에 맞춰 갱신됨.
+// v8 = v2 기반, 12장(다음 단계 삭제, 교훈 4개, 포즈 카드 3개): 목차 · 흐름 · 음성 · 포즈 추가, 영역 태그 제거)에 맞춰 갱신됨.
 //   npm install pptxgenjs
 //   node build.js
 const pptxgen = require("pptxgenjs");
@@ -183,7 +183,7 @@ function listRows(slide, rows, hasPage) {
   header(s, "눈");
   const cols = [
     ["시도", "EAR로 깜빡임을 인식하고, 3초 롱블링크로 모니터 끄기까지 연결", MUTED, CARD],
-    ["문제", "사람마다 눈 크기가 달라 기준값을 따로 맞춰야 함. 수치 조정에만 시간이 들어가는 중이었다", FAIL, FAIL_PALE],
+    ["문제", "사람마다 눈 크기가 달라 기준값을 따로 맞춰서 진행해도 값 기준이 모호해짐", FAIL, FAIL_PALE],
     ["결정", "눈 기능은 넣고 싶었지만 어려움이 있어 이번 기능에서는 제외했다. 예/아니오는 엄지척 · 엄지다운이 대신 맡음", OK, OK_PALE],
   ];
   const w = 3.8, gap = 0.35, x0 = 0.6;
@@ -291,4 +291,4 @@ function fourCards(s, cards, noteLabel, noteBody) {
   });
 }
 
-pres.writeFile({ fileName: "assistant_devlog_v7.pptx" }).then((f) => console.log("saved:", f));
+pres.writeFile({ fileName: "assistant_devlog_v8.pptx" }).then((f) => console.log("saved:", f));
