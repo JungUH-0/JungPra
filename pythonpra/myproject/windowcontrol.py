@@ -5,6 +5,8 @@
 # ============================================================
 
 import os
+import re
+from urllib.parse import quote_plus
 import win32gui
 import win32con
 import win32api  # [추가] 모니터 켜기용 마우스 이벤트
@@ -230,6 +232,39 @@ def press_media_key(name):
 
 
 # [추가] LLM이 해석한 명령("사이트 열기")을 실제로 실행하는 함수
+SEARCH_URL_PREFIX = "https://www.google.com/search?q="
+SEARCH_MAX_CHARS = 100  # 음성 오인식으로 엉뚱하게 긴 문장이 검색창에 들어가는 걸 막음
+
+
+def build_search_url(query):
+    """
+    검색어 -> 구글 검색 주소. 주소 앞부분(https://www.google.com/search?q=)은 고정이고
+    검색어는 URL 인코딩해서 q= 뒤에만 붙이므로, 검색어가 다른 주소나 명령이 될 수 없다.
+    반환값: (url, None) 또는 (None, 에러 메시지)
+    """
+    if not isinstance(query, str):
+        return None, "검색어가 없습니다"
+    query = re.sub(r"[\x00-\x1f\x7f]", " ", query)  # 제어문자 제거
+    query = " ".join(query.split())
+    if not query:
+        return None, "검색어가 없습니다"
+    if len(query) > SEARCH_MAX_CHARS:
+        return None, f"검색어가 너무 깁니다 ({len(query)}자, 최대 {SEARCH_MAX_CHARS}자)"
+    return SEARCH_URL_PREFIX + quote_plus(query), None
+
+
+def search_web(query):
+    """검색어를 기본 브라우저에서 구글로 검색"""
+    url, err = build_search_url(query)
+    if url is None:
+        return False, err
+    try:
+        os.startfile(url)
+        return True, None
+    except OSError as e:
+        return False, str(e)
+
+
 def open_url(name):
     """ALLOWED_URLS 화이트리스트에 있는 사이트만 기본 브라우저로 열기"""
     if not name:

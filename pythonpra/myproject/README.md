@@ -95,6 +95,7 @@ Whisper(`medium`, GPU)로 텍스트 변환 → LLM 해석 → 즉시 실행. 음
 | 단축키 | copy, paste, cut, undo, redo, save, select_all, new_tab, close_tab, switch_window |
 | 미디어 키 | volume_up/down, mute, play_pause, next_track, prev_track |
 | 사이트 열기 | youtube, google, gmail, naver, github |
+| 웹 검색 | `search_web` — "날씨 검색해줘"처럼 검색어를 구글 검색으로 연다 (기본 브라우저) |
 
 ---
 

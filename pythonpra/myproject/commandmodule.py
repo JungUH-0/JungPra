@@ -30,7 +30,12 @@ ALLOWED_ACTIONS = {
     "press_shortcut": ["target"],   # [추가] 키보드 단축키 입력
     "press_media_key": ["target"],  # [추가] 볼륨/재생 등 미디어 키 입력
     "open_url": ["target"],         # [추가] 화이트리스트에 등록된 사이트 열기
+    "search_web": ["target"],       # [추가] target = 검색어(자유 텍스트). 구글 검색 주소로만 열림
 }
+
+# [추가] target이 화이트리스트가 아니라 자유 텍스트인 action.
+# 검증은 windowcontrol.build_search_url에서 한다(고정 주소 + URL 인코딩 + 길이 제한).
+FREE_TEXT_ACTIONS = {"search_web"}
 
 # [추가] target이 필요한 action마다 어떤 화이트리스트로 검증할지 매핑
 # (windowcontrol.py에 있는 화이트리스트를 그대로 재사용 - LLM이 만든 임의 문자열이
@@ -53,11 +58,13 @@ SYSTEM_PROMPT = f"""너는 사용자의 자연어 명령을 아래 JSON 스키�
 - press_shortcut: {", ".join(windowcontrol.ALLOWED_SHORTCUTS.keys())}
 - press_media_key: {", ".join(windowcontrol.ALLOWED_MEDIA_KEYS.keys())}
 - open_url: {", ".join(windowcontrol.ALLOWED_URLS.keys())}
+- search_web: 검색할 말 자체 (자유 텍스트, "검색해줘" 같은 명령어는 빼고 찾을 내용만)
 
 주의:
 - target 목록에 있는 값(예: close_tab, mute)을 action 자리에 쓰면 안 된다. action은 반드시 위 action 목록 중 하나여야 한다.
 - "음소거"/"뮤트"/"소리 꺼줘"는 press_media_key(target=mute)이지, turn_off_monitor(모니터 끄기)가 아니다.
 - "탭 닫기"는 press_shortcut(target=close_tab)이다.
+- "크롬 열어줘"는 open_app이고, 무언가를 "검색해줘/찾아줘"는 search_web이다.
 
 예시:
 사용자 명령: 탭 닫아줘
@@ -71,6 +78,12 @@ SYSTEM_PROMPT = f"""너는 사용자의 자연어 명령을 아래 JSON 스키�
 
 사용자 명령: 유튜브 켜줘
 {{"action": "open_url", "target": "youtube"}}
+
+사용자 명령: 크롬에서 오늘 날씨 검색해줘
+{{"action": "search_web", "target": "오늘 날씨"}}
+
+사용자 명령: 파이썬 강의 찾아줘
+{{"action": "search_web", "target": "파이썬 강의"}}
 
 출력 형식(JSON만):
 {{"action": "<action 이름>", "target": "<필요시 대상, 없으면 null>"}}
@@ -134,6 +147,22 @@ def _save_commands(commands):
         json.dump(commands, f, ensure_ascii=False, indent=2)
 
 
+def _check_target(action, target):
+    """
+    action에 필요한 target을 검증. 문제가 없으면 None, 있으면 에러 메시지를 반환.
+    register_command와 execute_text가 같은 검증을 쓰도록 한곳에 모음.
+    """
+    if "target" not in ALLOWED_ACTIONS[action]:
+        return None
+    if action in FREE_TEXT_ACTIONS:
+        url, err = windowcontrol.build_search_url(target)
+        return err if url is None else None
+    whitelist = TARGET_WHITELISTS.get(action, {})
+    if not target or target.strip().lower() not in whitelist:
+        return "target을 알아듣지 못했습니다"
+    return None
+
+
 def register_command(gesture_name, user_text):
     """자연어 명령을 해석해서 gesture_name에 대한 동작으로 저장"""
     parsed, err = _ask_llm(user_text)
@@ -145,11 +174,9 @@ def register_command(gesture_name, user_text):
     if action not in ALLOWED_ACTIONS:
         return False, f"인식 실패 또는 지원하지 않는 동작입니다: {parsed}"
 
-    needed_params = ALLOWED_ACTIONS[action]
-    if "target" in needed_params:
-        whitelist = TARGET_WHITELISTS.get(action, {})
-        if not target or target.strip().lower() not in whitelist:
-            return False, f"target을 알아듣지 못했습니다: {parsed}"
+    problem = _check_target(action, target)
+    if problem:
+        return False, f"{problem}: {parsed}"
 
     commands = _load_commands()
     commands[gesture_name] = {"action": action, "target": target}
@@ -180,6 +207,8 @@ def _run_action(action, target):
         return windowcontrol.press_media_key(target)
     elif action == "open_url":
         return windowcontrol.open_url(target)
+    elif action == "search_web":
+        return windowcontrol.search_web(target)
     else:
         return False, f"알 수 없는 action: {action}"
 
@@ -213,11 +242,9 @@ def execute_text(user_text):
     if action not in ALLOWED_ACTIONS:
         return False, f"인식 실패 또는 지원하지 않는 동작입니다: {parsed}"
 
-    needed_params = ALLOWED_ACTIONS[action]
-    if "target" in needed_params:
-        whitelist = TARGET_WHITELISTS.get(action, {})
-        if not target or target.strip().lower() not in whitelist:
-            return False, f"target을 알아듣지 못했습니다: {parsed}"
+    problem = _check_target(action, target)
+    if problem:
+        return False, f"{problem}: {parsed}"
 
     return _run_action(action, target)
 
