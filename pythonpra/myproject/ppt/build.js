@@ -1,6 +1,8 @@
 // 개인 AI 비서 — 시행착오로 보는 개발 과정 (발표용)
 // 소스는 이 파일, .pptx는 산출물. 내용 근거는 ../DEVLOG.md
-// v8 = v2 기반, 12장(다음 단계 삭제, 교훈 4개, 포즈 카드 3개): 목차 · 흐름 · 음성 · 포즈 추가, 영역 태그 제거)에 맞춰 갱신됨.
+// 출력 파일명은 버전 없이 assistant_devlog.pptx 하나로 통일 (이력은 git이 보관).
+// 구성: 12장 (목차 · 흐름 · 음성 · 포즈 포함, 영역 태그 없음, 다음 단계 슬라이드 없음).
+// 사용자가 PowerPoint에서 직접 고친 내용이 있을 수 있으니, 덮어쓰기 전에 저장된 pptx와 먼저 비교할 것.
 //   npm install pptxgenjs
 //   node build.js
 const pptxgen = require("pptxgenjs");
@@ -15,7 +17,6 @@ const INK = "1B2230";        // 지배색 (어두운 남색)
 const PAPER = "F5F6F8";
 const CARD = "FFFFFF";
 const MUTED = "6A7384";
-const PAGE = "8F8F8F";       // 목차 쪽수
 const FAIL = "C8443A";       // 문제 / 실패
 const FAIL_PALE = "FBE9E7";
 const OK = "1F8A70";         // 해결 / 채택
@@ -45,30 +46,21 @@ function header(slide, title) {
   text(slide, title, 0.6, 0.67, 12.1, 0.7, { fontSize: 32, bold: true });
 }
 
+// 제목 줄 오른쪽 위 "사용 모델 / 이름" 상자 (LLM 슬라이드의 어두운 패널과 같은 색)
+function techBadge(slide, label, name, note) {
+  const x = 8.4, y = 0.4, w = 4.3, h = note ? 1.15 : 0.95;
+  card(slide, x, y, w, h, INK, false);
+  text(slide, label, x + 0.3, y + 0.15, w - 0.6, 0.3, { fontSize: 13, bold: true, color: "F2B8B2" });
+  text(slide, name, x + 0.3, y + 0.45, w - 0.6, 0.4, { fontSize: 18, bold: true, color: "FFFFFF" });
+  if (note) text(slide, note, x + 0.3, y + 0.82, w - 0.6, 0.25, { fontSize: 12, color: "C9D0DD" });
+}
+
 // 라벨 + 본문 (카드 안 텍스트)
 function labeled(slide, x, y, w, h, label, body, labelColor, ls = 17, bs = 16) {
   text(slide, [
     { text: label, options: { fontSize: ls, bold: true, color: labelColor, breakLine: true } },
     { text: body, options: { fontSize: bs, color: INK } },
   ], x, y, w, h, { paraSpaceAfter: 4 });
-}
-
-// 목차 · 흐름 공통: 번호 칸 + 흰 카드(굵은 제목 + 설명). pageText가 있으면 오른쪽에 쪽수.
-function listRows(slide, rows, hasPage) {
-  const y0 = 1.94, step = 0.833, h = 0.72;
-  rows.forEach((r, i) => {
-    const y = y0 + i * step;
-    slide.addShape(pres.shapes.ROUNDED_RECTANGLE, {
-      x: 0.6, y, w: 0.97, h, rectRadius: 0.08, fill: { color: INK }, line: { color: INK, width: 0 },
-    });
-    text(slide, String(i + 1).padStart(2, "0"), 0.6, y, 0.97, h, { fontSize: 18, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
-    card(slide, 1.74, y, 10.96, h);
-    text(slide, [
-      { text: r.label, options: { bold: true, color: INK } },
-      { text: "   " + r.desc, options: { color: INK } },
-    ], 1.99, y, hasPage ? 9.4 : 10.5, h, { fontSize: 15, valign: "middle" });
-    if (hasPage) text(slide, r.page, 10.97, y, 1.53, h, { fontSize: 14, color: PAGE, align: "right", valign: "middle" });
-  });
 }
 
 // ── 1. 표지 ─────────────────────────────────────────────
@@ -78,71 +70,139 @@ function listRows(slide, rows, hasPage) {
   text(s, "개인 AI 비서", 0.9, 2.2, 11.5, 1.0, { fontSize: 54, bold: true, color: "FFFFFF" });
   text(s, "시행착오로 보는 개발 과정", 0.9, 3.35, 11.5, 0.7, { fontSize: 30, color: "C9D0DD" });
   text(s, "손동작 · 음성 · 포즈를 로컬 LLM으로 해석해서 PC를 제어한다", 0.9, 4.5, 11.5, 0.5, { fontSize: 18, color: "9AA4B6" });
+  s.addNotes("[0:20 / 누적 0:20] 인사와 한 줄 소개. 전체 발표 시간은 약 10분.");
 }
 
-// ── 2. 목차 ─────────────────────────────────────────────
+// ── 2. 목적 (목표 · 출발 + 만든 순서) ───────────────────
 {
   const s = pres.addSlide();
-  header(s, "목차");
-  listRows(s, [
-    { label: "개요 · 흐름", desc: "만든 것의 전체 모습과 커밋으로 본 다섯 번의 전환점", page: "p.3 ~ 4" },
-    { label: "손", desc: "커서 · 우클릭 · 휠, 그리고 손가락이 겹쳐 보인 문제", page: "p.5 ~ 6" },
-    { label: "눈", desc: "눈 기능을 이번에는 제외한 이유", page: "p.7" },
-    { label: "LLM · 음성", desc: "사용한 모델과 도입 이유, 두 가지 음성 트리거", page: "p.8 ~ 9" },
-    { label: "포즈 · 박수", desc: "22차원 특징 추출, 박수를 접고 양손 모으기", page: "p.10 ~ 11" },
-    { label: "교훈", desc: "반복된 실수 네 가지", page: "p.12" },
-  ], true);
-}
+  header(s, "목적");
+  s.addNotes("[1:00 / 누적 1:20] 만든 이유를 먼저 말한다. 목표: 클릭과 예/아니오를 뺀 모든 동작을 사용자가 직접 정의. 수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤 추가 활용법을 찾다가 시작. 오른쪽은 만든 순서를 한 번만 훑는다.");
+  card(s, 0.6, 2.0, 4.9, 4.6, INK, false);
+  text(s, "목표", 0.9, 2.3, 4.3, 0.4, { fontSize: 15, bold: true, color: "F2B8B2" });
+  text(s, "클릭과 예/아니오를 뺀 모든 동작을 사용자가 직접 정의한다", 0.9, 2.75, 4.3, 1.4, { fontSize: 20, bold: true, color: "FFFFFF" });
+  text(s, "출발", 0.9, 4.3, 4.3, 0.4, { fontSize: 15, bold: true, color: "9ADBC6" });
+  text(s, "수어 인식 프로젝트의 손 인식에서 출발, 추가 활용법을 찾다가 비서로", 0.9, 4.75, 4.3, 1.6, { fontSize: 15, color: "C9D0DD" });
 
-// ── 3. 개요 ─────────────────────────────────────────────
-{
-  const s = pres.addSlide();
-  header(s, "개요");
-  const items = [
-    { name: "손", sub: "커서 · 클릭 · 휠\n예 / 아니오", st: "완성", c: OK, p: OK_PALE },
-    { name: "눈", sub: "깜빡임 · 롱블링크", st: "제외", c: HOLD, p: HOLD_PALE },
-    { name: "LLM · 음성", sub: "명령 해석 · 음성 입력", st: "구현", c: OK, p: OK_PALE },
-    { name: "포즈", sub: "상체 22차원 특징 추출", st: "등록 예정", c: HOLD, p: HOLD_PALE },
-    { name: "박수", sub: "모드 전환 신호", st: "전환에서 제외", c: HOLD, p: HOLD_PALE },
+  text(s, "만든 순서 (커밋 기준)", 5.8, 1.85, 6.9, 0.35, { fontSize: 14, bold: true, color: MUTED });
+  const steps = [
+    ["로컬 LLM 도입", "명령을 문장으로 등록"],
+    ["손 안정화", "오발동 제거, 명령 종류 확장"],
+    ["음성 명령", "웨이크워드 · 손등으로 녹음해 실행"],
+    ["포즈 · 모드 전환", "손과 포즈를 번갈아 사용"],
   ];
-  const w = 2.31, gap = 0.2, x0 = 0.49, y = 2.5, h = 3.3;
-  items.forEach((it, i) => {
-    const x = x0 + i * (w + gap);
-    card(s, x, y, w, h);
-    text(s, it.name, x + 0.22, y + 0.3, 1.92, 0.7, { fontSize: 26, bold: true });
-    text(s, it.sub, x + 0.22, y + 1.15, 1.92, 1.0, { fontSize: 15, color: MUTED });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
-      x: x + 0.22, y: y + h - 0.85, w: 1.86, h: 0.5, rectRadius: 0.25, fill: { color: it.p }, line: { color: it.p, width: 0 },
-    });
-    text(s, it.st, x + 0.22, y + h - 0.85, 1.86, 0.5, { fontSize: 13, bold: true, color: it.c, align: "center", valign: "middle" });
+  steps.forEach((st, i) => {
+    const y = 2.3 + i * 1.05;
+    card(s, 5.8, y, 6.9, 0.9);
+    text(s, [
+      { text: st[0], options: { bold: true, color: OK } },
+      { text: "   " + st[1], options: { color: INK } },
+    ], 6.05, y, 6.4, 0.9, { fontSize: 15, valign: "middle" });
   });
 }
 
-// ── 4. 흐름 (커밋으로 본 전환점) ────────────────────────
+// ── 3. 처리 흐름 (입력 → 처리 → 출력, 한 줄) ───────────
 {
   const s = pres.addSlide();
-  header(s, "흐름");
-  listRows(s, [
-    { label: "첫 시도", desc: "수어 인식 프로젝트의 MediaPipe 손 인식에서 출발. 추가 활용법을 찾다가 비서로 발전" },
-    { label: "로컬 LLM 도입", desc: "Ollama 기반 명령 등록 모듈을 만들고 main.py에 연결" },
-    { label: "손 안정화", desc: "오발동을 잡고 LLM이 해석하는 명령 종류를 확장" },
-    { label: "음성 명령", desc: "웨이크워드와 손등 트리거로 녹음해 바로 실행" },
-    { label: "포즈 · 모드 전환", desc: "전신 포즈 모드를 더하고, 손과 포즈를 전환. 안정성도 개선" },
-  ], false);
+  header(s, "처리 흐름");
+  s.addNotes("[1:00 / 누적 2:20] 입력에서 출력까지 한 줄로 설명한다. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다. LLM이 만든 값은 허용 목록에 있는 것만 실행한다. 손과 포즈는 한 번에 하나만 켠다.");
+  const stages = [
+    { title: "카메라\n마이크", desc: "", value: "영상 · 소리" },
+    { title: "인식", desc: "손 · 포즈 · 음성", value: "동작 이름 ·\n받아쓴 문장" },
+    { title: "연결", desc: "main.py\n모드 전환\n명령 찾기", value: "명령 또는 문장" },
+    { title: "해석 · 검증", desc: "commandmodule\n해석\n허용 목록 검사", value: "{ action, target }" },
+    { title: "실행", desc: "windowcontrol\n마우스 · 키 · 창", value: "" },
+  ];
+  const w = 2.1, gap = 0.4, x0 = 0.6, y = 2.3, h = 3.2;
+  // 입력 / 처리 / 출력 묶음 표시
+  const groupX = (i) => x0 + i * (w + gap);
+  text(s, "입력", groupX(0), 1.85, w, 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  text(s, "처리", groupX(1), 1.85, groupX(3) + w - groupX(1), 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  text(s, "출력", groupX(4), 1.85, w, 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  stages.forEach((st, i) => {
+    const x = groupX(i);
+    card(s, x, y, w, h, i === 0 || i === 4 ? OK_PALE : CARD, i > 0 && i < 4);
+    text(s, st.title, x + 0.2, y + 0.2, w - 0.4, 0.8, { fontSize: 18, bold: true });
+    if (st.desc) text(s, st.desc, x + 0.2, y + 1.0, w - 0.4, 1.3, { fontSize: 14, color: MUTED });
+    if (st.value) {
+      text(s, "넘기는 값", x + 0.2, y + 2.2, w - 0.4, 0.25, { fontSize: 12, color: MUTED });
+      text(s, st.value, x + 0.2, y + 2.45, w - 0.4, 0.6, { fontSize: 14, bold: true, color: OK });
+    }
+    if (i < stages.length - 1) text(s, "→", x + w, y, gap, h, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
+  });
+  const notes = [
+    ["인식은 이름만 넘긴다", "명령을 바꿔도 인식 코드는 그대로"],
+    ["허용 목록만 실행한다", "목록에 없으면 거부"],
+    ["한 번에 하나만 켠다", "손 ↔ 포즈는 양손 모으기로 전환"],
+  ];
+  const nw = (12.1 - 0.4) / 3;
+  notes.forEach((n, i) => {
+    const x = 0.6 + i * (nw + 0.2);
+    card(s, x, 5.75, nw, 1.2, i === 1 ? HOLD_PALE : OK_PALE, false);
+    labeled(s, x + 0.25, 5.87, nw - 0.5, 1.0, n[0], n[1], i === 1 ? HOLD : OK, 16, 14);
+  });
+}
+
+// ── 4. 도구 (용도별 · 출처 · 상태) ──────────────────────
+{
+  const s = pres.addSlide();
+  header(s, "도구");
+  s.addNotes("[0:50 / 누적 3:10] 용도별로 어떤 도구를 썼는지, 지금 상태가 어떤지 한 번에 본다. 모델은 출처 링크를 붙였다. 박수는 별도 모델 없이 소리 크기 변화로 감지한다.");
+  const head = ["영역", "용도", "도구 · 모델", "상태", "출처"].map((t) => ({
+    text: t, options: { bold: true, color: "FFFFFF", fill: { color: INK }, fontSize: 14 },
+  }));
+  const link = (label, url) => ({ text: label, options: { fontSize: 12, hyperlink: { url } } });
+  const plain = (t, o = {}) => ({ text: t, options: Object.assign({ fontSize: 14, color: INK }, o) });
+  const status = (t, c) => ({ text: t, options: { fontSize: 14, bold: true, color: c } });
+  const rows = [
+    ["손", "손 21개 점 인식", "MediaPipe Hands · OpenCV", status("완성", OK), link("github.com/google-ai-edge/mediapipe", "https://github.com/google-ai-edge/mediapipe")],
+    ["눈", "눈 감김 비율(EAR)", "MediaPipe Face Mesh", status("제외", HOLD), plain("위와 동일", { color: MUTED, fontSize: 12 })],
+    ["포즈", "상체 키포인트 인식", "MediaPipe Pose", status("등록 예정", HOLD), plain("위와 동일", { color: MUTED, fontSize: 12 })],
+    ["음성", "음성 → 텍스트", "faster-whisper medium", status("구현", OK), link("huggingface.co/Systran/faster-whisper-medium", "https://huggingface.co/Systran/faster-whisper-medium")],
+    ["LLM", "문장 → 동작", "Qwen2.5-3B-Instruct (Ollama)", status("구현", OK), link("huggingface.co/Qwen/Qwen2.5-3B-Instruct", "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct")],
+    ["박수", "소리 크기 변화", "sounddevice · NumPy (모델 없음)", status("전환에서 제외", HOLD), plain("—", { color: MUTED })],
+    ["PC 제어", "마우스 · 키보드 · 창", "pywin32", status("완성", OK), link("github.com/mhammond/pywin32", "https://github.com/mhammond/pywin32")],
+  ].map((r) => r.map((c) => (typeof c === "string" ? plain(c, c === r[0] ? { bold: true } : {}) : c)));
+  s.addTable([head, ...rows], {
+    x: 0.6, y: 1.95, w: 12.1, colW: [1.2, 2.6, 3.2, 1.7, 3.4], rowH: 0.56,
+    fontFace: FONT, valign: "middle", margin: [0.04, 0.1, 0.04, 0.1],
+    border: { type: "solid", pt: 0.75, color: "DDE0E6" }, fill: { color: CARD },
+  });
+}
+
+// ── 5. 개발 방식 (LLM 활용) ─────────────────────────────
+{
+  const s = pres.addSlide();
+  header(s, "개발 방식");
+  s.addNotes("[0:50 / 누적 4:00] 이 프로젝트는 Claude Code 세션으로 코드를 만들고 조언을 받으며 진행했다. 코드 작성과 수정, 설계 조언, 로그를 보고 원인 가설을 세우는 일에 썼다. 제품 안의 Qwen과는 별개.");
+  text(s, "LLM(Claude Code)", 0.6, 1.85, 6, 0.35, { fontSize: 14, bold: true, color: MUTED });
+  const items = [
+    ["코드 작성 · 수정", "모듈 구현과 오류 수정\n(예: 예외 처리)"],
+    ["설계 조언", "구조 제안과 대안 비교\n(예: 명령 모듈 공유)"],
+    ["원인 분석 보조", "로그를 읽고 원인 가설 제시\n(예: pinch_middle, 박수)"],
+  ];
+  const w = 3.8, gap = 0.35;
+  items.forEach((it, i) => {
+    const x = 0.6 + i * (w + gap);
+    card(s, x, 2.3, w, 2.4);
+    labeled(s, x + 0.3, 2.6, w - 0.6, 1.9, it[0], it[1], INK, 20, 17);
+  });
 }
 
 // ── 5. 손: 커서 · 우클릭 · 휠 ───────────────────────────
 {
   const s = pres.addSlide();
   header(s, "손");
+  s.addNotes("[0:50 / 누적 4:50] 시도, 문제, 해결 순서로 세 가지(커서, 우클릭, 휠)를 짧게. 시연 영상이 있으면 여기서 보여 준다.");
+  techBadge(s, "사용 라이브러리", "MediaPipe Hands · OpenCV");
   const cw = 3.7, gap = 0.55, xs = [0.6, 0.6 + cw + gap, 0.6 + 2 * (cw + gap)];
   ["시도", "문제", "해결"].forEach((l, i) => {
     text(s, l, xs[i], 1.85, cw, 0.35, { fontSize: 14, bold: true, color: [MUTED, FAIL, OK][i] });
   });
   const rows = [
-    ["커서", "검지 끝을 커서로 사용", "클릭하려고 엄지를 붙이는 순간 검지가 움직여 커서가 어긋남", "손바닥 중심(손목 + 관절 평균)으로 변경. 핀치와 무관하게 안정"],
-    ["우클릭", "검지 + 중지 겹치기", "손날 자세에서 손가락이 붙어 우클릭이 오발동", "엄지를 손바닥 중앙으로 넣는 동작으로 교체"],
-    ["휠", "중지만 펴서 위아래로, 이후 고정 거리 기준", "약지가 중지와 같이 움직임. 카메라 거리마다 값이 달라짐", "약지 + 새끼만 말고 손 전체를 위아래로 (검증된 방식 재사용)"],
+    ["커서", "검지 끝을 커서로 사용", "엄지를 붙이는 순간\n검지가 움직여 어긋남", "손바닥 중심으로 변경"],
+    ["우클릭", "검지 + 중지 겹치기", "손날 자세에서 오발동", "엄지를 손바닥 중앙으로"],
+    ["휠", "중지만 펴서 위아래로", "약지가 같이 움직임.\n거리마다 값이 달라짐", "약지 + 새끼만 말고\n손 전체를 위아래로"],
   ];
   rows.forEach((r, i) => {
     const y = 2.3 + i * 1.55, h = 1.4;
@@ -160,15 +220,16 @@ function listRows(slide, rows, hasPage) {
 {
   const s = pres.addSlide();
   header(s, "손");
+  s.addNotes("[0:50 / 누적 5:40] 가장 말할 거리가 많은 장면. 로그를 남겨 확인했더니 손을 돌릴 때 손가락이 겹쳐 보인 것이 원인이었다. 추측한 원인과 실제 원인이 달랐다.");
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.6, y: 2.0, w: 4.7, h: 4.6, rectRadius: 0.08, fill: { color: INK }, line: { color: INK, width: 0 } });
   text(s, "엄지–중지 거리", 0.9, 2.3, 4.1, 0.4, { fontSize: 15, color: "C9D0DD" });
   text(s, "0.17 → 0.003", 0.9, 2.95, 4.1, 1.0, { fontSize: 44, bold: true, color: "FFFFFF" });
-  text(s, "손을 정면에서 옆으로, 뒤로 돌리는 동안 기록된 값", 0.9, 4.15, 4.1, 0.8, { fontSize: 14, color: "C9D0DD" });
+  text(s, "손을 돌리는 동안 기록된 값", 0.9, 4.15, 4.1, 0.8, { fontSize: 14, color: "C9D0DD" });
 
   const cards = [
-    ["원인", "추측하지 않고 매 프레임 판정값을 파일로 남겨 확인. 손을 돌리면 카메라 2D 화면에서 손가락이 겹쳐 보인다.", FAIL, FAIL_PALE],
-    ["해결", "클릭류 제스처는 손이 정면(손바닥)일 때만 판정. ON/OFF 이중 임계값과 0.1초 유지시간을 추가.", OK, OK_PALE],
-    ["같은 계열", "손날 오인식: 거리에 따라 값이 변해서 단위벡터로 정규화. 판정 깜빡임: 0.28 미만에서 손날로 진입, 0.42 초과에서 해제. 그 사이는 직전 상태 유지.", OK, OK_PALE],
+    ["원인", "로그로 확인. 손을 돌리면 2D 화면에서 손가락이 겹쳐 보인다.", FAIL, FAIL_PALE],
+    ["해결", "손바닥이 정면일 때만 클릭 판정. 이중 임계값과 0.1초 유지시간 추가.", OK, OK_PALE],
+    ["같은 계열", "거리 영향은 정규화로 제거. 손날 판정은 0.28 미만에서 진입, 0.42 초과에서 해제(사이는 직전 상태 유지).", OK, OK_PALE],
   ];
   cards.forEach((c, i) => {
     const y = 2.0 + i * 1.57, h = 1.45;
@@ -181,10 +242,12 @@ function listRows(slide, rows, hasPage) {
 {
   const s = pres.addSlide();
   header(s, "눈");
+  s.addNotes("[0:30 / 누적 6:10] 짧게. 넣고 싶었지만 기준값 문제로 이번에는 제외했고 코드는 남겼다.");
+  techBadge(s, "사용 라이브러리", "MediaPipe Face Mesh", "눈 비율(EAR)은 직접 계산");
   const cols = [
-    ["시도", "EAR로 깜빡임을 인식하고, 3초 롱블링크로 모니터 끄기까지 연결", MUTED, CARD],
+    ["시도", "EAR로 깜빡임 인식, 3초 롱블링크로 모니터 끄기", MUTED, CARD],
     ["문제", "사람마다 눈 크기가 달라 기준값을 따로 맞춰서 진행해도 값 기준이 모호해짐", FAIL, FAIL_PALE],
-    ["결정", "눈 기능은 넣고 싶었지만 어려움이 있어 이번 기능에서는 제외했다. 예/아니오는 엄지척 · 엄지다운이 대신 맡음", OK, OK_PALE],
+    ["결정", "이번 기능에서는 제외. 예/아니오는 엄지척 · 엄지다운이 대신 맡음", OK, OK_PALE],
   ];
   const w = 3.8, gap = 0.35, x0 = 0.6;
   cols.forEach((c, i) => {
@@ -198,16 +261,17 @@ function listRows(slide, rows, hasPage) {
 {
   const s = pres.addSlide();
   header(s, "LLM");
+  s.addNotes("[0:50 / 누적 7:00] 사용 모델과 이유, 해석이 틀렸던 세 가지와 해결. LLM은 학습하지 않고 매번 지시문과 예시를 다시 읽는다는 점도 한 줄로.");
   card(s, 0.6, 2.0, 4.6, 4.6, INK, false);
   text(s, "사용 모델", 0.9, 2.3, 4.0, 0.4, { fontSize: 15, bold: true, color: "F2B8B2" });
   text(s, "qwen2.5:3b-instruct", 0.9, 2.75, 4.0, 0.9, { fontSize: 20, bold: true, color: "FFFFFF" });
   text(s, "도입 이유", 0.9, 3.9, 4.0, 0.4, { fontSize: 15, bold: true, color: "9ADBC6" });
-  text(s, "제스처에 원하는 명령을 코드 수정 없이 연결해 보고 싶어서 넣었다. 실시간 인식은 코드가, 문장 해석은 LLM이 맡도록 나눴다. Ollama로 로컬에서 실행한다.", 0.9, 4.35, 4.0, 2.0, { fontSize: 15, color: "C9D0DD" });
+  text(s, "코드 수정 없이 제스처에 원하는 명령을 연결해 보고 싶어서. 인식은 코드가, 문장 해석은 LLM이 맡는다.", 0.9, 4.35, 4.0, 2.0, { fontSize: 15, color: "C9D0DD" });
 
   const rows = [
-    ["\"음소거\"가 모니터 끄기로 해석됨", "대비 예시를 프롬프트에 추가 (테스트 7/7 정답)"],
-    ["\"탭 닫아줘\"에서 없는 동작을 만들어 냄", "허용 목록에 있는 동작만 실행, 프롬프트에 예시로 교정"],
-    ["응답이 늦어 예외가 메인 루프까지 올라와 프로그램이 통째로 종료", "예외는 그 명령만 실패시키고, 음성 명령은 별도 스레드, 모델은 30분 메모리 유지"],
+    ["\"음소거\"를\n모니터 끄기로 해석", "예시를 프롬프트에 추가\n(7문장 모두 정답)"],
+    ["없는 동작을\n만들어 냄", "허용 목록만 실행\n예시로 교정"],
+    ["응답 지연 예외로\n프로그램 전체 종료", "그 명령만 실패 처리\n모델은 메모리에 유지"],
   ];
   rows.forEach((r, i) => {
     const y = 2.0 + i * 1.57, h = 1.45;
@@ -225,59 +289,65 @@ function fourCards(s, cards, noteLabel, noteBody) {
   cards.forEach((c, i) => {
     const x = x0 + i * (w + gap);
     card(s, x, 2.0, w, 2.9, c[3], c[3] === CARD);
-    labeled(s, x + 0.2, 2.2, w - 0.4, 2.5, c[0], c[1], c[2], 19, 17);
+    labeled(s, x + 0.2, 2.2, w - 0.4, 2.5, c[0], c[1], c[2], 21, 19);
   });
   card(s, 0.6, 5.2, 12.1, 1.3, HOLD_PALE, false);
   text(s, [
     { text: noteLabel, options: { bold: true, color: HOLD } },
     { text: noteBody, options: { color: INK } },
-  ], 0.9, 5.4, 11.5, 0.9, { fontSize: 16 });
+  ], 0.9, 5.4, 11.5, 0.9, { fontSize: 18 });
 }
 
 // ── 9. 음성 ─────────────────────────────────────────────
 {
   const s = pres.addSlide();
   header(s, "음성");
+  s.addNotes("[0:40 / 누적 7:40] 두 가지 트리거(손등 3초, 웨이크워드)와 역할 분리. 조용한 환경에서는 잘 인식했다.");
+  techBadge(s, "사용 모델", "faster-whisper medium");
   fourCards(s, [
-    ["모델", "faster-whisper medium (GPU). 소음을 고려해 small보다 높은 모델을 골랐다", INK, CARD],
-    ["① 손등 3초", "손을 떼면 녹음이 끝난다. 소음 환경의 주력 방식", INK, CARD],
-    ["② 웨이크워드", "무음 1.2초 뒤 자동 종료. 손을 쓸 수 없을 때 쓴다. 단어 \"웨이크\"는 임시값", INK, CARD],
-    ["역할 분리", "Whisper는 받아쓰기만. 해석과 실행은 기존 명령 모듈(LLM)이 맡는다", OK, OK_PALE],
-  ], "계기: ", "음성 인식이 어떻게 동작하는지 알아보고 싶어서 넣었다. 현재는 손등 트리거를 주력으로 쓴다.");
+    ["모델", "소음을 고려해 small보다 큰 모델 선택", INK, CARD],
+    ["① 손등 3초", "손을 떼면 녹음 종료. 소음 환경의 주력", INK, CARD],
+    ["② 웨이크워드", "무음 1.2초 뒤 자동 종료. \"웨이크\"는 임시값", INK, CARD],
+    ["역할 분리", "Whisper는 받아쓰기만. 해석은 LLM이", OK, OK_PALE],
+  ], "계기: ", "음성 인식이 궁금해서 넣었다. 소음이 크지 않은 곳에서는 잘 인식한다.");
 }
 
 // ── 10. 포즈 ────────────────────────────────────────────
 {
   const s = pres.addSlide();
   header(s, "포즈");
+  s.addNotes("[0:40 / 누적 8:20] 라이브러리 선택 이유, 22차원 특징, 지금 단계(특징 추출까지)와 다음 단계.");
   fourCards(s, [
-    ["라이브러리", "MediaPipe Pose. 이미 설치돼 있고 가시성 정보를 주며, 다중 인원 검출은 필요 없다", INK, CARD],
-    ["22차원 특징", "정규화 좌표 9점 x 2, 팔꿈치 각도 2, 머리 방향 2. 박스는 관절 최소 · 최대로 직접 계산", INK, CARD],
-    ["모드 분리", "손과 포즈를 한 번에 하나만 켜서 충돌을 막음. 명령 모듈은 공유하고 이름만 pose_*로 구분", OK, OK_PALE],
-  ], "계기: ", "포즈 인식 참고 예제(YOLO)를 보고 우리 프로젝트에도 넣어 보고 싶었다. 지금은 특징 추출과 화면 표시까지 했고, 자세 등록과 인식은 다음 단계다.");
+    ["라이브러리", "MediaPipe Pose. 설치돼 있고 가시성 정보를 준다", INK, CARD],
+    ["22차원 특징", "좌표 18 + 팔꿈치 각도 2 + 머리 방향 2", INK, CARD],
+    ["모드 분리", "한 번에 하나만 켜서 충돌 방지. 명령 모듈은 공유", OK, OK_PALE],
+  ], "계기: ", "포즈 인식 참고 예제(YOLO)를 보고 넣어 보고 싶었다. 지금은 특징 추출까지, 자세 등록과 인식은 다음 단계.");
 }
 
 // ── 11. 박수 ────────────────────────────────────────────
 {
   const s = pres.addSlide();
   header(s, "박수");
+  s.addNotes("[0:40 / 누적 9:00] 인식이 안 된다고 생각했지만 로그를 보니 신호는 잡히고 있었다. 타이밍이 원인이었고, 결국 양손 모으기로 전환.");
+  techBadge(s, "사용 라이브러리", "sounddevice · NumPy", "별도 모델 없이 음량 변화로 감지");
   fourCards(s, [
     ["가정", "소리 감지가 약해서 인식이 안 된다", MUTED, CARD],
-    ["로그 확인", "박수 신호는 이미 정상으로 잡히고 있었다", INK, CARD],
-    ["진짜 원인", "박수 신호는 약 30ms만 유지, 카메라는 33ms마다 한 프레임이라 겹칠 확률이 낮음. 박수 순간 양손이 하나로 검출되기도 함", FAIL, FAIL_PALE],
-    ["해결", "동시를 요구하지 않고, 직전 1초 안에 양손이 모여 있었으면 인정", OK, OK_PALE],
-  ], "결국: ", "양손 모으기 1초만으로 손 / 포즈 모드를 전환(설정으로 박수 요구 복귀 가능). 키보드 소리와 박수를 가르는 건 고주파 비율이 아니라 음량(peak)이었다.");
+    ["로그 확인", "신호는 이미 정상으로 잡히고 있었다", INK, CARD],
+    ["진짜 원인", "박수 신호(30ms)와 카메라 프레임(33ms)이 잘 안 겹침. 양손이 하나로 검출되기도 함", FAIL, FAIL_PALE],
+    ["해결", "직전 1초 안에 양손이 모였으면 인정", OK, OK_PALE],
+  ], "결국: ", "양손 모으기 1초로 모드를 전환. 키보드 소리와 박수는 음량(peak)으로 구분.");
 }
 
 // ── 12. 교훈 ────────────────────────────────────────────
 {
   const s = pres.addSlide();
   header(s, "교훈");
+  s.addNotes("[0:50 / 누적 9:50] 네 가지 교훈으로 마무리. 로그로 확인하는 습관이 가장 크게 남았다.");
   const L = [
-    ["고정 좌표 대신 비율", "어깨 너비 · 관절 거리로 나눠야 카메라 거리에 안 흔들린다"],
-    ["순간과 유지를 구분", "스치듯 지나가는 전환 자세는 최소 유지시간으로 걸러낸다"],
+    ["고정 좌표 대신 비율", "어깨 너비 등으로 나눠야 거리에 안 흔들림"],
+    ["순간과 유지를 구분", "전환 자세는 최소 유지시간으로 걸러냄"],
     ["추측 말고 로그", "두 번 모두 짐작한 원인과 실제 원인이 달랐다"],
-    ["2D 화면의 한계", "손과 몸을 돌리면 실제로 떨어져 있어도 겹쳐 보인다"],
+    ["2D 화면의 한계", "돌리면 떨어져 있어도 겹쳐 보임"],
   ];
   // 4장이면 2열(2x2), 그 외에는 3열. 마지막 줄이 모자라면 가운데 정렬.
   const cols = L.length <= 4 ? 2 : 3;
@@ -291,4 +361,4 @@ function fourCards(s, cards, noteLabel, noteBody) {
   });
 }
 
-pres.writeFile({ fileName: "assistant_devlog_v8.pptx" }).then((f) => console.log("saved:", f));
+pres.writeFile({ fileName: "assistant_devlog.pptx" }).then((f) => console.log("saved:", f));
