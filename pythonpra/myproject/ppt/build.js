@@ -416,23 +416,21 @@ function bulletCard(s, x, y, w, h, fill, shadowOn, title, titleColor, items, siz
   text(s, runs, x + 0.3, y + 0.25, w - 0.6, h - 0.5, {});
 }
 
-// 2. 문제 정의
+// 2. 출발과 목표 (직접 고친 수정본을 반영: 4칸 문제 정의를 2칸으로 줄임)
 function pSlideProblem(notes) {
   const s = pres.addSlide();
-  header(s, "문제 정의");
+  header(s, "출발과 목표");
   s.addNotes(notes);
   const stages = [
     ["출발", "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 봄", MUTED, CARD],
-    ["질문", "이 손 인식을 어디에 더 쓸 수 있을까", INK, CARD],
-    ["문제", "동작이 정해져 있으면 사용자가 원하는 대로 쓸 수 없다", FAIL, FAIL_PALE],
-    ["목표", "클릭 · 예/아니오를 뺀 모든 동작을 사용자가 직접 정의", OK, OK_PALE],
+    ["목표", "정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶어서. 클릭 · 예/아니오를 뺀 모든 동작을 직접 정의", OK, OK_PALE],
   ];
-  const gap = 0.5, w = (12.1 - gap * 3) / 4;
+  const gap = 0.56, w = (12.1 - gap) / 2;
   stages.forEach((st, i) => {
     const x = 0.6 + i * (w + gap);
     card(s, x, 2.2, w, 3.4, st[3], st[3] === CARD);
-    labeled(s, x + 0.2, 2.45, w - 0.4, 2.9, st[0], st[1], st[2], 24, 21);
-    if (i < 3) text(s, "→", x + w, 2.2, gap, 3.4, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
+    labeled(s, x + 0.21, 2.45, w - 0.41, 2.9, st[0], st[1], st[2], 24, 21);
+    if (i < 1) text(s, "→", x + w, 2.2, gap, 3.4, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
   });
   return s;
 }
@@ -440,7 +438,7 @@ function pSlideProblem(notes) {
 // 3. 기존 방법과 한계 (발표 준비 중 공개 자료로 확인한 내용)
 function pSlideExisting(notes) {
   const s = pres.addSlide();
-  header(s, "기존 방법과 한계");
+  header(s, "비슷한 도구와 차이");
   s.addNotes(notes);
   const rows = [
     ["Project Gameface", "얼굴 움직임으로 마우스 조작\n(접근성)", "손이 아닌 얼굴 입력. 표정에 동작을 연결하는 설정 방식", tLink("blog.google", "https://blog.google/technology/ai/google-project-gameface/")],
@@ -459,7 +457,7 @@ function pSlidePlan(notes) {
   header(s, "방안과 이유");
   s.addNotes(notes);
   const cw = 3.7, gap = 0.55, xs = [0.6, 0.6 + cw + gap, 0.6 + 2 * (cw + gap)];
-  ["아쉬운 점", "방안", "이유"].forEach((l, i) => {
+  ["비슷한 도구는", "방안", "이유"].forEach((l, i) => {
     text(s, l, xs[i], 1.75, cw, 0.35, { fontSize: 14, bold: true, color: [FAIL, MUTED, OK][i] });
   });
   const rows = [
@@ -643,7 +641,7 @@ function buildDevlog() {
 function buildProcess() {
   newDeck("개인 AI 비서 — 문제에서 검증까지, 선택한 이유");
   slideCover("문제에서 검증까지, 선택한 이유", "[0:20 / 누적 0:20] 인사와 한 줄 소개. 이번 발표는 구현한 것보다 과정에서 이해한 것과 선택한 이유 중심. 약 10분.");
-  pSlideProblem("[0:50 / 누적 1:10] 수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤, 이걸 어디에 더 쓸 수 있을까 고민했다. 동작이 정해져 있으면 사용자가 원하는 대로 못 쓴다는 점을 문제로 잡았고, 목표는 클릭과 예/아니오를 뺀 모든 동작을 사용자가 정의하는 것.");
+  pSlideProblem("[0:50 / 누적 1:10] 수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤, 이걸 어디에 더 쓸 수 있을까 고민했다. 정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶었고, 그래서 클릭과 예/아니오를 뺀 모든 동작을 사용자가 정의하는 것을 목표로 잡았다.");
   pSlideExisting("[1:00 / 누적 2:10] 발표를 준비하며 공개 자료로 기존 방법을 확인했다. 직접 써 본 것은 아니라는 점을 먼저 밝힌다. 각각 목적이 달라서 우리 목표와 다른 점을 짚는다.");
   pSlidePlan("[0:50 / 누적 3:00] 확인한 아쉬운 점마다 방안과 이유를 짝지어 말한다. 자연어 등록, 허용 목록, 명령 엔진 공유, 로컬 실행.");
   slideFlow("[0:50 / 누적 3:50] 설계. 입력에서 출력까지 한 줄로. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다.");
