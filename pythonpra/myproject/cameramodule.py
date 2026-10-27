@@ -45,6 +45,10 @@ def put_korean_text(frame, text, org, font_size=24, color=(255, 200, 0)):
 # ── MediaPipe 초기화 ──────────────────────────────────────
 mp_hands    = mp.solutions.hands
 mp_face     = mp.solutions.face_mesh
+
+# [추가] 눈 기능(EAR · 깜빡임)은 이번 발표에서 제외해서 기본으로 끈다.
+# 켜 두면 매 프레임 얼굴 인식(FaceMesh)이 같이 돌아서 FPS가 떨어진다. 다시 쓸 때만 True로.
+EYE_TRACKING_ENABLED = False
 mp_drawing  = mp.solutions.drawing_utils
 mp_styles   = mp.solutions.drawing_styles
 
@@ -327,13 +331,15 @@ class CameraModule:
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
         )
-        # 얼굴 메시 (눈 + 표정)
-        self.face_mesh = mp_face.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=False,  # [수정] 홍채(iris) 랜드마크 안 쓰는데 켜져있어 불필요한 연산이었음 - FPS 변동 완화
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
+        # 얼굴 메시 (눈 + 표정) - [수정] 눈 기능이 꺼져 있으면 만들지 않는다 (메모리 · 시작 시간 · FPS 절약)
+        self.face_mesh = None
+        if EYE_TRACKING_ENABLED:
+            self.face_mesh = mp_face.FaceMesh(
+                max_num_faces=1,
+                refine_landmarks=False,  # [수정] 홍채(iris) 랜드마크 안 쓰는데 켜져있어 불필요한 연산이었음 - FPS 변동 완화
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.5,
+            )
 
         # 눈 깜빡임 상태
         self._eye_close_start = None  # 눈 감기 시작 시간
@@ -829,6 +835,8 @@ class CameraModule:
     # [비활성화] 눈 관련 기능은 손 쪽 기능이 어느 정도 정리될 때까지 뒤로 미룸.
     # 예/아니오도 손 제스처로 옮길 예정이라 블링크 판정은 통째로 꺼두고 EAR만 확인.
     def _process_blink(self, frame_rgb, frame_vis):
+        if self.face_mesh is None:  # 눈 기능이 꺼져 있음
+            return
         h, w  = frame_vis.shape[:2]
         res   = self.face_mesh.process(frame_rgb)
         blink = False
@@ -949,8 +957,9 @@ class CameraModule:
                 # 손동작 처리
                 self._process_hands(frame_rgb, frame)
 
-                # 눈 깜빡임 처리
-                self._process_blink(frame_rgb, frame)
+                # 눈 깜빡임 처리 - [수정] 눈 기능이 꺼져 있으면 얼굴 인식을 돌리지 않는다
+                if EYE_TRACKING_ENABLED:
+                    self._process_blink(frame_rgb, frame)
             elif self.pose_module is not None:
                 # 전신 포즈 처리 (카메라를 공유하기 위해 프레임을 넘겨줌)
                 self.pose_module.process(frame_rgb, frame)

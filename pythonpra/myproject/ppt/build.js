@@ -8,7 +8,12 @@
 //   node build.js            기존 덱만
 //   node build.js process    과정 중심 덱만
 //   node build.js all        둘 다
+// 과정 중심 덱의 마지막 장(시연)에는 영상이 들어간다. 영상 파일은 용량 때문에 git에 올리지 않으며,
+// 기본 경로(내 문서의 Videos\시연_클립\시연_전체.mp4)가 아니면 환경변수 DEMO_VIDEO로 지정한다.
 const pptxgen = require("pptxgenjs");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
 let pres; // 덱마다 새로 만든다 (newDeck)
 function newDeck(title) {
@@ -491,8 +496,10 @@ function pSlideToolsWhy(notes) {
     ["LLM", "Qwen2.5-3B-Instruct (Ollama)", "작은 모델을 로컬에서 실행", tLink("huggingface.co/Qwen/Qwen2.5-3B-Instruct", "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct")],
     ["박수", "sounddevice · NumPy", "모델 없이 음량 변화로 간단히 감지", tPlain("—", { color: MUTED })],
     ["PC 제어", "pywin32", "Windows 마우스 · 키보드 · 창을 직접 제어", tLink("github.com/mhammond/pywin32", "https://github.com/mhammond/pywin32")],
+    ["코드 작성", "VS Code", "코드편집기", tPlain("—", { color: MUTED })],
+    ["개발 보조", "Claude Code", "코드 작성 · 설계 조언 · 원인 분석", tPlain("제품 안의 Qwen과는 별개", { color: MUTED, fontSize: 12 })],
   ].map((r) => r.map((c, i) => (typeof c === "string" ? tPlain(c, i === 0 ? { bold: true } : {}) : c)));
-  s.addTable([tHead(["영역", "도구 · 모델", "왜 썼나", "출처"]), ...rows], tableOpts([1.1, 2.9, 4.0, 4.1], 0.56));
+  s.addTable([tHead(["영역", "도구 · 모델", "왜 썼나", "출처"]), ...rows], tableOpts([1.1, 2.9, 4.0, 4.1], 0.5));
   return s;
 }
 
@@ -507,12 +514,7 @@ function pSlideVerify(notes) {
     ["한계", FAIL, FAIL_PALE, false, ["표본이 작다 (파일 5개, 조용한 환경)", "소음 환경은 확인하지 못했다", "포즈는 특징 추출까지, 박수는 전환에서 제외"]],
   ];
   const w = 3.8, gap = 0.35;
-  cols.forEach((c, i) => bulletCard(s, 0.6 + i * (w + gap), 2.0, w, 3.5, c[2], c[3], c[0], c[1], c[4], 16));
-  card(s, 0.6, 5.8, 12.1, 0.85, HOLD_PALE, false);
-  text(s, [
-    { text: "개발 방식: ", options: { bold: true, color: HOLD } },
-    { text: "Claude Code를 코드 작성 · 설계 조언 · 원인 분석에 활용했다. 제품 안의 Qwen과는 별개다.", options: { color: INK } },
-  ], 0.9, 5.8, 11.5, 0.85, { fontSize: 15, valign: "middle" });
+  cols.forEach((c, i) => bulletCard(s, 0.6 + i * (w + gap), 2.0, w, 4.5, c[2], c[3], c[0], c[1], c[4], 15, 14));
   return s;
 }
 
@@ -521,17 +523,29 @@ function pSlideSummary(notes) {
   const s = pres.addSlide();
   header(s, "정리");
   s.addNotes(notes);
-  bulletCard(s, 0.6, 2.0, 7.0, 4.3, CARD, true, "알게 된 것", OK, [
-    "LLM은 학습하지 않고 매번 지시문을 다시 읽는다",
-    "로컬 LLM은 대화만 하니 코드로 연결해야 한다",
-    "손을 돌리면 2D 화면에서 손가락이 겹쳐 보인다",
-    "추측하지 말고 로그로 확인한다",
-  ], 19, 18);
-  bulletCard(s, 8.0, 2.0, 4.7, 4.3, HOLD_PALE, false, "다음 단계", HOLD, [
+  // 왼쪽: 입력 방식별로 할 수 있는 것 (README 기능 표를 줄여서)
+  const cell = (t, o = {}) => ({ text: t, options: Object.assign({ fontFace: FONT, fontSize: 17, color: INK, valign: "middle" }, o) });
+  const head = (t) => cell(t, { bold: true, color: "FFFFFF", fill: { color: INK } });
+  const rows = [
+    [head("입력"), head("할 수 있는 것")],
+    [cell("손", { bold: true }), cell("커서 이동 · 좌클릭 / 우클릭 · 스크롤 · 예 / 아니오 · 창 제어")],
+    [cell("포즈", { bold: true }), cell("손 동작과 모드 전환, 자세로 명령 실행")],
+    [cell("음성", { bold: true }), cell("앱 실행 · 단축키 · 미디어 키 · 사이트 열기 · 웹 검색 (LLM이 해석)")],
+    [cell("박수", { bold: true }), cell([
+      { text: "모드 전환", options: { fontFace: FONT, fontSize: 17, color: INK } },
+      { text: "   ※ 전환이 말끔하지 않아 보류", options: { fontFace: FONT, fontSize: 15, bold: true, color: HOLD } },
+    ])],
+  ];
+  card(s, 0.6, 2.0, 7.4, 4.5, CARD, true);
+  s.addTable(rows, {
+    x: 0.8, y: 2.2, w: 7.0, colW: [1.2, 5.8], rowH: [0.55, 1.0, 0.8, 1.0, 0.75],
+    border: { type: "solid", pt: 0.75, color: "E1E4EA" },
+  });
+  // 오른쪽: 다음 단계를 크게
+  bulletCard(s, 8.3, 2.0, 4.4, 4.5, HOLD_PALE, false, "다음 단계", HOLD, [
     "자세 등록 · 인식",
     "UI 통합",
-    "웨이크워드 확정",
-  ], 21, 18);
+  ], 24, 22);
   return s;
 }
 
@@ -616,6 +630,26 @@ function pSlideClapPanel(notes) {
   return s;
 }
 
+// 시연 (마지막 장): 손 · 명령 실행, 손↔포즈 전환, 음성 명령 세 장면을 이어 붙인 전체 시연 영상 하나.
+// 영상에는 자막을 넣지 않았다. 영상 파일이 없으면 포스터 이미지만 넣는다.
+const DEMO_VIDEO = process.env.DEMO_VIDEO || path.join(os.homedir(), "Videos", "시연_클립", "시연_전체.mp4");
+const DEMO_POSTER = path.join(__dirname, "demo_poster.png");
+
+function pSlideDemo(notes) {
+  const s = pres.addSlide();
+  header(s, "시연");
+  s.addNotes(notes);
+  const h = 5.1, w = (h * 16) / 9, x = (13.333 - w) / 2, y = 1.85;
+  if (fs.existsSync(DEMO_VIDEO)) {
+    const cover = "data:image/png;base64," + fs.readFileSync(DEMO_POSTER).toString("base64");
+    s.addMedia({ type: "video", path: DEMO_VIDEO, x, y, w, h, cover });
+  } else {
+    console.warn("시연 영상 파일이 없어 포스터 이미지만 넣습니다:", DEMO_VIDEO);
+    s.addImage({ path: DEMO_POSTER, x, y, w, h });
+  }
+  return s;
+}
+
 // ── 덱 빌드 ─────────────────────────────────────────────
 
 // 기존 덱: 시행착오로 보는 개발 과정 (13장)
@@ -640,19 +674,25 @@ function buildDevlog() {
 // 과정 중심 덱: 문제 정의에서 검증까지 (13장, 약 9분 50초)
 function buildProcess() {
   newDeck("개인 AI 비서 — 문제에서 검증까지, 선택한 이유");
-  slideCover("문제에서 검증까지, 선택한 이유", "[0:20 / 누적 0:20] 인사와 한 줄 소개. 이번 발표는 구현한 것보다 과정에서 이해한 것과 선택한 이유 중심. 약 10분.");
-  pSlideProblem("[0:50 / 누적 1:10] 수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤, 이걸 어디에 더 쓸 수 있을까 고민했다. 정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶었고, 그래서 클릭과 예/아니오를 뺀 모든 동작을 사용자가 정의하는 것을 목표로 잡았다.");
-  pSlideExisting("[1:00 / 누적 2:10] 발표를 준비하며 공개 자료로 기존 방법을 확인했다. 직접 써 본 것은 아니라는 점을 먼저 밝힌다. 각각 목적이 달라서 우리 목표와 다른 점을 짚는다.");
-  pSlidePlan("[0:50 / 누적 3:00] 확인한 아쉬운 점마다 방안과 이유를 짝지어 말한다. 자연어 등록, 허용 목록, 명령 엔진 공유, 로컬 실행.");
-  slideFlow("[0:50 / 누적 3:50] 설계. 입력에서 출력까지 한 줄로. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다.");
-  pSlideToolsWhy("[0:50 / 누적 4:40] 도구마다 왜 썼는지. 손은 수어 프로젝트에서 써 본 MediaPipe를 이어서 썼다. 모델은 출처 링크를 붙였다.");
-  pSlideHandPanel("[0:50 / 누적 5:30] 구현하며 이해한 것 1. 클릭이 계속 발동해서 로그를 남겨 확인했다. 손을 정면에서 옆으로, 뒤로 돌리는 동안 엄지–중지 거리가 0.17에서 0.003까지 떨어졌다. 실제로 붙인 게 아니라 2D 화면에서 손가락이 겹쳐 보인 것이었다. 추측한 원인과 실제 원인이 달랐다.");
-  slideLLM("[0:50 / 누적 6:20] 구현하며 이해한 것 2. 로컬 LLM은 학습하지 않고 매번 지시문과 예시를 다시 읽는다. 해석이 틀린 세 가지와 해결.");
-  pSlideVoicePanel("[0:40 / 누적 7:00] 구현하며 이해한 것 3. 두 가지 트리거와 역할 분리. 조용한 환경에서는 잘 인식했다.");
-  pSlideEyePanel("[0:25 / 누적 7:25] 넣고 싶었지만 기준값 문제로 이번에는 제외했다.");
-  pSlideClapPanel("[0:35 / 누적 8:00] 인식이 안 된다고 생각했지만 로그를 보니 신호는 잡히고 있었다. 타이밍이 원인.");
-  pSlideVerify("[1:00 / 누적 9:00] 어떻게 확인했고 무엇을 확인하지 못했는지. 표본이 작고 소음 환경은 못 봤다는 점을 분명히. 개발에는 Claude Code를 썼다.");
-  pSlideSummary("[0:50 / 누적 9:50] 알게 된 것으로 마무리하고 다음 단계를 말한다.");
+  // 발표자 노트의 시간 배분: 슬라이드별 시간(초)만 정하면 누적 시간은 자동으로 계산한다. (표지 20초 포함 약 9분 40초)
+  const SEC = { pSlideProblem: 40, pSlideExisting: 50, pSlidePlan: 40, slideFlow: 50, pSlideToolsWhy: 40, pSlideHandPanel: 50, slideLLM: 50, pSlideVoicePanel: 40, pSlideEyePanel: 25, pSlideClapPanel: 35, pSlideVerify: 50, pSlideSummary: 40, pSlideDemo: 50 };
+  let cum = 0;
+  const mmss = (t) => Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+  const T = (sec, text) => { cum += sec; return "[" + mmss(sec) + " / 누적 " + mmss(cum) + "] " + text; };
+  slideCover("문제에서 검증까지, 선택한 이유", T(20, "인사와 한 줄 소개. 이번 발표는 구현한 것보다 과정에서 이해한 것과 선택한 이유 중심. 약 10분."));
+  pSlideProblem(T(SEC.pSlideProblem, "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤, 이걸 어디에 더 쓸 수 있을까 고민했다. 정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶었고, 그래서 클릭과 예/아니오를 뺀 모든 동작을 사용자가 정의하는 것을 목표로 잡았다."));
+  pSlideExisting(T(SEC.pSlideExisting, "발표를 준비하며 공개 자료로 기존 방법을 확인했다. 직접 써 본 것은 아니라는 점을 먼저 밝힌다. 각각 목적이 달라서 우리 목표와 다른 점을 짚는다."));
+  pSlidePlan(T(SEC.pSlidePlan, "확인한 아쉬운 점마다 방안과 이유를 짝지어 말한다. 자연어 등록, 허용 목록, 명령 엔진 공유, 로컬 실행."));
+  slideFlow(T(SEC.slideFlow, "설계. 입력에서 출력까지 한 줄로. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다."));
+  pSlideToolsWhy(T(SEC.pSlideToolsWhy, "도구마다 왜 썼는지. 손은 수어 프로젝트에서 써 본 MediaPipe를 이어서 썼다. 모델은 출처 링크를 붙였다."));
+  pSlideHandPanel(T(SEC.pSlideHandPanel, "구현하며 이해한 것 1. 클릭이 계속 발동해서 로그를 남겨 확인했다. 손을 정면에서 옆으로, 뒤로 돌리는 동안 엄지–중지 거리가 0.17에서 0.003까지 떨어졌다. 실제로 붙인 게 아니라 2D 화면에서 손가락이 겹쳐 보인 것이었다. 추측한 원인과 실제 원인이 달랐다."));
+  slideLLM(T(SEC.slideLLM, "구현하며 이해한 것 2. 로컬 LLM은 학습하지 않고 매번 지시문과 예시를 다시 읽는다. 해석이 틀린 세 가지와 해결."));
+  pSlideVoicePanel(T(SEC.pSlideVoicePanel, "구현하며 이해한 것 3. 두 가지 트리거와 역할 분리. 조용한 환경에서는 잘 인식했다."));
+  pSlideEyePanel(T(SEC.pSlideEyePanel, "넣고 싶었지만 기준값 문제로 이번에는 제외했다."));
+  pSlideClapPanel(T(SEC.pSlideClapPanel, "인식이 안 된다고 생각했지만 로그를 보니 신호는 잡히고 있었다. 타이밍이 원인."));
+  pSlideVerify(T(SEC.pSlideVerify, "어떻게 확인했고 무엇을 확인하지 못했는지. 표본이 작고 소음 환경은 못 봤다는 점을 분명히. 개발에는 Claude Code를 썼다."));
+  pSlideSummary(T(SEC.pSlideSummary, "입력 방식별로 무엇을 할 수 있게 됐는지 표로 보여 주고, 다음 단계를 말하며 마무리한다."));
+  pSlideDemo(T(SEC.pSlideDemo, "전체 시연 영상(약 47초). 앞부분은 손 동작과 명령 실행(크롬이 열리고 창 닫기 확인), 중간은 손과 포즈 전환, 마지막은 손등을 유지해 음성 명령(유튜브가 열림). 영상에는 말소리가 들어 있지 않으므로 직접 '유튜브 켜줘'라고 말하며 설명한다. 시간이 모자라면 앞부분만 재생한다."));
   return pres.writeFile({ fileName: "assistant_process.pptx" });
 }
 
