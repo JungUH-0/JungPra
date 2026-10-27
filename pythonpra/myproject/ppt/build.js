@@ -79,8 +79,9 @@ function slideCover(subtitle, notes) {
   const s = pres.addSlide();
   s.background = { color: INK };
   text(s, "개인 AI 비서", 0.9, 2.2, 11.5, 1.0, { fontSize: 54, bold: true, color: "FFFFFF" });
-  text(s, subtitle || "시행착오로 보는 개발 과정", 0.9, 3.35, 11.5, 0.7, { fontSize: 30, color: "C9D0DD" });
-  text(s, "손동작 · 음성 · 포즈를 로컬 LLM으로 해석해서 PC를 제어한다", 0.9, 4.5, 11.5, 0.5, { fontSize: 18, color: "9AA4B6" });
+  const hasSub = subtitle !== ""; // 빈 문자열이면 부제 줄 없이 한 줄 소개만 올려서 둔다
+  if (hasSub) text(s, subtitle || "시행착오로 보는 개발 과정", 0.9, 3.35, 11.5, 0.7, { fontSize: 30, color: "C9D0DD" });
+  text(s, "손동작 · 음성 · 포즈를 로컬 LLM으로 해석해서 PC를 제어한다", 0.9, hasSub ? 4.5 : 3.25, 11.5, 0.5, { fontSize: 18, color: "9AA4B6" });
   s.addNotes(notes || "[0:20 / 누적 0:20] 인사와 한 줄 소개. 전체 발표 시간은 약 10분.");
   return s;
 }
@@ -235,9 +236,9 @@ function slideHand(notes) {
 
 // ── 6. 손: 겹쳐 보이는 문제 (로그로 원인 추적) ──────────
 const HANDLOG_CARDS = [
-  ["원인", "로그로 확인. 손을 돌리면 2D 화면에서 손가락이 겹쳐 보인다.", FAIL, FAIL_PALE],
-  ["해결", "손바닥이 정면일 때만 클릭 판정. 0.1초 이상 유지해야 인정.", OK, OK_PALE],
-  ["같은 계열", "거리 영향은 정규화로 제거. 손날 판정은 들어가는 기준과 나오는 기준을 다르게 둬서 깜빡임을 막음.", OK, OK_PALE],
+  ["원인", "로그로 확인했다. 손을 돌리면 2D 화면에서 손가락이 겹쳐 보인다.", FAIL, FAIL_PALE],
+  ["해결", "손바닥이 정면일 때만 클릭을 판정한다.", OK, OK_PALE],
+  ["같은 계열", "거리 영향은 정규화로 없앤다. 손날 판정은 들어가는 기준과 나오는 기준을 다르게 둬서 깜빡임을 막는다.", OK, OK_PALE],
 ];
 
 function slideHandLog(notes) {
@@ -292,9 +293,9 @@ function slideLLM(notes) {
   text(s, "코드 수정 없이 제스처에 원하는 명령을 연결해 보고 싶어서. 인식은 코드가, 문장 해석은 LLM이 맡는다.", 0.9, 4.35, 4.0, 2.0, { fontSize: 15, color: "C9D0DD" });
 
   const rows = [
-    ["\"음소거\"를\n모니터 끄기로 해석", "예시를 프롬프트에 추가\n(7문장 모두 정답)"],
-    ["없는 동작을\n만들어 냄", "허용 목록만 실행\n예시로 교정"],
-    ["응답 지연 예외로\n프로그램 전체 종료", "그 명령만 실패 처리\n모델은 메모리에 유지"],
+    ["\"음소거\"를\n모니터 끄기로 해석한다", "예시를 프롬프트에 추가한다\n(7문장 모두 정답)"],
+    ["없는 동작을\n만들어 낸다", "허용 목록만 실행한다\n예시로 교정한다"],
+    ["응답이 늦으면\n프로그램 전체가 종료된다", "그 명령만 실패로 처리한다\n모델은 메모리에 유지한다"],
   ];
   rows.forEach((r, i) => {
     const y = 2.0 + i * 1.57, h = 1.45;
@@ -324,10 +325,10 @@ function fourCards(s, cards, noteLabel, noteBody) {
 
 // ── 9. 음성 ─────────────────────────────────────────────
 const VOICE_CARDS = [
-  ["모델", "소음을 고려해 small보다 큰 모델 선택", INK, CARD],
-  ["① 손등 3초", "손을 떼면 녹음 종료. 소음 환경의 주력", INK, CARD],
-  ["② 웨이크워드", "무음 1.2초 뒤 자동 종료. \"웨이크\"는 임시값", INK, CARD],
-  ["역할 분리", "Whisper는 받아쓰기만. 해석은 LLM이", OK, OK_PALE],
+  ["모델", "소음을 고려해 small보다 큰 모델을 골랐다", INK, CARD],
+  ["① 손등 3초", "손을 떼면 녹음이 끝난다. 소음 환경에서 주로 쓴다", INK, CARD],
+  ["② 웨이크워드", "무음 1.2초 뒤 자동으로 끝난다. \"웨이크\"는 임시값이다", INK, CARD],
+  ["역할 분리", "Whisper는 받아쓰기만 하고 해석은 LLM이 한다", OK, OK_PALE],
 ];
 const VOICE_NOTE = "음성 인식이 궁금해서 넣었다. 소음이 크지 않은 곳에서는 잘 인식한다.";
 
@@ -357,10 +358,10 @@ function slidePose(notes) {
 const CLAP_CARDS = [
   ["가정", "소리 감지가 약해서 인식이 안 된다", MUTED, CARD],
   ["로그 확인", "신호는 이미 정상으로 잡히고 있었다", INK, CARD],
-  ["진짜 원인", "박수 신호(30ms)와 카메라 프레임(33ms)이 잘 안 겹침. 양손이 하나로 검출되기도 함", FAIL, FAIL_PALE],
-  ["해결", "직전 1초 안에 양손이 모였으면 인정", OK, OK_PALE],
+  ["진짜 원인", "박수 신호(30ms)와 카메라 프레임(33ms)이 잘 안 겹친다. 양손이 하나로 검출되기도 한다", FAIL, FAIL_PALE],
+  ["해결", "직전 1초 안에\n양손이 모였으면 인정한다", OK, OK_PALE],
 ];
-const CLAP_NOTE = "양손 모으기 1초로 모드를 전환. 키보드 소리와 박수는 음량(peak)으로 구분.";
+const CLAP_NOTE = "양손 모으기 1초로 모드를 전환한다. 키보드 소리와 박수는 음량(peak)으로 구분한다.";
 
 function slideClap(notes) {
   const s = pres.addSlide();
@@ -427,8 +428,8 @@ function pSlideProblem(notes) {
   header(s, "출발과 목표");
   s.addNotes(notes);
   const stages = [
-    ["출발", "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 봄", MUTED, CARD],
-    ["목표", "정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶어서. 클릭 · 예/아니오를 뺀 모든 동작을 직접 정의", OK, OK_PALE],
+    ["출발", "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 봤다", MUTED, CARD],
+    ["목표", "정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶어서, 클릭 · 예/아니오를 뺀 모든 동작을 직접 정의하기로 했다", OK, OK_PALE],
   ];
   const gap = 0.56, w = (12.1 - gap) / 2;
   stages.forEach((st, i) => {
@@ -456,28 +457,71 @@ function pSlideExisting(notes) {
   return s;
 }
 
-// 4. 방안과 이유
+// 3. 방안 (번호 카드 네 개. 이 방안의 결과는 다음 슬라이드의 처리 흐름에서 함께 보여 준다)
+// 방안을 세울 때 견준 비슷한 도구(Talon, Open Interpreter, 입력별 개별 도구, Home Assistant)는
+// 발표 준비 중 조사한 내용이라 슬라이드에서 뺐다.
+const PLAN_ITEMS = [
+  "자연어로 명령을 등록한다",
+  "허용 목록의 동작만 실행한다",
+  "손 · 포즈 · 음성이\n명령 엔진 하나를 공유한다",
+  "PC 동작에 맞춘 목록,\n로컬 실행",
+];
 function pSlidePlan(notes) {
   const s = pres.addSlide();
-  header(s, "방안과 이유");
+  header(s, "방안");
   s.addNotes(notes);
-  const cw = 3.7, gap = 0.55, xs = [0.6, 0.6 + cw + gap, 0.6 + 2 * (cw + gap)];
-  ["비슷한 도구는", "방안", "이유"].forEach((l, i) => {
-    text(s, l, xs[i], 1.75, cw, 0.35, { fontSize: 14, bold: true, color: [FAIL, MUTED, OK][i] });
+  const gap = 0.4, cw = (12.1 - gap) / 2, h = 2.0;
+  PLAN_ITEMS.forEach((t, i) => {
+    const x = 0.6 + (i % 2) * (cw + gap), y = 2.0 + Math.floor(i / 2) * (h + 0.3);
+    card(s, x, y, cw, h);
+    s.addShape(pres.shapes.OVAL, { x: x + 0.35, y: y + h / 2 - 0.35, w: 0.7, h: 0.7, fill: { color: OK }, line: { color: OK, width: 0 } });
+    text(s, String(i + 1), x + 0.35, y + h / 2 - 0.35, 0.7, 0.7, { fontSize: 24, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
+    text(s, t, x + 1.4, y, cw - 1.7, h, { fontSize: 22, bold: true, valign: "middle" });
   });
-  const rows = [
-    ["명령을 코드로 정의해야 한다 (Talon)", "자연어로 명령을 등록한다", "코드 없이 동작을 붙이려고"],
-    ["임의 코드를 실행한다 (Open Interpreter)", "허용 목록의 동작만 실행한다", "틀려도 위험한 동작은 막으려고"],
-    ["입력마다 도구가 따로 있다\n(얼굴, 음성)", "손 · 포즈 · 음성이\n명령 엔진 하나를 공유한다", "입력을 늘려도 명령은\n한곳에서 관리하려고"],
-    ["집 기기 중심이다 (Home Assistant)", "PC 동작에 맞춘 목록, 로컬 실행", "데이터가 PC 밖으로\n나가지 않게"],
+  return s;
+}
+
+// 4. 처리 흐름 + 방안의 결과 (과정 중심 덱 전용. 기존 덱의 slideFlow는 그대로 둔다)
+function pSlideFlow(notes) {
+  const s = pres.addSlide();
+  header(s, "처리 흐름");
+  s.addNotes(notes);
+  const stages = [
+    { title: "카메라\n마이크", desc: "", value: "영상 · 소리" },
+    { title: "인식", desc: "손 · 포즈 · 음성", value: "동작 이름 ·\n받아쓴 문장" },
+    { title: "연결", desc: "main.py\n모드 전환\n(한 번에 하나)\n명령 찾기", value: "명령 또는 문장" },
+    { title: "해석 · 검증", desc: "commandmodule\n해석\n허용 목록 검사", value: "{ action, target }" },
+    { title: "실행", desc: "windowcontrol\n마우스 · 키 · 창", value: "" },
   ];
-  rows.forEach((r, i) => {
-    const y = 2.2 + i * 1.12, h = 1.0;
-    card(s, xs[0], y, cw, h, FAIL_PALE, false);
-    card(s, xs[1], y, cw, h);
-    card(s, xs[2], y, cw, h, OK_PALE, false);
-    r.forEach((t, j) => text(s, t, xs[j] + 0.2, y, cw - 0.4, h, { fontSize: 16, valign: "middle" }));
-    [xs[0] + cw, xs[1] + cw].forEach((ax) => text(s, "→", ax, y, gap, h, { fontSize: 24, color: MUTED, align: "center", valign: "middle" }));
+  const w = 2.1, gap = 0.4, x0 = 0.6, y = 2.2, h = 3.1;
+  const groupX = (i) => x0 + i * (w + gap);
+  text(s, "입력", groupX(0), 1.8, w, 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  text(s, "처리", groupX(1), 1.8, groupX(3) + w - groupX(1), 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  text(s, "출력", groupX(4), 1.8, w, 0.35, { fontSize: 14, bold: true, color: MUTED, align: "center" });
+  stages.forEach((st, i) => {
+    const x = groupX(i);
+    card(s, x, y, w, h, i === 0 || i === 4 ? OK_PALE : CARD, i > 0 && i < 4);
+    text(s, st.title, x + 0.2, y + 0.2, w - 0.4, 0.8, { fontSize: 18, bold: true });
+    if (st.desc) text(s, st.desc, x + 0.2, y + 1.0, w - 0.4, 1.3, { fontSize: 14, color: MUTED });
+    if (st.value) {
+      text(s, "넘기는 값", x + 0.2, y + 2.15, w - 0.4, 0.25, { fontSize: 12, color: MUTED });
+      text(s, st.value, x + 0.2, y + 2.4, w - 0.4, 0.6, { fontSize: 14, bold: true, color: OK });
+    }
+    if (i < stages.length - 1) text(s, "→", x + w, y, gap, h, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
+  });
+  // 아래: 방안 네 가지의 결과 (번호는 앞 슬라이드의 방안 번호와 같다)
+  const results = [
+    ["① 자연어 등록", "코드 없이 동작을 붙인다", OK_PALE, OK],
+    ["② 허용 목록", "목록에 있는 동작만 실행된다", HOLD_PALE, HOLD],
+    ["③ 명령 엔진 공유", "손 · 포즈 · 음성이 같은 명령을 쓴다", OK_PALE, OK],
+    ["④ 로컬 실행", "정해 둔 PC 조작만 PC 안에서 처리한다", OK_PALE, OK],
+  ];
+  const rg = 0.2, rw = (12.1 - 3 * rg) / 4;
+  text(s, "방안의 결과", 0.6, 5.45, 4, 0.3, { fontSize: 13, bold: true, color: MUTED });
+  results.forEach((r, i) => {
+    const x = 0.6 + i * (rw + rg);
+    card(s, x, 5.8, rw, 1.15, r[2], false);
+    labeled(s, x + 0.2, 5.9, rw - 0.4, 0.95, r[0], r[1], r[3], 15, 13);
   });
   return s;
 }
@@ -487,19 +531,17 @@ function pSlideToolsWhy(notes) {
   const s = pres.addSlide();
   header(s, "도구와 선택 이유");
   s.addNotes(notes);
-  const same = tPlain("위와 동일", { color: MUTED, fontSize: 12 });
+  // 손과 포즈는 같은 MediaPipe라 한 행으로 합친다. 눈은 이 덱에서 제외했으므로 행도 없다.
   const rows = [
-    ["손", "MediaPipe Hands · OpenCV", "수어 프로젝트에서 써 본 MediaPipe", tLink("github.com/google-ai-edge/mediapipe", "https://github.com/google-ai-edge/mediapipe")],
-    ["눈", "MediaPipe Face Mesh", "같은 MediaPipe로 눈 감김 비율(EAR) 계산", same],
-    ["포즈", "MediaPipe Pose", "이미 쓰던 MediaPipe, 가시성 정보 제공", same],
-    ["음성", "faster-whisper medium", "소음을 고려해 small보다 큰 모델", tLink("huggingface.co/Systran/faster-whisper-medium", "https://huggingface.co/Systran/faster-whisper-medium")],
-    ["LLM", "Qwen2.5-3B-Instruct (Ollama)", "작은 모델을 로컬에서 실행", tLink("huggingface.co/Qwen/Qwen2.5-3B-Instruct", "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct")],
-    ["박수", "sounddevice · NumPy", "모델 없이 음량 변화로 간단히 감지", tPlain("—", { color: MUTED })],
-    ["PC 제어", "pywin32", "Windows 마우스 · 키보드 · 창을 직접 제어", tLink("github.com/mhammond/pywin32", "https://github.com/mhammond/pywin32")],
+    ["손 · 포즈", "MediaPipe Hands · Pose · OpenCV", "수어 프로젝트에서 써 본 MediaPipe를 이어서 썼다", tLink("github.com/google-ai-edge/mediapipe", "https://github.com/google-ai-edge/mediapipe")],
+    ["음성", "faster-whisper medium", "소음을 고려해 small보다 큰 모델을 골랐다", tLink("huggingface.co/Systran/faster-whisper-medium", "https://huggingface.co/Systran/faster-whisper-medium")],
+    ["LLM", "Qwen2.5-3B-Instruct (Ollama)", "작은 모델을 로컬에서 실행한다", tLink("huggingface.co/Qwen/Qwen2.5-3B-Instruct", "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct")],
+    ["박수", "sounddevice · NumPy", "모델 없이 음량 변화로 간단히 감지한다", tPlain("—", { color: MUTED })],
+    ["PC 제어", "pywin32", "Windows 마우스 · 키보드 · 창을 직접 제어한다", tLink("github.com/mhammond/pywin32", "https://github.com/mhammond/pywin32")],
     ["코드 작성", "VS Code", "코드편집기", tPlain("—", { color: MUTED })],
     ["개발 보조", "Claude Code", "코드 작성 · 설계 조언 · 원인 분석", tPlain("제품 안의 Qwen과는 별개", { color: MUTED, fontSize: 12 })],
   ].map((r) => r.map((c, i) => (typeof c === "string" ? tPlain(c, i === 0 ? { bold: true } : {}) : c)));
-  s.addTable([tHead(["영역", "도구 · 모델", "왜 썼나", "출처"]), ...rows], tableOpts([1.1, 2.9, 4.0, 4.1], 0.5));
+  s.addTable([tHead(["영역", "도구 · 모델", "왜 썼나", "출처"]), ...rows], tableOpts([1.1, 3.1, 4.3, 3.6], 0.56));
   return s;
 }
 
@@ -509,9 +551,9 @@ function pSlideVerify(notes) {
   header(s, "검증과 한계");
   s.addNotes(notes);
   const cols = [
-    ["확인한 방법", INK, CARD, true, ["판정값을 로그로 남겨 원인 확인 (손, 박수)", "녹음 5개를 받아쓰기 → 해석", "예시 문장으로 LLM 해석 확인"]],
-    ["확인 결과", OK, OK_PALE, false, ["음성: 받아쓰기 5개 중 4개 정확, 해석은 5개 모두 의도대로", "LLM: 예시 7문장 모두 정답", "손: 겹침 오발동 해결"]],
-    ["한계", FAIL, FAIL_PALE, false, ["표본이 작다 (파일 5개, 조용한 환경)", "소음 환경은 확인하지 못했다", "포즈는 특징 추출까지, 박수는 전환에서 제외"]],
+    ["확인한 방법", INK, CARD, true, ["판정값을 로그로 남겨 원인을 확인했다 (손, 박수)", "녹음 5개를 받아쓰게 하고 해석을 확인했다", "예시 문장으로 LLM 해석을 확인했다"]],
+    ["확인 결과", OK, OK_PALE, false, ["음성: 받아쓰기 5개 중 4개가 정확했고, 해석은 5개 모두 의도대로였다", "LLM: 예시 7문장이 모두 정답이었다", "손: 겹침으로 인한 오발동을 해결했다"]],
+    ["한계", FAIL, FAIL_PALE, false, ["표본이 작다 (파일 5개, 조용한 환경)", "소음 환경은 확인하지 못했다", "포즈는 특징 추출까지만 했고, 박수는 전환에서 제외했다"]],
   ];
   const w = 3.8, gap = 0.35;
   cols.forEach((c, i) => bulletCard(s, 0.6 + i * (w + gap), 2.0, w, 4.5, c[2], c[3], c[0], c[1], c[4], 15, 14));
@@ -533,7 +575,7 @@ function pSlideSummary(notes) {
     [cell("음성", { bold: true }), cell("앱 실행 · 단축키 · 미디어 키 · 사이트 열기 · 웹 검색 (LLM이 해석)")],
     [cell("박수", { bold: true }), cell([
       { text: "모드 전환", options: { fontFace: FONT, fontSize: 17, color: INK } },
-      { text: "   ※ 전환이 말끔하지 않아 보류", options: { fontFace: FONT, fontSize: 15, bold: true, color: HOLD } },
+      { text: "   ※ 전환이 말끔하지 않아 보류했다", options: { fontFace: FONT, fontSize: 15, bold: true, color: HOLD } },
     ])],
   ];
   card(s, 0.6, 2.0, 7.4, 4.5, CARD, true);
@@ -568,7 +610,7 @@ function pSlideHandPanel(notes) {
   const s = pres.addSlide();
   header(s, "손");
   s.addNotes(notes);
-  techPanel(s, "사용 라이브러리", "MediaPipe Hands · OpenCV", "수어 인식 프로젝트에서 써 본\nMediaPipe를 이어서 사용.");
+  techPanel(s, "사용 라이브러리", "MediaPipe Hands · OpenCV", "수어 인식 프로젝트에서 써 본\nMediaPipe를 이어서 썼다.");
   HANDLOG_CARDS.forEach((c, i) => {
     const y = 2.0 + i * 1.55;
     card(s, PANEL_X, y, PANEL_W, 1.4, c[3], false);
@@ -582,7 +624,7 @@ function pSlideVoicePanel(notes) {
   const s = pres.addSlide();
   header(s, "음성");
   s.addNotes(notes);
-  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식이 궁금해서. 소음을 고려해 small보다 큰 모델을 선택.");
+  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식이 궁금해서 골랐다. 소음을 고려해 small보다 큰 모델을 썼다.");
   VOICE_CARDS.slice(1).forEach((c, i) => {
     const y = 2.0 + i * 1.1;
     card(s, PANEL_X, y, PANEL_W, 1.0, c[3], c[3] === CARD);
@@ -596,7 +638,28 @@ function pSlideVoicePanel(notes) {
   return s;
 }
 
-// 눈: 라이브러리는 패널로, 오른쪽에는 시도 · 문제 · 결정을 세로로
+// 포즈: 라이브러리는 패널로, 오른쪽에는 특징 · 모드 분리 · 지금 단계 · 눈 제외를 세로로
+// (눈은 이 덱에서 별도 슬라이드 없이 여기서 "기능적 문제로 없앴다"고만 말한다)
+function pSlidePosePanel(notes) {
+  const s = pres.addSlide();
+  header(s, "포즈");
+  s.addNotes(notes);
+  techPanel(s, "사용 라이브러리", "MediaPipe Pose", "손과 같은 MediaPipe라 이어서 썼다.\n가시성 정보도 준다.");
+  const cards = [
+    ["특징", "상체 좌표 · 팔꿈치 각도 · 머리 방향을 뽑는다", INK, CARD],
+    ["모드 분리", "손과 포즈는 한 번에 하나만 켠다. 명령 모듈은 함께 쓴다", OK, OK_PALE],
+    ["지금 단계", "특징 추출까지. 자세 등록 · 인식은 다음 단계", HOLD, HOLD_PALE],
+    ["눈은 제외", "기능적 문제로 없앴다. 사람마다 눈 크기가 달라 기준값이 모호했다", FAIL, FAIL_PALE],
+  ];
+  cards.forEach((c, i) => {
+    const y = 2.0 + i * 1.1;
+    card(s, PANEL_X, y, PANEL_W, 1.0, c[3], c[3] === CARD);
+    labeled(s, PANEL_X + 0.25, y + 0.1, PANEL_W - 0.5, 0.8, c[0], c[1], c[2], 17, 16);
+  });
+  return s;
+}
+
+// 눈: 라이브러리는 패널로, 오른쪽에는 시도 · 문제 · 결정을 세로로 (현재 과정 중심 덱에서는 쓰지 않음)
 function pSlideEyePanel(notes) {
   const s = pres.addSlide();
   header(s, "눈");
@@ -615,7 +678,7 @@ function pSlideClapPanel(notes) {
   const s = pres.addSlide();
   header(s, "박수");
   s.addNotes(notes);
-  techPanel(s, "사용 라이브러리", "sounddevice · NumPy", "별도 모델 없이 음량 변화로 간단히 감지.");
+  techPanel(s, "사용 라이브러리", "sounddevice · NumPy", "별도 모델 없이\n음량 변화로 감지한다.");
   const gap = 0.2, w = (PANEL_W - gap) / 2;
   CLAP_CARDS.forEach((c, i) => {
     const x = PANEL_X + (i % 2) * (w + gap), y = 2.0 + Math.floor(i / 2) * 1.55;
@@ -674,21 +737,21 @@ function buildDevlog() {
 // 과정 중심 덱: 문제 정의에서 검증까지 (13장, 약 9분 50초)
 function buildProcess() {
   newDeck("개인 AI 비서 — 문제에서 검증까지, 선택한 이유");
-  // 발표자 노트의 시간 배분: 슬라이드별 시간(초)만 정하면 누적 시간은 자동으로 계산한다. (표지 20초 포함 약 9분 40초)
-  const SEC = { pSlideProblem: 40, pSlideExisting: 50, pSlidePlan: 40, slideFlow: 50, pSlideToolsWhy: 40, pSlideHandPanel: 50, slideLLM: 50, pSlideVoicePanel: 40, pSlideEyePanel: 25, pSlideClapPanel: 35, pSlideVerify: 50, pSlideSummary: 40, pSlideDemo: 50 };
+  // 발표자 노트의 시간 배분: 슬라이드별 시간(초)만 정하면 누적 시간은 자동으로 계산한다. (표지 20초 포함 약 9분 5초)
+  // "비슷한 도구와 차이"(pSlideExisting)는 발표 준비 중 조사한 내용이라 이 덱에서는 뺐다. 함수는 남겨 둔다.
+  const SEC = { pSlideProblem: 40, pSlidePlan: 40, pSlideFlow: 50, pSlideToolsWhy: 40, pSlideHandPanel: 50, slideLLM: 50, pSlideVoicePanel: 40, pSlidePosePanel: 40, pSlideClapPanel: 35, pSlideVerify: 50, pSlideSummary: 40, pSlideDemo: 50 };
   let cum = 0;
   const mmss = (t) => Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
   const T = (sec, text) => { cum += sec; return "[" + mmss(sec) + " / 누적 " + mmss(cum) + "] " + text; };
-  slideCover("문제에서 검증까지, 선택한 이유", T(20, "인사와 한 줄 소개. 이번 발표는 구현한 것보다 과정에서 이해한 것과 선택한 이유 중심. 약 10분."));
+  slideCover("", T(20, "인사와 한 줄 소개. 이번 발표는 구현한 것보다 과정에서 이해한 것과 선택한 이유 중심. 약 10분."));
   pSlideProblem(T(SEC.pSlideProblem, "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 본 뒤, 이걸 어디에 더 쓸 수 있을까 고민했다. 정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶었고, 그래서 클릭과 예/아니오를 뺀 모든 동작을 사용자가 정의하는 것을 목표로 잡았다."));
-  pSlideExisting(T(SEC.pSlideExisting, "발표를 준비하며 공개 자료로 기존 방법을 확인했다. 직접 써 본 것은 아니라는 점을 먼저 밝힌다. 각각 목적이 달라서 우리 목표와 다른 점을 짚는다."));
-  pSlidePlan(T(SEC.pSlidePlan, "확인한 아쉬운 점마다 방안과 이유를 짝지어 말한다. 자연어 등록, 허용 목록, 명령 엔진 공유, 로컬 실행."));
-  slideFlow(T(SEC.slideFlow, "설계. 입력에서 출력까지 한 줄로. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다."));
-  pSlideToolsWhy(T(SEC.pSlideToolsWhy, "도구마다 왜 썼는지. 손은 수어 프로젝트에서 써 본 MediaPipe를 이어서 썼다. 모델은 출처 링크를 붙였다."));
+  pSlidePlan(T(SEC.pSlidePlan, "방안 네 가지만 말한다. 자연어 등록, 허용 목록, 명령 엔진 공유, 로컬 실행. 각각의 결과는 다음 슬라이드의 처리 흐름에서 함께 보여 준다."));
+  pSlideFlow(T(SEC.pSlideFlow, "설계. 입력에서 출력까지 한 줄로 설명하고, 아래의 방안 네 가지 결과가 흐름의 어느 단계에서 나타나는지 짚는다. 인식 모듈은 동작의 이름만 넘기고 실행은 다른 곳이 맡는다. 손과 포즈는 한 번에 하나만 켠다."));
+  pSlideToolsWhy(T(SEC.pSlideToolsWhy, "도구마다 왜 썼는지. 앞의 흐름의 각 단계에 무엇을 썼는지로 말한다. 손은 수어 프로젝트에서 써 본 MediaPipe를 이어서 썼다. 모델은 출처 링크를 붙였다."));
   pSlideHandPanel(T(SEC.pSlideHandPanel, "구현하며 이해한 것 1. 클릭이 계속 발동해서 로그를 남겨 확인했다. 손을 정면에서 옆으로, 뒤로 돌리는 동안 엄지–중지 거리가 0.17에서 0.003까지 떨어졌다. 실제로 붙인 게 아니라 2D 화면에서 손가락이 겹쳐 보인 것이었다. 추측한 원인과 실제 원인이 달랐다."));
   slideLLM(T(SEC.slideLLM, "구현하며 이해한 것 2. 로컬 LLM은 학습하지 않고 매번 지시문과 예시를 다시 읽는다. 해석이 틀린 세 가지와 해결."));
   pSlideVoicePanel(T(SEC.pSlideVoicePanel, "구현하며 이해한 것 3. 두 가지 트리거와 역할 분리. 조용한 환경에서는 잘 인식했다."));
-  pSlideEyePanel(T(SEC.pSlideEyePanel, "넣고 싶었지만 기준값 문제로 이번에는 제외했다."));
+  pSlidePosePanel(T(SEC.pSlidePosePanel, "손과 같은 MediaPipe로 상체 특징까지 뽑았다. 손과 포즈는 한 번에 하나만 켜서 충돌을 막는다. 눈(깜빡임 인식)은 사람마다 눈 크기가 달라 기준값이 모호해서 기능적 문제로 없앴다. 자세 등록과 인식은 다음 단계."));
   pSlideClapPanel(T(SEC.pSlideClapPanel, "인식이 안 된다고 생각했지만 로그를 보니 신호는 잡히고 있었다. 타이밍이 원인."));
   pSlideVerify(T(SEC.pSlideVerify, "어떻게 확인했고 무엇을 확인하지 못했는지. 표본이 작고 소음 환경은 못 봤다는 점을 분명히. 개발에는 Claude Code를 썼다."));
   pSlideSummary(T(SEC.pSlideSummary, "입력 방식별로 무엇을 할 수 있게 됐는지 표로 보여 주고, 다음 단계를 말하며 마무리한다."));
