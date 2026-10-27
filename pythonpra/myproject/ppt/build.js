@@ -238,7 +238,7 @@ function slideHand(notes) {
 const HANDLOG_CARDS = [
   ["원인", "로그로 확인했다. 손을 돌리면 2D 화면에서 손가락이 겹쳐 보인다.", FAIL, FAIL_PALE],
   ["해결", "손바닥이 정면일 때만 클릭을 판정한다.", OK, OK_PALE],
-  ["같은 계열", "거리 영향은 정규화로 없앤다. 손날 판정은 들어가는 기준과 나오는 기준을 다르게 둬서 깜빡임을 막는다.", OK, OK_PALE],
+  ["같은 계열", "거리 영향은 정규화로 없앤다. 손날 판정은 들어가는 기준과 나오는 기준을 다르게 두어 깜빡임을 막는다.", OK, OK_PALE],
 ];
 
 function slideHandLog(notes) {
@@ -290,7 +290,7 @@ function slideLLM(notes) {
   text(s, "사용 모델", 0.9, 2.3, 4.0, 0.4, { fontSize: 15, bold: true, color: "F2B8B2" });
   text(s, "qwen2.5:3b-instruct", 0.9, 2.75, 4.0, 0.9, { fontSize: 20, bold: true, color: "FFFFFF" });
   text(s, "도입 이유", 0.9, 3.9, 4.0, 0.4, { fontSize: 15, bold: true, color: "9ADBC6" });
-  text(s, "코드 수정 없이 제스처에 원하는 명령을 연결해 보고 싶어서. 인식은 코드가, 문장 해석은 LLM이 맡는다.", 0.9, 4.35, 4.0, 2.0, { fontSize: 15, color: "C9D0DD" });
+  text(s, "코드 수정 없이 제스처에 원하는 명령을 연결하기 위해 사용했다. 인식은 코드가, 문장 해석은 LLM이 맡는다.", 0.9, 4.35, 4.0, 2.0, { fontSize: 15, color: "C9D0DD" });
 
   const rows = [
     ["\"음소거\"를\n모니터 끄기로 해석한다", "예시를 프롬프트에 추가한다\n(7문장 모두 정답)"],
@@ -330,7 +330,7 @@ const VOICE_CARDS = [
   ["② 웨이크워드", "무음 1.2초 뒤 자동으로 끝난다. \"웨이크\"는 임시값이다", INK, CARD],
   ["역할 분리", "Whisper는 받아쓰기만 하고 해석은 LLM이 한다", OK, OK_PALE],
 ];
-const VOICE_NOTE = "음성 인식이 궁금해서 넣었다. 소음이 크지 않은 곳에서는 잘 인식한다.";
+const VOICE_NOTE = "음성 인식의 동작 방식을 알아보려고 넣었다. 소음이 크지 않은 곳에서는 잘 인식한다.";
 
 function slideVoice(notes) {
   const s = pres.addSlide();
@@ -356,9 +356,9 @@ function slidePose(notes) {
 
 // ── 11. 박수 ────────────────────────────────────────────
 const CLAP_CARDS = [
-  ["가정", "소리 감지가 약해서 인식이 안 된다", MUTED, CARD],
+  ["가정", "소리 감지가 약해서 인식되지 않는다", MUTED, CARD],
   ["로그 확인", "신호는 이미 정상으로 잡히고 있었다", INK, CARD],
-  ["진짜 원인", "박수 신호(30ms)와 카메라 프레임(33ms)이 잘 안 겹친다. 양손이 하나로 검출되기도 한다", FAIL, FAIL_PALE],
+  ["진짜 원인", "박수 신호(30ms)와 카메라 프레임(33ms)이 잘 겹치지 않는다. 양손이 하나로 검출되기도 한다", FAIL, FAIL_PALE],
   ["해결", "직전 1초 안에\n양손이 모였으면 인정한다", OK, OK_PALE],
 ];
 const CLAP_NOTE = "양손 모으기 1초로 모드를 전환한다. 키보드 소리와 박수는 음량(peak)으로 구분한다.";
@@ -429,7 +429,7 @@ function pSlideProblem(notes) {
   s.addNotes(notes);
   const stages = [
     ["출발", "수어 인식 프로젝트에서 MediaPipe 손 인식을 써 봤다", MUTED, CARD],
-    ["목표", "정해진 제스처 대신 내가 원하는 동작을 직접 붙여 보고 싶어서, 클릭 · 예/아니오를 뺀 모든 동작을 직접 정의하기로 했다", OK, OK_PALE],
+    ["목표", "정해진 제스처 대신 원하는 동작을 직접 붙이기 위해, 클릭 · 예/아니오를 뺀 모든 동작을 직접 정의하기로 했다", OK, OK_PALE],
   ];
   const gap = 0.56, w = (12.1 - gap) / 2;
   stages.forEach((st, i) => {
@@ -624,7 +624,7 @@ function pSlideVoicePanel(notes) {
   const s = pres.addSlide();
   header(s, "음성");
   s.addNotes(notes);
-  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식이 궁금해서 골랐다. 소음을 고려해 small보다 큰 모델을 썼다.");
+  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식의 동작 방식을 알아보려고 골랐다. 소음을 고려해 small보다 큰 모델을 썼다.");
   VOICE_CARDS.slice(1).forEach((c, i) => {
     const y = 2.0 + i * 1.1;
     card(s, PANEL_X, y, PANEL_W, 1.0, c[3], c[3] === CARD);
@@ -644,7 +644,7 @@ function pSlidePosePanel(notes) {
   const s = pres.addSlide();
   header(s, "포즈");
   s.addNotes(notes);
-  techPanel(s, "사용 라이브러리", "MediaPipe Pose", "손과 같은 MediaPipe라 이어서 썼다.\n가시성 정보도 준다.");
+  techPanel(s, "사용 라이브러리", "MediaPipe Pose", "손과 같은 MediaPipe를\n이어서 썼다. 가시성 정보도 준다.");
   const cards = [
     ["특징", "상체 좌표 · 팔꿈치 각도 · 머리 방향을 뽑는다", INK, CARD],
     ["모드 분리", "손과 포즈는 한 번에 하나만 켠다. 명령 모듈은 함께 쓴다", OK, OK_PALE],
