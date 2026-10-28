@@ -631,7 +631,7 @@ function pSlideVoicePanel(notes) {
   const s = pres.addSlide();
   header(s, "음성");
   s.addNotes(notes);
-  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식의 동작 방식을 알아보려는 목적\n선정 이유: 소음 환경을 고려해 small 대신 medium 선택, GPU로 실행");
+  techPanel(s, "사용 모델", "faster-whisper medium", "음성 인식의 동작 방식을 알아보려는 목적\n선정 이유: 소음 환경을 고려해 small 대신 medium 선택, GPU로 실행\nsmall과 차이: 파라미터 약 3배 (2.4억 → 7.7억)\n정확도 향상, 속도 · 메모리 부담 증가");
   VOICE_CARDS.slice(1).forEach((c, i) => {
     const y = 2.0 + i * 1.1;
     card(s, PANEL_X, y, PANEL_W, 1.0, c[3], c[3] === CARD);
@@ -822,12 +822,12 @@ function fSlideLLM() {
   const s = pres.addSlide();
   header(s, "LLM");
   journey(s, "Qwen2.5-3B-Instruct (Ollama)",
-    "코드 수정 없이 원하는 동작을 자연어로 연결하려는 목적. 인식은 코드, 해석은 LLM\n선정 이유: 작은 3B 모델을 Ollama로 PC 안에서 직접 실행",
+    "코드 수정 없이 명령을 연결하려는 목적. 인식은 코드, 해석은 LLM\n선정 이유: 일반 PC에서 직접 실행 가능한 3B(30억 파라미터) 규모\n제약: GPU가 없는 환경에서는 더 작은 모델로 축소 필요",
     [
       ["적용", "학습 없이 매 요청마다 지시문과 예시를 프롬프트로 전달", INK, CARD],
-      ["오해석", "\"음소거\"를 모니터 끄기로 해석\n→ 예시를 프롬프트에 추가 (7문장 모두 정답)", FAIL, CARD],
-      ["임의 생성", "없는 동작을 만들어 냄\n→ 허용 목록에 있는 동작만 실행", FAIL, CARD],
-      ["응답 지연", "프로그램 전체 종료\n→ 해당 명령만 실패 처리, 모델은 메모리에 유지", FAIL, CARD],
+      ["오해석", "\"음소거\"를 모니터 끄기로 해석\n→ 예시를 프롬프트에 추가 (7문장 모두 정답)", FAIL, FAIL_PALE],
+      ["임의 생성", "없는 동작을 만들어 냄\n→ 허용 목록에 있는 동작만 실행", FAIL, FAIL_PALE],
+      ["응답 지연", "프로그램 전체 종료\n→ 해당 명령만 실패 처리, 모델은 메모리에 유지", FAIL, FAIL_PALE],
     ]);
   return s;
 }
@@ -836,7 +836,7 @@ function fSlideVoice() {
   const s = pres.addSlide();
   header(s, "음성");
   journey(s, "faster-whisper medium",
-    "음성으로 앱 실행 · 웹 검색 · 단축키를 명령하려는 목적\n선정 이유: 소음 환경을 고려해 small 대신 medium 선택, GPU로 실행",
+    "음성으로 앱 실행 · 웹 검색 · 단축키를 명령하려는 목적\n선정 이유: 소음 환경을 고려해 small 대신 medium 선택, GPU로 실행\nsmall과 차이: 파라미터 약 3배 (2.4억 → 7.7억)\n정확도 향상, 속도 · 메모리 부담 증가",
     [
       ["트리거 ①", "손등 3초 유지로 녹음 시작, 손을 떼면 종료. 소음 환경 대비", INK, CARD],
       ["트리거 ②", "웨이크워드로 녹음 시작, 무음 1.2초 뒤 종료 (단어는 임시)", INK, CARD],
@@ -929,7 +929,7 @@ function buildProcess() {
   pSlideToolsWhy(T(SEC.pSlideToolsWhy, "도구마다 왜 썼는지. 앞의 흐름의 각 단계에 무엇을 썼는지로 말한다. 손과 포즈는 MediaPipe 하나로 처리했다. 모델은 출처 링크를 붙였다."));
   pSlideHandPanel(T(SEC.pSlideHandPanel, "구현하며 이해한 것 1. 클릭이 계속 발동해서 로그를 남겨 확인했다. 손을 정면에서 옆으로, 뒤로 돌리는 동안 엄지–중지 거리가 0.17에서 0.003까지 떨어졌다. 실제로 붙인 게 아니라 2D 화면에서 손가락이 겹쳐 보인 것이었다. 추측한 원인과 실제 원인이 달랐다."));
   slideLLM(T(SEC.slideLLM, "구현하며 이해한 것 2. 로컬 LLM은 학습하지 않고 매번 지시문과 예시를 다시 읽는다. 해석이 틀린 세 가지와 해결."),
-    "코드 수정 없이 제스처에 원하는 명령을 연결하려는 목적. 인식은 코드, 해석은 LLM\n선정 이유: 작은 3B 모델을 Ollama로 PC 안에서 직접 실행");
+    "코드 수정 없이 명령을 연결하려는 목적. 인식은 코드, 해석은 LLM\n선정 이유: 일반 PC에서 직접 실행 가능한 3B(30억 파라미터) 규모\n제약: GPU가 없는 환경에서는 더 작은 모델로 축소 필요");
   pSlideVoicePanel(T(SEC.pSlideVoicePanel, "구현하며 이해한 것 3. 두 가지 트리거와 역할 분리. 조용한 환경에서는 잘 인식했다."));
   // 사용자가 PowerPoint에서 박수를 포즈 앞으로 옮겼다 (정의형_발표 기준)
   pSlideClapPanel(T(SEC.pSlideClapPanel, "인식이 안 된다고 생각했지만 로그를 보니 신호는 잡히고 있었다. 타이밍이 원인."));
