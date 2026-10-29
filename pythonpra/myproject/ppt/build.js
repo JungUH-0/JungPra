@@ -685,7 +685,7 @@ function pSlideClapPanel(notes) {
   const s = pres.addSlide();
   header(s, "박수");
   s.addNotes(notes);
-  techPanel(s, "사용 라이브러리", "sounddevice · NumPy", "별도 모델 없이\n음량 변화로 감지");
+  techPanel(s, "사용 라이브러리", "sounddevice · NumPy", "별도 모델 없이 음량 변화로 감지\nsounddevice: 마이크 입력을 30ms 블록 단위로 수신\n실측 로그: 실제 박수 peak 0.2~1.0, 키보드 등 잡음 0.03 안팎. 박수 소리 정상 포착");
   const gap = 0.2, w = (PANEL_W - gap) / 2;
   CLAP_CARDS.forEach((c, i) => {
     const x = PANEL_X + (i % 2) * (w + gap), y = 2.0 + Math.floor(i / 2) * 1.55;
@@ -773,15 +773,14 @@ function fSlideProblem() {
   header(s, "출발과 목표");
   const stages = [
     ["출발", "MediaPipe 손 인식을 PC 조작에 활용할 방법 탐색", MUTED, CARD],
-    ["문제의식", "정해진 제스처에 정해진 기능이 붙은 방식은 원하는 동작을 붙이기 어려움", FAIL, FAIL_PALE],
-    ["목표", "클릭과 예/아니오만 고정, 나머지 모든 동작은 사용자가 직접 정의", OK, OK_PALE],
+    ["목표", "정해진 제스처-기능 연결 대신, 클릭과 예/아니오만 고정하고 나머지 모든 동작은 사용자가 직접 정의", OK, OK_PALE],
   ];
-  const gap = 0.5, w = (12.1 - 2 * gap) / 3;
+  const gap = 0.56, w = (12.1 - gap) / 2;
   stages.forEach((st, i) => {
     const x = 0.6 + i * (w + gap);
-    card(s, x, 2.2, w, 3.6, st[3], st[3] === CARD);
-    labeled(s, x + 0.25, 2.5, w - 0.5, 3.0, st[0], st[1], st[2], 24, 19);
-    if (i < 2) text(s, "→", x + w, 2.2, gap, 3.6, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
+    card(s, x, 2.2, w, 3.4, st[3], st[3] === CARD);
+    labeled(s, x + 0.21, 2.45, w - 0.41, 2.9, st[0], st[1], st[2], 24, 21);
+    if (i < 1) text(s, "→", x + w, 2.2, gap, 3.4, { fontSize: 24, color: MUTED, align: "center", valign: "middle" });
   });
   return s;
 }
@@ -864,7 +863,7 @@ function fSlideClap() {
   const s = pres.addSlide();
   header(s, "박수");
   journey(s, "sounddevice · NumPy",
-    "모드 전환 수단으로 시도. 별도 모델 없이 음량 변화만으로 박수 감지",
+    "모드 전환 수단으로 시도. 별도 모델 없이 음량 변화만으로 박수 감지\nsounddevice: 마이크 입력을 30ms 블록 단위로 수신\n실측 로그: 실제 박수 peak 0.2~1.0, 키보드 등 잡음 0.03 안팎. 박수 소리 정상 포착",
     [
       ["가정", "박수가 인식되지 않음. 소리 감지가 약하다고 추정", MUTED, CARD],
       ["로그 확인", "박수 신호는 이미 정상 감지", INK, CARD],
@@ -948,7 +947,7 @@ function buildPortfolio() {
   fSlideProblem();
   pSlidePlan("");
   pSlideFlow("");
-  fSlideIntent();
+  pSlideToolsWhy("");
   fSlideHand();
   fSlideLLM();
   fSlideVoice();
