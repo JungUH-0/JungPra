@@ -105,6 +105,9 @@ def run_assistant():
     # [수정] 커스텀 명령 슬롯 3개(엄지+중지/약지/새끼) rising edge용 이전 상태 기억
     prev_pinch_slots = {name: False for name in PINCH_SLOT_NAMES}
 
+    # [추가] 자리 비움 rising/falling edge용 이전 상태 기억
+    prev_away = False
+
     # [추가] 음성 명령 트리거(웨이크워드 / 손등 3초) rising edge용 이전 상태 기억
     prev_wake_word     = False
     prev_voice_trigger = False
@@ -158,8 +161,10 @@ def run_assistant():
 
             # [수정] 예/아니오는 엄지척/엄지다운 담당 (박수는 모드 전환 전용이 됐고,
             # 눈 깜빡임은 현재 비활성화 상태라 blink/double_blink는 항상 False임)
-            yes_event = cam_res["blink"] or cam_res["thumbs_up"]
-            no_event  = cam_res["double_blink"] or cam_res["thumbs_down"]
+            # [추가] 포즈 모드에서는 고개 끄덕임=예, 가로젓기=아니오도 같은 신호로 취급
+            # (손 모드에서는 pose_res의 값이 항상 False)
+            yes_event = cam_res["blink"] or cam_res["thumbs_up"] or pose_res["nod"]
+            no_event  = cam_res["double_blink"] or cam_res["thumbs_down"] or pose_res["shake"]
 
             # [추가] rising edge만 추출 - 신호가 계속 True로 읽혀도 딱 한 번만 반응
             yes_edge = yes_event and not prev_yes
@@ -198,8 +203,18 @@ def run_assistant():
 
             # [수정] 어느 채널에서 온 신호인지 출력용으로 구분
             # (박수 채널이 모드 전환 전용으로 빠지면서 예/아니오는 손/눈만 남음)
-            yes_source = "카메라-눈깜빡임" if cam_res["blink"] else "카메라-엄지척"
-            no_source  = "카메라-눈더블블링크" if cam_res["double_blink"] else "카메라-엄지다운"
+            if cam_res["blink"]:
+                yes_source = "카메라-눈깜빡임"
+            elif pose_res["nod"]:
+                yes_source = "포즈-끄덕임"
+            else:
+                yes_source = "카메라-엄지척"
+            if cam_res["double_blink"]:
+                no_source = "카메라-눈더블블링크"
+            elif pose_res["shake"]:
+                no_source = "포즈-가로젓기"
+            else:
+                no_source = "카메라-엄지다운"
 
             if pending_close:
                 if yes_edge:
@@ -250,6 +265,18 @@ def run_assistant():
                         _log("제스처", f"{slot_name} (사용자 정의)")
                     else:
                         _log("제스처", f"{slot_name} - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
+
+            # [추가] 자리 비움 / 복귀 (포즈 모드에서만 판정됨).
+            # 등록된 "away" / "back" 명령이 있을 때만 실행하고, 없으면 로그만 남긴다.
+            # (화면 끄기·음악 일시정지 같은 동작은 사용자가 commandmodule.py로 등록)
+            away_edge = pose_res["away"] and not prev_away
+            back_edge = prev_away and not pose_res["away"]
+            prev_away = pose_res["away"]
+            if away_edge or back_edge:
+                name = "away" if away_edge else "back"
+                ok, _ = commandmodule.execute_command(name)
+                label = "자리 비움" if away_edge else "자리 복귀"
+                _log("포즈", f"{label} ({'사용자 정의 명령 실행' if ok else '등록된 명령 없음'})")
 
             # [수정] 음성 명령 트리거 처리
             # - 웨이크워드: VoiceModule이 스스로 녹음을 시작하고 무음 감지로 알아서

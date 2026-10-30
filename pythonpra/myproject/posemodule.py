@@ -73,6 +73,41 @@ HANDS_TOGETHER_SHOULDER_RATIO = 0.5
 
 MIN_SHOULDER_WIDTH = 1e-6  # 0으로 나누기 방지
 
+# ── 고개 끄덕임(예) / 가로젓기(아니오) 판정 ─────────────────
+# 최근 HEAD_WINDOW_SEC 동안의 머리 값을 모아, 한 방향으로 움직였다가 되돌아오는 횟수
+# (swing)가 HEAD_MIN_SWINGS 이상이면 인정한다. 한 번 숙이거나 돌린 것만으로는 인정하지 않음.
+#  - 끄덕임: 코-귀 중점의 세로 거리(어깨 너비로 나눈 값)가 위아래로 흔들림
+#  - 가로젓기: 기존 head_turn 값이 좌우로 흔들림
+# [미실측] 아래 임계값은 추정치다. debug_pose.txt의 headPitch / headTurn 값을 보고 조정할 것.
+#
+# 각 값의 의미와 조정 방향 (swing 1회 = 한 방향으로 움직임, 되돌아오면 +1)
+#  - HEAD_WINDOW_SEC: 이 시간 안의 움직임만 본다. 늘리면 느린 끄덕임도 잡히지만,
+#    평소 고개 움직임이 섞여 오작동이 늘어난다.
+#  - HEAD_MIN_SWINGS: 방향이 바뀐 횟수. 숙임 1회, 듦 2회로 세므로 2 = 끄덕임 한 번,
+#    4 = 끄덕임 두 번(현재). 작을수록 쉽게 인정되고 오작동도 늘어난다. 두 번 끄덕이는데도
+#    안 잡히면 3으로 내리거나 HEAD_WINDOW_SEC를 늘린다.
+#  - HEAD_PITCH_MIN_SWING: 끄덕임 진폭. 작은 떨림을 무시하는 기준이라, 끄덕여도 반응이 없으면
+#    낮추고, 가만히 있어도 반응하면 높인다. debug_pose.txt의 headPitch가 끄덕일 때 얼마나
+#    변하는지 보고 그 절반쯤으로 잡는다.
+#  - HEAD_TURN_MIN_SWING: 가로젓기 진폭. 위와 같은 방식으로 headTurn 변화량을 보고 조정.
+#  - HEAD_EVENT_COOLDOWN: 인정 직후 이 시간 동안은 다시 인정하지 않음. 한 번 끄덕였는데
+#    예가 두 번 나가는 것을 막는다.
+#  - HEAD_EVENT_HOLD_SEC: 결과를 True로 유지하는 시간. main의 폴링(0.02초)이 놓치지 않게
+#    하는 값이라 보통 바꿀 필요가 없다.
+HEAD_WINDOW_SEC       = 2.0
+HEAD_MIN_SWINGS       = 4      # 숙임-듦-숙임-듦 (또는 좌-우-좌-우) 두 번 반복
+HEAD_PITCH_MIN_SWING  = 0.06   # 끄덕임으로 볼 최소 진폭 (어깨 너비 대비)
+HEAD_TURN_MIN_SWING   = 0.25   # 가로젓기로 볼 최소 진폭 (head_turn 단위)
+HEAD_EVENT_COOLDOWN   = 1.0    # 한 번 인정한 뒤 다시 인정하기까지의 최소 간격
+HEAD_EVENT_HOLD_SEC   = 0.3    # 결과값을 True로 유지하는 시간 (main의 0.02초 폴링이 놓치지 않게)
+
+# ── 자리 비움 판정 ─────────────────────────────────────────
+# 사람(포즈 랜드마크)이 이 시간 이상 화면에서 보이지 않으면 "자리 비움"으로 판정.
+# 팔이 가려진 경우(특징 추출 실패)와 구분하기 위해 랜드마크 자체가 없을 때만 센다.
+AWAY_AFTER_SEC = 5.0
+# process()가 이 시간 이상 호출되지 않았다면 포즈 모드에 막 들어온 것으로 보고 타이머를 새로 시작
+PROCESS_GAP_RESET_SEC = 1.0
+
 # [추가] 진단용 - 팔꿈치 각도/머리 방향/손목 위치가 실제 동작에서 어떻게 움직이는지
 # 파일로 남겨서 나중에 확인한다. (어떤 자세가 값으로 잘 구분되는지 판단하는 근거)
 # 매 프레임 남기면 파일이 너무 커지므로 일정 간격으로만 기록한다.
@@ -161,6 +196,89 @@ def _head_features(landmarks, shoulder_width):
     return float(head_turn), head_tilt
 
 
+def _head_pitch(landmarks, shoulder_width):
+    """
+    고개 숙임 정도의 대용 값. 코와 두 귀 중점의 세로 차이를 어깨 너비로 나눈 값으로,
+    고개를 숙이면 코가 귀보다 내려가 값이 커진다. 머리가 안 보이면 None.
+    """
+    nose = landmarks[NOSE]
+    le, re = landmarks[LEFT_EAR], landmarks[RIGHT_EAR]
+    if (le.visibility < MIN_VISIBILITY or re.visibility < MIN_VISIBILITY
+            or nose.visibility < MIN_VISIBILITY):
+        return None
+    return float((nose.y - (le.y + re.y) / 2.0) / shoulder_width)
+
+
+def _count_swings(values, min_swing):
+    """
+    값이 위아래(또는 좌우)로 min_swing 이상 방향을 바꾼 횟수.
+    작은 떨림은 무시하고, 기준 이상 움직였다가 되돌아올 때마다 1회로 센다.
+    """
+    swings = 0
+    ref = values[0]
+    direction = 0  # 0=아직 모름, 1=증가 중, -1=감소 중
+    for v in values[1:]:
+        if direction == 0:
+            if abs(v - ref) >= min_swing:
+                direction = 1 if v > ref else -1
+                ref = v
+                swings += 1
+        elif direction == 1:
+            if v > ref:
+                ref = v
+            elif ref - v >= min_swing:
+                direction = -1
+                ref = v
+                swings += 1
+        else:
+            if v < ref:
+                ref = v
+            elif v - ref >= min_swing:
+                direction = 1
+                ref = v
+                swings += 1
+    return swings
+
+
+class HeadMotionDetector:
+    """머리 값(pitch, turn)의 최근 기록으로 끄덕임 / 가로젓기를 판정"""
+
+    def __init__(self):
+        self._history = []  # (time, pitch, turn)
+        self._last_fire = 0.0
+
+    def clear(self):
+        self._history.clear()
+
+    def update(self, now, pitch, turn):
+        """매 프레임 호출. 'nod' / 'shake' / None 반환"""
+        if pitch is None:
+            self._history.clear()  # 머리가 안 보이면 이어 붙이지 않음
+            return None
+
+        self._history.append((now, pitch, turn))
+        while self._history and now - self._history[0][0] > HEAD_WINDOW_SEC:
+            self._history.pop(0)
+
+        if now - self._last_fire < HEAD_EVENT_COOLDOWN or len(self._history) < 2 * HEAD_MIN_SWINGS:
+            return None
+
+        pitch_swings = _count_swings([h[1] for h in self._history], HEAD_PITCH_MIN_SWING)
+        turn_swings  = _count_swings([h[2] for h in self._history], HEAD_TURN_MIN_SWING)
+
+        # 한쪽이 기준을 넘고 다른 쪽보다 확실히 많을 때만 인정 (대각선으로 흔들린 경우 제외)
+        if pitch_swings >= HEAD_MIN_SWINGS and pitch_swings > turn_swings:
+            event = "nod"
+        elif turn_swings >= HEAD_MIN_SWINGS and turn_swings > pitch_swings:
+            event = "shake"
+        else:
+            return None
+
+        self._last_fire = now
+        self._history.clear()
+        return event
+
+
 def extract_pose_features(landmarks):
     """
     선택한 랜드마크들을 '몸 기준'으로 정규화한 특징 벡터로 변환.
@@ -247,8 +365,17 @@ class PoseModule:
             "pose_features"  : None,   # 정규화된 상체 특징 벡터 (수집/학습/분류용)
             "hands_together" : False,  # 양손 모임 - 포즈 모드에서 모드 전환 판정에 사용
             "pose_name"      : None,   # [예정] 학습된 분류기가 붙으면 자세 이름이 들어갈 자리
+            "nod"            : False,  # 고개 끄덕임 (예) - HEAD_EVENT_HOLD_SEC 동안 True 유지
+            "shake"          : False,  # 고개 가로젓기 (아니오)
+            "away"           : False,  # 자리 비움 - 사람이 AWAY_AFTER_SEC 이상 안 보이는 동안 True
         }
         self._lock = threading.Lock()
+
+        self._head = HeadMotionDetector()
+        self._nod_until   = 0.0
+        self._shake_until = 0.0
+        self._last_seen_time    = time.time()  # 사람이 마지막으로 보인 시각
+        self._last_process_time = 0.0
 
         # [추가] 진단 로그 상태
         self._last_log_time = 0.0
@@ -263,7 +390,7 @@ class PoseModule:
                 pass
 
     # ── 내부: 진단 로그 기록 ──────────────────────────────
-    def _debug_log(self, features, reason):
+    def _debug_log(self, features, reason, pitch=None):
         if not DEBUG_LOG_ENABLED:
             return
         now = time.time()
@@ -272,18 +399,30 @@ class PoseModule:
         self._last_log_time = now
 
         if features is None:
-            line = f"{time.strftime('%H:%M:%S')} pose skip: {reason}"
+            line = (f"{time.strftime('%H:%M:%S')} pose skip: {reason} "
+                    f"(머리 판정은 계속, headPitch={'-' if pitch is None else format(pitch, '+.2f')})")
         else:
             lwx, lwy = _keypoint_feature(features, LEFT_WRIST)
             rwx, rwy = _keypoint_feature(features, RIGHT_WRIST)
             line = (f"{time.strftime('%H:%M:%S')} "
                     f"elbowL={features[-4]:.2f} elbowR={features[-3]:.2f} "
                     f"headTurn={features[-2]:+.2f} headTilt={features[-1]:+.2f} "
+                    f"headPitch={'-' if pitch is None else format(pitch, '+.2f')} "
                     f"wristL=({lwx:+.2f},{lwy:+.2f}) wristR=({rwx:+.2f},{rwy:+.2f})")
 
         try:
             with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
+        except OSError:
+            pass
+
+    def _debug_note(self, text):
+        """이벤트 발생 시점을 진단 로그에 한 줄 남김 (간격 제한 없이)"""
+        if not DEBUG_LOG_ENABLED:
+            return
+        try:
+            with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%H:%M:%S')} {text}\n")
         except OSError:
             pass
 
@@ -294,9 +433,19 @@ class PoseModule:
         detected       = False
         features       = None
         hands_together = False
+        head_event     = None
+        head_pitch     = None
+
+        now = time.time()
+        # 포즈 모드에 막 들어온 경우(한동안 process가 호출되지 않았음) 자리 비움 타이머를 새로 시작
+        if now - self._last_process_time > PROCESS_GAP_RESET_SEC:
+            self._last_seen_time = now
+            self._head.clear()
+        self._last_process_time = now
 
         if res.pose_landmarks:
             landmarks = res.pose_landmarks.landmark
+            self._last_seen_time = now
 
             # 시각화 - 손 모드의 손 랜드마크 표시와 같은 방식
             mp_drawing.draw_landmarks(
@@ -308,6 +457,19 @@ class PoseModule:
             hands_together = get_hands_together(landmarks)
             features, reason = extract_pose_features(landmarks)
             detected = features is not None
+
+            # 끄덕임 / 가로젓기: 팔(팔꿈치·손목)이 가려져 특징 추출이 실패한 프레임에서도
+            # 판정한다. 필요한 것은 어깨(크기 기준)와 코·귀뿐이다.
+            ls_, rs_ = landmarks[LEFT_SHOULDER], landmarks[RIGHT_SHOULDER]
+            sw = ((ls_.x - rs_.x) ** 2 + (ls_.y - rs_.y) ** 2) ** 0.5
+            shoulders_ok = (ls_.visibility >= MIN_VISIBILITY and
+                            rs_.visibility >= MIN_VISIBILITY and sw >= MIN_SHOULDER_WIDTH)
+            if shoulders_ok:
+                head_pitch = _head_pitch(landmarks, sw)
+                head_turn, _ = _head_features(landmarks, sw)
+                head_event = self._head.update(now, head_pitch, head_turn)
+            else:
+                self._head.clear()
 
             # [추가] 사람 주위에 박스 + 그 위에 자세 이름 표시.
             # MediaPipe는 YOLO처럼 박스를 직접 주지 않아서 랜드마크 min/max로 직접 계산함.
@@ -341,17 +503,45 @@ class PoseModule:
                            f"head turn{features[-2]:+.2f} tilt{features[-1]:+.2f}",
                            (10, 120), cv.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 255), 2)
 
+            # 머리 판정은 팔과 별개로 동작하므로, 팔 인식 여부를 따로 표시
+            cv.putText(frame_vis, "arms OK" if detected else "arms hidden (head only)",
+                       (10, 210), cv.FONT_HERSHEY_SIMPLEX, 0.55,
+                       (0, 255, 100) if detected else (0, 165, 255), 2)
+
             if hands_together:
                 cv.putText(frame_vis, "HANDS TOGETHER", (10, 90),
                            cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
 
             # [추가] 값 변화를 파일로 남겨서 나중에 어떤 자세가 잘 구분되는지 분석
-            self._debug_log(features, reason)
+            self._debug_log(features, reason, head_pitch)
+        else:
+            self._head.clear()
+
+        if head_event == "nod":
+            self._nod_until = now + HEAD_EVENT_HOLD_SEC
+            self._debug_note(f"EVENT nod")
+        elif head_event == "shake":
+            self._shake_until = now + HEAD_EVENT_HOLD_SEC
+            self._debug_note(f"EVENT shake")
+
+        away = (now - self._last_seen_time) >= AWAY_AFTER_SEC
+        if now < self._nod_until:
+            cv.putText(frame_vis, "NOD (yes)", (10, 150),
+                       cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        if now < self._shake_until:
+            cv.putText(frame_vis, "SHAKE (no)", (10, 150),
+                       cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        if away:
+            cv.putText(frame_vis, "AWAY", (10, 180),
+                       cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
 
         with self._lock:
             self.result["pose_detected"]  = detected
             self.result["pose_features"]  = features
             self.result["hands_together"] = hands_together
+            self.result["nod"]            = now < self._nod_until
+            self.result["shake"]          = now < self._shake_until
+            self.result["away"]           = away
 
     def get_result(self):
         """현재 감지 결과 반환 (스레드 안전)"""
@@ -365,3 +555,9 @@ class PoseModule:
             self.result["pose_features"]  = None
             self.result["hands_together"] = False
             self.result["pose_name"]      = None
+            self.result["nod"]            = False
+            self.result["shake"]          = False
+            self.result["away"]           = False
+        self._head.clear()
+        self._nod_until = self._shake_until = 0.0
+        self._last_seen_time = time.time()
