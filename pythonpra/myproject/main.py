@@ -44,10 +44,22 @@ MODE_SWITCH_HOLD_SEC = 1.0
 
 CLOSE_CONFIRM_TIMEOUT_SEC = 5.0  # 닫기 확인 요청 후 응답 없으면 자동 취소(안전 기본값)
 
+# [추가] 손 모드에서 손이 하나도 안 보이는 상태가 이 시간 이상 이어지면(손을 내리고 키보드를
+# 치는 중 등) 제스처·마우스·신호 로그를 찍지 않는다. 손이 다시 보이면 바로 재개.
+# 모드 전환·음성·등록 로그는 계속 출력하고, 제스처 처리 자체는 그대로 동작한다.
+HAND_GONE_QUIET_SEC = 3.0
+_quiet_logs = False
+
 
 # [추가] 콘솔에 시각 태그를 붙여 어느 시점에 무슨 신호가 찍혔는지 구분하기 쉽게 함
 def _log(tag, msg):
     print(f"[{time.strftime('%H:%M:%S')}] [{tag}] {msg}")
+
+
+# [추가] 손 입력에서 나오는 로그(신호·제스처·마우스) - 손이 오래 안 보이면 건너뜀
+def _gesture_log(tag, msg):
+    if not _quiet_logs:
+        _log(tag, msg)
 
 
 # [추가] 음성 명령 실행 - 별도 스레드에서 돌린다.
@@ -61,7 +73,42 @@ def _run_voice_command(text):
         _log("음성", f"명령 실행 중 오류: {e}")
 
 
+# [추가] main이 실행 중 실제로 호출하는 명령 이름 - 콘솔로 등록할 때 이 밖의 이름이면 경고
+KNOWN_COMMAND_NAMES = ["swipe_up", "swipe_down", "close_confirm", "away", "back"] + PINCH_SLOT_NAMES
+
+
+# [추가] 콘솔 명령 등록 - main 실행 중에 "이름: 하고 싶은 일"을 입력하면 commandmodule에 저장.
+# input()과 LLM 호출이 모두 대기하는 작업이라 별도 스레드로 돌려서 제스처 처리가 멈추지 않게 한다.
+def _console_register_loop():
+    print("[등록] 명령 저장: '이름: 하고 싶은 일' 형식으로 입력 (예: pinch_ring: 크롬 열어줘)")
+    print(f"[등록] main이 쓰는 이름: {', '.join(KNOWN_COMMAND_NAMES)}")
+    while True:
+        try:
+            line = input().strip()
+        except (EOFError, KeyboardInterrupt):
+            return
+        if not line:
+            continue
+        if ":" not in line:
+            _log("등록", "형식 오류 - '이름: 하고 싶은 일' 형식으로 입력")
+            continue
+        name, text = (part.strip() for part in line.split(":", 1))
+        if not name or not text:
+            _log("등록", "형식 오류 - 이름과 내용을 모두 입력")
+            continue
+        if name not in KNOWN_COMMAND_NAMES:
+            _log("등록", f"주의: '{name}'은 main이 호출하는 이름이 아니라 저장만 되고 실행되지 않음")
+        try:
+            ok, result = commandmodule.register_command(name, text)
+            _log("등록", f"저장 완료: {name} -> {result}" if ok else f"저장 실패: {result}")
+        except Exception as e:
+            _log("등록", f"저장 중 오류: {e}")
+
+
 def run_assistant():
+    global _quiet_logs
+    no_hand_since = None  # 손이 안 보이기 시작한 시각 (None이면 보이는 중)
+
     # [추가] 포즈 모듈은 카메라를 직접 열지 않고 cameramodule이 읽은 프레임을 넘겨받음
     pose  = PoseModule()
     cam   = CameraModule(camera_id=0, show_window=True, pose_module=pose)
@@ -74,6 +121,7 @@ def run_assistant():
     cam_thread.start()
     audio_thread.start()
     voice_thread.start()
+    threading.Thread(target=_console_register_loop, daemon=True).start()
 
     print("[Assistant] 시작 - 카메라 창에서 'q'를 누르면 전체 종료")
 
@@ -123,6 +171,16 @@ def run_assistant():
             voice_res = voice.get_result()
 
             now = time.time()
+
+            # [추가] 손 모드에서 손이 안 보인 지 HAND_GONE_QUIET_SEC가 지나면 손 로그를 끔
+            # (포즈 모드는 손 추적이 꺼져 있어 항상 "안 보임"이므로 대상에서 제외)
+            if mode == MODE_HAND and not cam_res["hand_detected"]:
+                if no_hand_since is None:
+                    no_hand_since = now
+            else:
+                no_hand_since = None
+            _quiet_logs = (no_hand_since is not None and
+                           now - no_hand_since >= HAND_GONE_QUIET_SEC)
 
             # [수정] 모드 전환 - "박수 소리 + 양손 모임(시각 확인)"이 동시에 있어야 인정.
             # 소리만으로 판정하면 주변 소음(문 닫는 소리, 남의 박수 등)에 오작동하는데,
@@ -237,9 +295,9 @@ def run_assistant():
                     pending_close_since = time.time()
                     _log("확인 필요", "창을 닫을까요? 눈 1번/박수 1번=예, 더블=아니오 (5초 내 응답)")
                 elif yes_edge:
-                    _log("신호", f"예 / 동의 ({yes_source})")
+                    _gesture_log("신호", f"예 / 동의 ({yes_source})")
                 elif no_edge:
-                    _log("신호", f"아니오 / 거절 ({no_source})")
+                    _gesture_log("신호", f"아니오 / 거절 ({no_source})")
 
             # [추가] swipe_up/swipe_down → commandmodule에 등록된 사용자 정의 명령이
             # 있으면 그걸 실행, 없으면 기본 동작(복원/최소화)으로 폴백.
@@ -248,12 +306,12 @@ def run_assistant():
                 ok, _ = commandmodule.execute_command("swipe_up")
                 if not ok:
                     windowcontrol.restore_last_window()
-                _log("제스처", f"swipe_up ({'사용자 정의' if ok else '기본 동작'})")
+                _gesture_log("제스처", f"swipe_up ({'사용자 정의' if ok else '기본 동작'})")
             if swipe_down_edge and not cam_res["close_request"]:
                 ok, _ = commandmodule.execute_command("swipe_down")
                 if not ok:
                     windowcontrol.minimize_active_window()
-                _log("제스처", f"swipe_down ({'사용자 정의' if ok else '기본 동작'})")
+                _gesture_log("제스처", f"swipe_down ({'사용자 정의' if ok else '기본 동작'})")
 
             # [수정] 커스텀 명령 슬롯 3개(엄지를 중지/약지/새끼에 붙이기) - swipe와 달리
             # 기본 동작이 없는 순수 커스텀 슬롯이라, 등록된 명령이 없으면 아무 것도
@@ -262,9 +320,9 @@ def run_assistant():
                 if pinch_slot_edges[slot_name]:
                     ok, _ = commandmodule.execute_command(slot_name)
                     if ok:
-                        _log("제스처", f"{slot_name} (사용자 정의)")
+                        _gesture_log("제스처", f"{slot_name} (사용자 정의)")
                     else:
-                        _log("제스처", f"{slot_name} - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
+                        _gesture_log("제스처", f"{slot_name} - 등록된 명령 없음 (commandmodule.py로 등록하세요)")
 
             # [추가] 자리 비움 / 복귀 (포즈 모드에서만 판정됨).
             # 등록된 "away" / "back" 명령이 있을 때만 실행하고, 없으면 로그만 남긴다.
@@ -309,11 +367,11 @@ def run_assistant():
 
             # [추가] 마우스 좌/우클릭도 콘솔에 로그 (실제 클릭 자체는 cameramodule에서 이미 실행됨)
             if left_click_down_edge:
-                _log("마우스", "좌클릭 DOWN (핀치)")
+                _gesture_log("마우스", "좌클릭 DOWN (핀치)")
             elif left_click_up_edge:
-                _log("마우스", "좌클릭 UP")
+                _gesture_log("마우스", "좌클릭 UP")
             if right_click_edge:
-                _log("마우스", "우클릭 (엄지 넣기)")
+                _gesture_log("마우스", "우클릭 (엄지 넣기)")
 
             time.sleep(0.02)
     except KeyboardInterrupt:
